@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pharmacy Dispensing Platform</title>
+<script src="supabase-config.js"></script>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#111827;--muted:#667085;--line:#d8dee8;--green:#14785f;--dark:#101828;--gold:#b78118;--red:#b42318;--soft:#eef2f6}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}.wrap{max-width:1500px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
+.brand{font-weight:900;font-size:26px}.sub{color:var(--muted);font-size:13px}.badge{padding:8px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:800;font-size:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 2px 10px rgba(16,24,40,.03)}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800}.btn.primary{background:var(--green);color:#fff}.btn.dark{background:var(--dark);color:#fff}.btn.soft{background:var(--soft);color:var(--ink)}.btn.red{background:#fee4e2;color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-weight:800;font-size:13px;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid #cfd7e4;border-radius:12px;padding:11px;background:#fff}textarea{min-height:72px;resize:vertical}
+.hospital-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1000px;margin:70px auto}.hospital-card{padding:42px 24px;text-align:center;background:#fff;border:2px solid transparent;border-radius:28px;box-shadow:0 12px 35px rgba(16,24,40,.08);transition:.2s}.hospital-card:hover{transform:translateY(-3px);border-color:#b7c4d6}.hospital-icon{font-size:64px}.hospital-card h2{font-size:25px;margin:12px 0 4px}.hospital-card .ar{font-size:20px;font-weight:800}
+.months{display:flex;gap:8px;flex-wrap:wrap}.month{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800}.month.active{background:var(--dark);color:#fff}
+.actionbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:14px 0}.med{border:1px solid var(--line);border-radius:18px;padding:15px;margin:12px 0;background:#fff}.medhead{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start}.medname{font-size:17px;font-weight:900;line-height:1.3}.medgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr .7fr;gap:9px;margin-top:12px}.ivgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.fieldcap{font-size:11px;font-weight:800;color:#596579;margin-bottom:4px}.note{padding:11px 13px;border-radius:12px;background:#fff7e6;border:1px solid #f2d59a;color:#79520c;font-size:13px}
+.info{padding:11px 13px;border-radius:12px;background:#edf7f3;border:1px solid #b7ddcf;color:#155e4b;font-size:13px}.error{background:#fef3f2;border-color:#fecdca;color:#b42318}
+dialog{border:0;border-radius:20px;padding:0;box-shadow:0 25px 70px rgba(0,0,0,.28);max-width:950px;width:94%}dialog::backdrop{background:rgba(16,24,40,.55)}.modal{padding:20px}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.calday,.calhead{padding:9px;text-align:center;border-radius:10px}.calhead{font-weight:900;font-size:12px}.calday{background:#f7f8fa;border:1px solid #edf0f4;min-height:43px}.calday.has{background:#eaf6f1;border-color:#9dcfbc;font-weight:900}.calday.sel{outline:2px solid var(--green)}.calday.empty{visibility:hidden}
+.histitem{padding:10px 0;border-bottom:1px solid var(--line)}.histtime{font-weight:900}.histmeta{color:var(--muted);font-size:12px;margin-top:3px}
+.admin-grid{display:grid;grid-template-columns:360px 1fr;gap:18px}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}.kpi{padding:14px;border-radius:15px;background:#fff;border:1px solid var(--line)}.kpi b{font-size:24px;display:block}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e7ebf0}th{background:#f7f8fa;position:sticky;top:0}.tablebox{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:14px}
+.loginbox{max-width:430px;margin:auto}
+#lockScreen{position:fixed;z-index:9999;inset:0;background:#f4f6f8;display:flex;align-items:center;justify-content:center}.lockcard{width:min(440px,92vw);background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(16,24,40,.12)}
+/* MEDICA-LIKE LABELS */
+.label-wrap{background:#fff;color:#111;font-family:Arial,sans-serif;width:9cm;min-height:10cm;margin:auto;padding:.22cm;border:1px dashed #999}
+.reg-head{display:grid;grid-template-columns:2.2cm 1fr 2.7cm;gap:5px;align-items:start}.barcode svg{width:2.05cm;height:.72cm}.barcode-num{text-align:center;font-weight:900;font-size:9px}.hosp{text-align:center}.hosp .ar{font-size:12px;font-weight:900}.hosp .en{font-size:8px;font-weight:800}.reg-right{text-align:right;font-size:7.5px;line-height:1.25;font-weight:800}.label-rule{border-top:1px dashed #222;margin:5px 0}
+.reg-line{display:grid;grid-template-columns:1.25cm 1fr;gap:4px;font-size:9px;line-height:1.25;margin:3px 0}.reg-line .lab{font-weight:900}.reg-name{font-size:11px;font-weight:900}.reg-ar{text-align:right;font-weight:900;font-size:10px}.reg-drug{font-size:11px;font-weight:900}.how-ar{text-align:right;font-size:11px;font-weight:900;line-height:1.45;margin:5px 0}.how-en{font-size:10.5px;font-weight:900;line-height:1.4;margin:5px 0}.expiry{font-size:9px;font-weight:800;margin:5px 0}.flags{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;font-size:8px;margin-top:8px}.boxflag{display:flex;gap:4px;align-items:center}.square{width:13px;height:13px;border:1.5px solid #111;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900}
+.ivtop{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:5px;font-size:9px}.ivcenter{text-align:center;font-weight:900}.iv-title{text-align:center;font-size:9px;font-weight:900}.iv-patient{display:grid;grid-template-columns:1.2cm 1fr 1.2cm auto;gap:4px;font-size:9px;margin:6px 0}.iv-solution{display:grid;grid-template-columns:1.5cm 1fr;gap:4px;font-size:10px;margin:5px 0}.iv-add{display:grid;grid-template-columns:1fr 1.7cm;gap:8px;font-size:10px}.iv-add .head{font-weight:900;text-align:center}.iv-dose-row{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:12px;font-size:9px}.iv-prod{font-size:8.5px;line-height:1.5;margin-top:18px}.iv-prod>div{display:grid;grid-template-columns:1.6cm 1fr;gap:5px}
+@media(max-width:900px){.grid,.grid2,.admin-grid,.medgrid,.ivgrid,.hospital-grid{grid-template-columns:1fr}.wrap{padding:12px}.brand{font-size:20px}}
+</style>
+</head>
+<body>
+<div id="lockScreen">
+  <div class="lockcard">
+    <div style="font-size:26px;font-weight:900">Pharmacy Dispensing Platform</div>
+    <p class="sub">Enter platform access code.</p>
+    <input id="accessCode" type="password" autocomplete="off">
+    <button class="btn dark" id="unlockBtn" style="width:100%;margin-top:10px">Open Platform</button>
+    <div id="lockError" style="color:#b42318;margin-top:8px;font-weight:800"></div>
+  </div>
+</div>
+
+<div id="landing" class="wrap hidden">
+  <div class="top">
+    <div><div class="brand">Pharmacy Dispensing Platform</div><div class="sub">Select hospital / اختر المستشفى</div></div>
+    <div style="display:flex;gap:8px"><span id="cloudBadge" class="badge">☁ Checking Cloud...</span><button class="btn dark" id="adminOpen">Admin</button></div>
+  </div>
+  <div class="hospital-grid">
+    <button class="hospital-card" data-h="QCH"><div class="hospital-icon">🏥</div><h2>Qatif Central Hospital</h2><div class="ar">مستشفى القطيف المركزي</div></button>
+    <button class="hospital-card" data-h="PMFH"><div class="hospital-icon">🏥</div><h2>Prince Mohammed Bin Fahd Hospital</h2><div class="ar">مستشفى الأمير محمد بن فهد</div></button>
+  </div>
+</div>
+
+<div id="dispensePage" class="wrap hidden">
+  <div class="top">
+    <div><button class="btn soft" id="backHome">← Hospitals</button><div class="brand" id="hospitalTitle" style="margin-top:10px"></div><div class="sub" id="pharmacistLine"></div></div>
+    <span id="cloudBadge2" class="badge">☁ Cloud</span>
+  </div>
+  <div class="card">
+    <div class="grid">
+      <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select></div>
+      <div><label>MRN / رقم الملف</label><div style="display:flex;gap:8px"><input id="mrn"><button class="btn dark" id="loadMrn">Search</button></div></div>
+      <div><label>Patient Name / اسم المريض</label><input id="pname"></div>
+      <div><label>National ID / الهوية</label><input id="nid"></div>
+      <div><label>Department / القسم</label><input id="dept"></div>
+      <div><label>Arabic Name / الاسم بالعربي</label><input id="par"></div>
+      <div><label>Age / العمر</label><input id="age"></div>
+      <div><label>Weight kg / الوزن</label><input id="weight"></div>
+      <div><label>Birth Date / تاريخ الميلاد</label><input id="dob"></div>
+    </div>
+    <div style="margin-top:14px"><label>Months / الأشهر — select one or more</label><div id="months" class="months"></div></div>
+    <div id="patientStatus" class="note" style="margin-top:14px">Choose pharmacy, months and MRN.</div>
+    <div class="actionbar">
+      <button class="btn soft" id="addPatient">＋ Add Patient</button>
+      <button class="btn soft" id="addMedication">＋ Add Medication</button>
+      <button class="btn soft" id="selectAll">Select All</button>
+      <button class="btn soft" id="deselectAll">Deselect All</button>
+      <button class="btn dark" id="historyBtn">◷ History Calendar</button>
+      <button class="btn dark" id="previewBtn">◎ Preview</button>
+      <button class="btn primary" id="printBtn">▣ Print Labels</button>
+      <button class="btn primary" id="dispenseBtn">✓ Dispense Selected</button>
+    </div>
+  </div>
+  <div id="meds"></div>
+</div>
+
+<div id="adminPage" class="wrap hidden">
+  <div class="top"><div><button class="btn soft" id="adminBack">← Back</button><div class="brand" style="margin-top:10px">Admin — Live Pharmacy Activity</div><div class="sub">Auto-refresh every 5 seconds</div></div><span class="badge" id="adminLive">● LIVE</span></div>
+  <div class="admin-grid">
+    <div class="card">
+      <h3>Pharmacist Accounts</h3>
+      <label>Username</label><input id="newUser">
+      <label style="margin-top:9px">Full Name</label><input id="newFullName">
+      <label style="margin-top:9px">Password</label><input id="newPassword" type="password">
+      <button class="btn primary" id="createAccount" style="width:100%;margin-top:10px">Create Pharmacist Account</button>
+      <div id="accounts" style="margin-top:15px"></div>
+    </div>
+    <div>
+      <div class="kpis">
+        <div class="kpi"><span class="sub">Dispensed rows today</span><b id="kpiToday">0</b></div>
+        <div class="kpi"><span class="sub">Pharmacists active today</span><b id="kpiStaff">0</b></div>
+        <div class="kpi"><span class="sub">Latest activity</span><b id="kpiLatest" style="font-size:15px">—</b></div>
+      </div>
+      <div class="card">
+        <div class="grid">
+          <div><label>From</label><input type="date" id="adminFrom"></div>
+          <div><label>To</label><input type="date" id="adminTo"></div>
+          <div><label>Hospital</label><select id="adminHospital"><option value="">All</option><option value="QCH">QCH</option><option value="PMFH">PMFH</option></select></div>
+          <div><label>Pharmacy</label><select id="adminPharmacy"><option value="">All</option><option>OPD</option><option>OPD2</option><option>INPATIENT</option><option>ER</option><option>IV</option><option>NARCOTICS</option><option>DISCHARGE</option></select></div>
+          <div><label>Pharmacist</label><select id="adminPharmacist"><option value="">All</option></select></div>
+          <div style="display:flex;align-items:end;gap:8px"><button class="btn dark" id="adminRefresh">Refresh</button><button class="btn soft" id="adminAll">All Dates</button><button class="btn primary" id="adminExcel">Excel Export</button></div>
+        </div>
+        <div class="tablebox" style="margin-top:14px"><table><thead><tr><th>Date/Time</th><th>Pharmacist</th><th>Hospital</th><th>Pharmacy</th><th>MRN</th><th>Patient</th><th>Medication</th><th>Dose</th><th>Qty</th></tr></thead><tbody id="adminRows"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="loginDialog"><div class="modal loginbox"><h2>Pharmacist Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser"><label style="margin-top:9px">Password</label><input id="loginPass" type="password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN</label><input id="newMrn"></div><div><label>Patient Name</label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"></div><div><label>National ID</label><input id="newNid"></div><div><label>Department</label><input id="newDept"></div><div><label>Age</label><input id="newAge"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="medDialog"><div class="modal"><h2>Add Medication</h2><label>Medication</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="saveMed">Add Medication</button><button class="btn soft" onclick="medDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="previewDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><h2>Label Preview</h2><button class="btn soft" onclick="previewDialog.close()">✕</button></div><div id="previewArea"></div></div></dialog>
+<dialog id="historyDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><div><h2 style="margin:0">Patient History Calendar</h2><div class="sub" id="historyPatient"></div></div><button class="btn soft" onclick="historyDialog.close()">✕</button></div><div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0"><button class="btn soft" id="calPrev">←</button><b id="calTitle"></b><button class="btn soft" id="calNext">→</button></div><div class="calendar" id="calendar"></div><div id="dayHistory" style="margin-top:16px"></div></div></dialog>
+
+<script>
+const $=id=>document.getElementById(id);
+const ACCESS='124620';
+let hospital=null, DATA=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null;
+
+function configOK(){const c=window.SUPABASE_CONFIG||{};return c.url&&c.publishableKey&&!String(c.url).includes('PASTE_')}
+async function rpc(name,args={}){
+  if(!configOK())throw new Error('Supabase config missing');
+  const c=window.SUPABASE_CONFIG, r=await fetch(c.url.replace(/\/$/,'')+'/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':c.publishableKey,'Authorization':'Bearer '+c.publishableKey},body:JSON.stringify(args)});
+  const txt=await r.text(); if(!r.ok)throw new Error((()=>{try{return JSON.parse(txt).message}catch{return txt}})()||'Cloud error');
+  if(!txt)return null; try{return JSON.parse(txt)}catch{return txt}
+}
+async function cloudPing(){try{await rpc('medica_ping');$('cloudBadge').textContent='☁ Cloud Connected';$('cloudBadge2').textContent='☁ Cloud Connected'}catch{$('cloudBadge').textContent='☁ Cloud Offline';$('cloudBadge2').textContent='☁ Cloud Offline'}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function fmtDate(d){if(!d)return'';let x=new Date(d);return isNaN(x)?String(d):x.toLocaleDateString('en-GB')}
+function fmtDT(d){let x=new Date(d);return isNaN(x)?String(d):x.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function hospNames(){return hospital==='QCH'?['Qatif Central Hospital','مستشفى القطيف المركزي']:['Prince Mohammed Bin Fahd Hospital','مستشفى الأمير محمد بن فهد']}
+function phMeta(){return (DATA?.pharmacies||[]).find(x=>x[0]===$('pharmacy').value)||['','Pharmacy','الصيدلية',1]}
+function defaultDays(){return +phMeta()[3]||1}
+function prettyMonth(m){let [y,mo]=m.split('-');return new Date(+y,+mo-1,1).toLocaleString('en-US',{month:'short',year:'numeric'})}
+
+function unlock(){if(($('accessCode').value||'').trim()===ACCESS){sessionStorage.setItem('medica_access','1');$('lockScreen').classList.add('hidden');$('landing').classList.remove('hidden')}else $('lockError').textContent='Incorrect code'}
+$('unlockBtn').onclick=unlock;$('accessCode').onkeydown=e=>{if(e.key==='Enter')unlock()};
+if(sessionStorage.getItem('medica_access')==='1'){$('lockScreen').classList.add('hidden');$('landing').classList.remove('hidden')}
+
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[data-src="${src}"]`))return res();let s=document.createElement('script');s.src=src;s.dataset.src=src;s.onload=res;s.onerror=()=>rej(new Error('Unable to load '+src));document.head.appendChild(s)})}
+async function ensureHospitalData(code){
+  let varname=code+'_DATA';if(window[varname])return window[varname];
+  await loadScript(code.toLowerCase()+'-data.js');return window[varname];
+}
+document.querySelectorAll('.hospital-card').forEach(b=>b.onclick=()=>chooseHospital(b.dataset.h));
+async function chooseHospital(code){pendingHospital=code;if(!pharmacist){$('loginHospital').textContent=code==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginError').textContent='';$('loginDialog').showModal();return}await enterHospital(code)}
+$('loginGo').onclick=async()=>{try{let x=await rpc('medica_pharmacist_login',{p_username:$('loginUser').value,p_password:$('loginPass').value});pharmacist=x;sessionStorage.setItem('medica_pharmacist',JSON.stringify(x));$('loginDialog').close();await enterHospital(pendingHospital)}catch(e){$('loginError').textContent=e.message}};
+try{let p=JSON.parse(sessionStorage.getItem('medica_pharmacist')||'null');if(p?.token)pharmacist=p}catch{}
+
+async function enterHospital(code){
+  hospital=code;$('landing').classList.add('hidden');$('dispensePage').classList.remove('hidden');$('patientStatus').textContent='Loading hospital data...';
+  try{DATA=await ensureHospitalData(code)}catch(e){$('patientStatus').className='note error';$('patientStatus').textContent=e.message;return}
+  let [en,ar]=hospNames();$('hospitalTitle').textContent=ar+' — '+en;$('pharmacistLine').textContent='Signed in: '+(pharmacist?.full_name||'')+' ('+(pharmacist?.username||'')+')';
+  $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(x[2])} / ${esc(x[1])}</option>`).join('');
+  $('drugList').innerHTML=DATA.drugs.map(x=>`<option value="${esc(x)}">`).join('');
+  buildMonths();clearPatient();$('patientStatus').className='note';$('patientStatus').textContent='Select pharmacy, months and MRN.';
+}
+$('backHome').onclick=()=>{$('dispensePage').classList.add('hidden');$('landing').classList.remove('hidden')};
+
+function buildMonths(){
+  $('months').innerHTML='';let ms=DATA.months||[];selectedMonths=new Set(ms.slice(-2));
+  ms.forEach(m=>{let b=document.createElement('button');b.className='month'+(selectedMonths.has(m)?' active':'');b.textContent=prettyMonth(m);b.onclick=()=>{if(selectedMonths.has(m)){if(selectedMonths.size>1)selectedMonths.delete(m)}else selectedMonths.add(m);buildMonthsFromSelection();if(selectedMRN)loadPatient(selectedMRN)};$('months').appendChild(b)})
+}
+function buildMonthsFromSelection(){[...$('months').children].forEach((b,i)=>b.classList.toggle('active',selectedMonths.has(DATA.months[i])))}
+function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML=''}
+$('pharmacy').onchange=()=>{if(selectedMRN)loadPatient(selectedMRN)};
+$('loadMrn').onclick=()=>loadPatient(($('mrn').value||'').trim());$('mrn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();loadPatient(($('mrn').value||'').trim())}};
+
+function staticProfile(mrn){return DATA?.patients?.[mrn]||null}
+function recordMeds(profile){
+  if(!profile)return{dept:'',ids:[]};let ids=[],seen=new Set(),dept='';let ph=$('pharmacy').value;
+  for(const r of profile[6]||[]){let mon=DATA.months[r[0]];if(selectedMonths.has(mon)&&r[1]===ph){dept=DATA.depts[r[2]]||dept;for(const di of r[3]||[])if(!seen.has(di)){seen.add(di);ids.push(di)}}}
+  return{dept,ids}
+}
+async function loadPatient(mrn){
+  if(!mrn)return;selectedMRN=mrn;$('mrn').value=mrn;let sp=staticProfile(mrn),cloud=null;
+  try{cloud=await rpc('medica_get_profile',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:mrn})}catch{}
+  if(!sp&&!cloud){$('patientStatus').className='note error';$('patientStatus').textContent='MRN not found. Use Add Patient.';$('meds').innerHTML='';return}
+  let rec=recordMeds(sp),name=cloud?.patient_name||sp?.[0]||'',nid=cloud?.national_id||sp?.[1]||'',ar=cloud?.patient_name_ar||sp?.[2]||'',age=cloud?.age||sp?.[3]||'',weight=cloud?.weight||sp?.[4]||'',dob=cloud?.birth_date||sp?.[5]||'',dept=cloud?.department||rec.dept||'';
+  $('pname').value=name;$('nid').value=nid;$('par').value=ar;$('age').value=age;$('weight').value=weight;$('dob').value=dob;$('dept').value=dept;
+  let medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:mrn,p_pharmacy:$('pharmacy').value});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
+  renderMeds(medNames,sp);$('patientStatus').className='info';$('patientStatus').textContent=`Loaded ${medNames.length} medication(s) • ${phMeta()[2]} • ${[...selectedMonths].map(prettyMonth).join(' + ')}`;
+}
+function detectForm(drug){
+  let d=drug.toUpperCase();if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';if(/SACHET/.test(d))return'SACHET';if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';if(/EYE DROP|OPHTHALMIC|DROPS?/.test(d))return'DROPS';if(/INHALER|PUFF/.test(d))return'INHALER';if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';if(/CREAM|OINTMENT|GEL/.test(d))return'TOPICAL';if(/VIAL|AMPOULE|AMP\b|INJECTION/.test(d))return'INJECTION';return'OTHER'
+}
+function parseRx(txt,drug){
+  txt=String(txt||'');let u=txt.toUpperCase(),form=detectForm(drug),dose='';
+  let m=u.match(/(\d+(?:\.\d+)?)\s*(ML|MG|MCG|GRAM|G|TABLET|TAB|CAPSULE|CAP|SACHET|PUFF|DROP)/);if(m)dose=m[1]+' '+m[2];
+  let freq='';if(/ONCE DAILY|\bOD\b/.test(u))freq='OD';else if(/TWICE DAILY|\bBID\b/.test(u))freq='BID';else if(/THREE TIMES DAILY|\bTID\b/.test(u))freq='TID';else if(/FOUR TIMES DAILY|\bQID\b/.test(u))freq='QID';else if(/EVERY 6 HOUR|Q6H/.test(u))freq='Q6H';else if(/EVERY 8 HOUR|Q8H/.test(u))freq='Q8H';else if(/EVERY 12 HOUR|Q12H/.test(u))freq='Q12H';else if(/AT BEDTIME|QHS/.test(u))freq='QHS';else if(/AS NEEDED|PRN/.test(u))freq='PRN';else if(/ONCE WEEKLY|WEEKLY/.test(u))freq='WEEKLY';
+  return{dose,freq,form}
+}
+function rxOptions(sp,drug){
+  if(!sp)return[];let di=DATA.drugs.indexOf(drug),rx=sp[7]||{};if((phMeta()[0]==='OPD'||phMeta()[0]==='OPD2')&&di>=0&&rx[String(di)])return rx[String(di)];
+  return di>=0?(DATA.generalDirections?.[String(di)]||[]):[]
+}
+function renderMeds(names,sp){
+  $('meds').innerHTML=names.length?names.map((drug,i)=>medCard(drug,i,sp)).join(''):'<div class="card sub">No medication records for the selected pharmacy/months. Use Add Medication.</div>';
+  document.querySelectorAll('.rxsel').forEach(s=>s.onchange=e=>{let med=e.target.closest('.med'),p=parseRx(e.target.value,med.dataset.drug);med.querySelector('.dose').value=p.dose;med.querySelector('.freq').value=p.freq;med.querySelector('.free').value=e.target.value})
+}
+function medCard(drug,i,sp){
+  let opts=rxOptions(sp,drug),p=parseRx(opts[0]||'',drug),days=defaultDays(),iv=$('pharmacy').value==='IV',now=new Date(),tom=new Date(now.getTime()+24*3600e3);
+  let dl=x=>{let z=new Date(x),off=z.getTimezoneOffset()*60000;return new Date(z-off).toISOString().slice(0,16)};
+  if(iv)return `<div class="med ivmed" data-drug="${esc(drug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(drug)}</div><span class="badge">IV Label</span></div><div class="ivgrid">
+  <div><div class="fieldcap">Solution / المحلول</div><input class="ivsolution" placeholder="e.g. Sodium Chloride 0.9%"></div><div><div class="fieldcap">Additive / المضاف</div><input class="dose" value="${esc(p.dose)}" placeholder="Dose"></div><div><div class="fieldcap">IV Access</div><select class="ivaccess"><option>Peripheral</option><option>Central</option></select></div>
+  <div><div class="fieldcap">Rate mL/hour</div><input class="ivrate"></div><div><div class="fieldcap">Volume mL</div><input class="ivvolume"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div>
+  <div><div class="fieldcap">Duration days</div><input class="days" type="number" min="1" value="1"></div><div><div class="fieldcap">Infuse over minutes</div><input class="ivinfusion" placeholder="60"></div><div><div class="fieldcap">Ordered By</div><input class="orderedby"></div>
+  <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${dl(now)}"></div><div><div class="fieldcap">Expiry Date/Time — editable</div><input class="ivexpiry" type="datetime-local" value="${dl(tom)}"></div><div><div class="fieldcap">Route</div><input class="route" value="IV"></div>
+  </div>${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Instructions">${esc(opts[0]||'')}</textarea></div>`;
+  return `<div class="med" data-drug="${esc(drug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(drug)}</div><span class="badge">${esc(p.form)}</span></div><div class="medgrid">
+  <div><div class="fieldcap">Dosage Form</div><select class="form">${formOptions(p.form)}</select></div><div><div class="fieldcap">Dose</div><input class="dose" value="${esc(p.dose)}"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div><div><div class="fieldcap">Qty</div><input class="qty" type="number" min="0"></div><div><div class="fieldcap">Days</div><input class="days" type="number" min="1" value="${days}"></div>
+  </div><div class="grid" style="margin-top:9px"><div><div class="fieldcap">Route</div><input class="route" value="PO"></div><div><div class="fieldcap">Expiry Date (optional)</div><input class="expiry" type="date"></div><div style="display:flex;gap:12px;align-items:center;padding-top:20px"><label><input class="refrig" type="checkbox" style="width:auto"> Refrigerated</label><label><input class="alert" type="checkbox" style="width:auto"> High Alert</label><label><input class="risk" type="checkbox" style="width:auto"> High Risk</label></div></div>
+  ${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Directions / طريقة الاستعمال">${esc(opts[0]||'')}</textarea></div>`
+}
+function formOptions(sel){return['TABLET','CAPSULE','LIQUID','DROPS','INHALER','SACHET','SUPPOSITORY','TOPICAL','INJECTION','OTHER'].map(x=>`<option ${x===sel?'selected':''}>${x}</option>`).join('')}
+function freqOptions(sel){return['','OD','BID','TID','QID','Q6H','Q8H','Q12H','QHS','PRN','WEEKLY'].map(x=>`<option ${x===sel?'selected':''}>${x||'—'}</option>`).join('')}
+function freqEn(f){return({OD:'once daily',BID:'twice daily',TID:'three times daily',QID:'four times daily',Q6H:'every 6 hours',Q8H:'every 8 hours',Q12H:'every 12 hours',QHS:'at bedtime',PRN:'as needed',WEEKLY:'once weekly'})[f]||f||''}
+function freqAr(f){return({OD:'مرة يوميًا',BID:'مرتين يوميًا',TID:'ثلاث مرات يوميًا',QID:'أربع مرات يوميًا',Q6H:'كل 6 ساعات',Q8H:'كل 8 ساعات',Q12H:'كل 12 ساعة',QHS:'عند النوم',PRN:'عند الحاجة',WEEKLY:'مرة أسبوعيًا'})[f]||f||''}
+function dayAr(n){n=+n||0;if(n===1)return'يوم واحد';if(n===2)return'يومين';if(n>=3&&n<=10)return n+' أيام';return n+' يومًا'}
+function unitDose(item){
+  let raw=(item.dose||'').toUpperCase(),m,form=item.form;
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':m[1]+' tablets',n===1?'حبة واحدة':n===2?'حبتين':m[1]+' حبات']}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':m[1]+' capsules',n===1?'كبسولة واحدة':n===2?'كبسولتين':m[1]+' كبسولات']}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*ML/)))return[m[1]+' mL',m[1]+' مل'];
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(PUFF)/)))return[m[1]+' puff'+(+m[1]===1?'':'s'),m[1]+' بخة'];
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(DROP)/)))return[m[1]+' drop'+(+m[1]===1?'':'s'),m[1]+' قطرة'];
+  if(form==='TABLET')return['1 tablet','حبة واحدة'];if(form==='CAPSULE')return['1 capsule','كبسولة واحدة'];if(form==='SACHET')return['1 sachet','كيس واحد'];if(form==='INHALER')return['1 puff','بخة واحدة'];if(form==='DROPS')return['1 drop','قطرة واحدة'];
+  return[item.dose||'',item.dose||'']
+}
+function smartDirections(i){
+  let [de,da]=unitDose(i),en=[de?'Take '+de:'',freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):'',i.route?'('+i.route+')':''].filter(Boolean).join(' ');
+  let ar=[da?'خذ '+da:'',freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):'',i.route?'('+routeAr(i.route)+')':''].filter(Boolean).join(' ');
+  return{en,enRaw:i.free||'',ar}
+}
+function routeAr(r){return({PO:'عن طريق الفم',IV:'وريدي',IM:'عضلي',SC:'تحت الجلد',TOPICAL:'موضعي',INHALATION:'استنشاق'})[String(r||'').toUpperCase()]||r||''}
+function selectedItems(){
+  return[...document.querySelectorAll('.med')].filter(m=>m.querySelector('.pick').checked).map(m=>{
+    let iv=m.classList.contains('ivmed'),drug=m.dataset.drug,dose=m.querySelector('.dose')?.value||'',freq=m.querySelector('.freq')?.value||'',route=m.querySelector('.route')?.value||'',days=m.querySelector('.days')?.value||'';
+    if(iv)return{medication:drug,drug,form:'INJECTION',dosage_form:'INJECTION',dose,frequency:freq,freq,route,quantity:'',days,supply_days:days,free:m.querySelector('.free')?.value||'',label_type:'IV',iv_solution:m.querySelector('.ivsolution')?.value||'',iv_rate:m.querySelector('.ivrate')?.value||'',iv_volume:m.querySelector('.ivvolume')?.value||'',iv_infusion_time:m.querySelector('.ivinfusion')?.value||'',iv_access:m.querySelector('.ivaccess')?.value||'',iv_production_at:m.querySelector('.ivprod')?.value||'',iv_expiry_at:m.querySelector('.ivexpiry')?.value||'',ordered_by:m.querySelector('.orderedby')?.value||''};
+    let form=m.querySelector('.form')?.value||detectForm(drug),qty=m.querySelector('.qty')?.value||'',dir=smartDirections({drug,form,dose,freq,route,days});
+    return{medication:drug,drug,form,dosage_form:form,dose,frequency:freq,freq,route,quantity:qty,days,supply_days:days,free:m.querySelector('.free')?.value||'',directions_en:dir.en,directions_ar:dir.ar,expiry_date:m.querySelector('.expiry')?.value||'',refrigerated:m.querySelector('.refrig')?.checked||false,high_alert:m.querySelector('.alert')?.checked||false,high_risk:m.querySelector('.risk')?.checked||false,label_type:'REGULAR'}
+  })
+}
+$('selectAll').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x.checked=true);$('deselectAll').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x.checked=false);
+
+$('addPatient').onclick=()=>{$('newMrn').value=$('mrn').value;$('newPname').value=$('pname').value;$('newPar').value=$('par').value;$('newNid').value=$('nid').value;$('newDept').value=$('dept').value;$('newAge').value=$('age').value;$('newWeight').value=$('weight').value;$('newDob').value=$('dob').value;$('patientDialog').showModal()};
+$('savePatient').onclick=async()=>{try{let p={hospital,mrn:$('newMrn').value.trim(),patient_name:$('newPname').value.trim(),patient_name_ar:$('newPar').value.trim(),national_id:$('newNid').value.trim(),department:$('newDept').value.trim(),age:$('newAge').value.trim(),weight:$('newWeight').value.trim(),birth_date:$('newDob').value.trim()};await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});$('patientDialog').close();$('mrn').value=p.mrn;await loadPatient(p.mrn)}catch(e){alert(e.message)}}
+$('addMedication').onclick=()=>{if(!selectedMRN)return alert('Load or add a patient first');$('newMed').value='';$('medDialog').showModal()};
+$('saveMed').onclick=async()=>{let med=$('newMed').value.trim();if(!med)return;try{await rpc('medica_add_manual_med',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_medication:med});$('medDialog').close();await loadPatient(selectedMRN)}catch(e){alert(e.message)}}
+
+function code39SVG(text){
+ const pat={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw','5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn','*':'nwnnwnwnn'};let s='*'+String(text).replace(/\D/g,'')+'*',x=2,parts=[];
+ for(const ch of s){let p=pat[ch]||pat['0'];for(let i=0;i<p.length;i++){let w=p[i]==='w'?4:2;if(i%2===0)parts.push(`<rect x="${x}" y="1" width="${w}" height="36"/>`);x+=w}x+=2}
+ return `<svg viewBox="0 0 ${x+2} 38" preserveAspectRatio="none">${parts.join('')}</svg>`
+}
+function regularLabel(i){
+ let [he,ha]=hospNames(),ph=phMeta(),d=smartDirections(i),date=new Date().toLocaleDateString('en-GB'),ar=$('par').value,expiry=i.expiry_date?fmtDate(i.expiry_date):'';
+ return `<div class="label-wrap"><div class="reg-head"><div class="barcode">${code39SVG(selectedMRN)}<div class="barcode-num">${esc(selectedMRN)}</div></div><div class="hosp"><div class="ar">${ha}</div><div class="en">${he}</div></div><div class="reg-right">${esc(ph[1])}<br>${esc($('dept').value||'')}<br>${date}</div></div>
+ <div class="label-rule"></div><div class="reg-line"><span class="lab">NAME</span><span class="reg-name">${esc($('pname').value||'—')}</span></div>${ar?`<div class="reg-ar">${esc(ar)}</div>`:''}
+ <div class="label-rule"></div><div class="reg-line"><span class="lab">Drug</span><span class="reg-drug">${esc(i.drug)}</span></div><div class="label-rule"></div>
+ <div class="how-ar" dir="rtl">${esc(d.ar)}</div>${expiry?`<div class="expiry">Expired at &nbsp; ${esc(expiry)}</div>`:''}<div class="label-rule"></div><div class="how-en">${esc(d.en)}</div>
+ <div class="label-rule"></div><div style="font-size:8px;min-height:18px"><b>Note</b></div><div class="flags"><div class="boxflag"><span>Keep Refrigerated</span><span class="square">${i.refrigerated?'✓':''}</span></div><div class="boxflag"><span>High Risk</span><span class="square">${i.high_risk?'✓':''}</span></div><div class="boxflag"><span>High Alert</span><span class="square">${i.high_alert?'✓':''}</span></div><div><b>Qty&nbsp; ${esc(i.quantity||'—')}</b></div></div></div>`
+}
+function ivLabel(i){
+ let [he,ha]=hospNames(),ph=phMeta(),date=new Date().toLocaleDateString('en-GB'),freq=freqEn(i.freq);
+ return `<div class="label-wrap"><div class="ivtop"><div><b>Weight</b>&nbsp; ${esc($('weight').value||'—')}</div><div class="ivcenter"><div style="font-size:12px">${ha}</div><div style="font-size:8px">${he}</div></div><div style="text-align:right;font-weight:900">${esc(i.iv_access||'Peripheral')}</div></div><div class="iv-title">Store &nbsp; ${esc(ph[1])}</div><div class="label-rule"></div>
+ <div class="iv-patient"><b>Patient</b><span>${esc($('pname').value||'—')}</span><b>MRN</b><span>${esc(selectedMRN)}</span></div><div class="iv-solution"><b>Location</b><span>${esc($('dept').value||'—')}</span></div><div class="iv-solution"><b>Solution</b><span>${esc(i.iv_solution||'—')}</span></div>
+ <div class="iv-add"><div><div class="head">Additive</div><div style="font-size:11px;font-weight:900;margin-top:8px">${esc(i.drug)}</div></div><div><div class="head">Dose</div><div style="font-size:11px;font-weight:900;margin-top:8px">${esc(i.dose||'—')}</div></div></div>
+ <div class="iv-dose-row"><div><b>Rate</b>&nbsp; ${esc(i.iv_rate||'—')} ML/Hour<br><b>Volume</b>&nbsp; ${esc(i.iv_volume||'—')} ML</div><div>${esc(freq||'')}${i.days?' for '+esc(i.days)+' Day(s)':''}<br>${i.iv_infusion_time?'infuse over '+esc(i.iv_infusion_time)+' Min(s)':''}</div></div>
+ <div style="font-size:9px;margin-top:8px"><b>Instructions</b>&nbsp; ${esc(i.free||'')}</div><div class="iv-prod"><div><b>Prod. Date</b><span>${esc(i.iv_production_at?fmtDT(i.iv_production_at):'—')}</span></div><div><b>Expiry Date</b><span>${esc(i.iv_expiry_at?fmtDT(i.iv_expiry_at):'—')}</span></div><div><b>Ordered By</b><span>${esc(i.ordered_by||'—')}</span></div><div><b>Accepted By</b><span>${esc(pharmacist?.full_name||'—')}</span></div><div><b>Prepared By</b><span>________________</span></div><div><b>Checked By</b><span>________________</span></div></div></div>`
+}
+function labelHTML(i){return i.label_type==='IV'?ivLabel(i):regularLabel(i)}
+$('previewBtn').onclick=()=>{let i=selectedItems()[0];if(!i)return alert('Select a medication');$('previewArea').innerHTML=labelHTML(i);$('previewDialog').showModal()};
+$('printBtn').onclick=()=>{let items=selectedItems();if(!items.length)return alert('Select medication(s)');let w=window.open('','_blank','width=650,height=850');if(!w)return alert('Allow pop-ups');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><style>@page{size:9cm 10cm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial}.label-wrap{width:9cm;height:10cm;padding:.22cm;page-break-after:always;overflow:hidden;color:#111}.reg-head{display:grid;grid-template-columns:2.2cm 1fr 2.7cm;gap:5px;align-items:start}.barcode svg{width:2.05cm;height:.72cm}.barcode-num{text-align:center;font-weight:900;font-size:9px}.hosp{text-align:center}.hosp .ar{font-size:12px;font-weight:900}.hosp .en{font-size:8px;font-weight:800}.reg-right{text-align:right;font-size:7.5px;line-height:1.25;font-weight:800}.label-rule{border-top:1px dashed #222;margin:5px 0}.reg-line{display:grid;grid-template-columns:1.25cm 1fr;gap:4px;font-size:9px;line-height:1.25;margin:3px 0}.reg-line .lab{font-weight:900}.reg-name{font-size:11px;font-weight:900}.reg-ar{text-align:right;font-weight:900;font-size:10px}.reg-drug{font-size:11px;font-weight:900}.how-ar{text-align:right;font-size:11px;font-weight:900;line-height:1.45;margin:5px 0}.how-en{font-size:10.5px;font-weight:900;line-height:1.4;margin:5px 0}.expiry{font-size:9px;font-weight:800;margin:5px 0}.flags{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;font-size:8px;margin-top:8px}.boxflag{display:flex;gap:4px;align-items:center}.square{width:13px;height:13px;border:1.5px solid #111;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900}.ivtop{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:5px;font-size:9px}.ivcenter{text-align:center;font-weight:900}.iv-title{text-align:center;font-size:9px;font-weight:900}.iv-patient{display:grid;grid-template-columns:1.2cm 1fr 1.2cm auto;gap:4px;font-size:9px;margin:6px 0}.iv-solution{display:grid;grid-template-columns:1.5cm 1fr;gap:4px;font-size:10px;margin:5px 0}.iv-add{display:grid;grid-template-columns:1fr 1.7cm;gap:8px;font-size:10px}.iv-add .head{font-weight:900;text-align:center}.iv-dose-row{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:12px;font-size:9px}.iv-prod{font-size:8.5px;line-height:1.5;margin-top:18px}.iv-prod>div{display:grid;grid-template-columns:1.6cm 1fr;gap:5px}</style></head><body>${items.map(labelHTML).join('')}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()};
+
+function payload(){
+ let items=selectedItems();for(const i of items){if(i.label_type==='REGULAR'&&!i.directions_en){let d=smartDirections(i);i.directions_en=d.en;i.directions_ar=d.ar}}
+ return{hospital,pharmacy:$('pharmacy').value,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,age:$('age').value,weight:$('weight').value,birth_date:$('dob').value,profile:{hospital,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,age:$('age').value,weight:$('weight').value,birth_date:$('dob').value},items}
+}
+$('dispenseBtn').onclick=async()=>{if(!selectedMRN)return alert('Load patient first');let p=payload();if(!p.items.length)return alert('Select medication(s)');$('dispenseBtn').disabled=true;$('dispenseBtn').textContent='Saving...';try{let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});$('patientStatus').className='info';$('patientStatus').textContent=`✓ Saved to Cloud — ${r.saved} medication(s) by ${r.pharmacist}`;alert('✓ Dispense saved successfully to Cloud')}catch(e){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');q.push({token:pharmacist.token,payload:p});localStorage.setItem('medica_pending',JSON.stringify(q));$('patientStatus').className='note error';$('patientStatus').textContent='Cloud save failed. Saved to local pending queue: '+e.message;alert('Cloud unavailable. Dispense saved locally as pending sync.')}finally{$('dispenseBtn').disabled=false;$('dispenseBtn').textContent='✓ Dispense Selected'}};
+async function syncPending(){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');if(!q.length||!pharmacist)return;let left=[];for(const x of q){try{await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:x.payload})}catch{left.push(x)}}localStorage.setItem('medica_pending',JSON.stringify(left))}
+setInterval(syncPending,60000);
+
+async function ensureHistory(){let vn=hospital+'_HISTORY';if(window[vn])return window[vn];await loadScript(hospital.toLowerCase()+'-history.js');return window[vn]}
+$('historyBtn').onclick=async()=>{if(!selectedMRN)return alert('Load patient first');$('historyPatient').textContent=($('pname').value||'Patient')+' • MRN '+selectedMRN;$('dayHistory').innerHTML='Loading...';$('historyDialog').showModal();let hist=await ensureHistory(),src=(hist?.[selectedMRN]||[]).map(x=>({date:x[0],pharmacy:x[1],medication:DATA.drugs[x[2]]||'',department:DATA.depts[x[3]]||'',source:'Medica'})),cloud=[];try{cloud=await rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})||[]}catch{}currentHistory=[...src,...cloud.map(x=>({...x,date:String(x.dispensed_at).slice(0,10),source:'Platform'}))];let latest=currentHistory.map(x=>x.date).sort().at(-1);calCursor=latest?new Date(latest+'T12:00:00'):new Date();renderCalendar()};
+function renderCalendar(){
+ let y=calCursor.getFullYear(),m=calCursor.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),days=new Set(currentHistory.map(x=>x.date));$('calTitle').textContent=first.toLocaleString('en-US',{month:'long',year:'numeric'});
+ let h=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="calhead">${x}</div>`).join('');for(let i=0;i<first.getDay();i++)h+='<div class="calday empty"></div>';for(let d=1;d<=last.getDate();d++){let ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;h+=`<button class="calday ${days.has(ds)?'has':''}" data-date="${ds}">${d}</button>`}$('calendar').innerHTML=h;document.querySelectorAll('.calday[data-date]').forEach(b=>b.onclick=()=>showHistoryDay(b.dataset.date));let firstEvent=currentHistory.find(x=>x.date.startsWith(`${y}-${String(m+1).padStart(2,'0')}`));if(firstEvent)showHistoryDay(firstEvent.date);else $('dayHistory').innerHTML='<div class="sub">No dispensing records in this month.</div>'
+}
+function showHistoryDay(date){document.querySelectorAll('.calday').forEach(x=>x.classList.toggle('sel',x.dataset.date===date));let rows=currentHistory.filter(x=>x.date===date);$('dayHistory').innerHTML=`<h3>${fmtDate(date)}</h3>`+(rows.length?rows.map(x=>`<div class="histitem"><div class="histtime">${x.source==='Platform'?fmtDT(x.dispensed_at):fmtDate(x.date)} — ${esc(x.medication)}</div><div class="histmeta">${esc(x.source)} • ${esc(x.pharmacy||'')} • ${esc(x.department||'')}${x.pharmacist_name?' • '+esc(x.pharmacist_name):''}</div></div>`).join(''):'<div class="sub">No records.</div>')}
+$('calPrev').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};$('calNext').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};
+
+$('adminOpen').onclick=()=>{$('adminPass').value='';$('adminLoginError').textContent='';$('adminLoginDialog').showModal()};
+$('adminLoginGo').onclick=async()=>{try{let x=await rpc('medica_admin_login',{p_password:$('adminPass').value});adminToken=x.token;$('adminLoginDialog').close();$('landing').classList.add('hidden');$('adminPage').classList.remove('hidden');let today=new Date().toISOString().slice(0,10);$('adminFrom').value=today;$('adminTo').value=today;await refreshAccounts();await refreshAdmin()}catch(e){$('adminLoginError').textContent=e.message}};
+$('adminBack').onclick=()=>{$('adminPage').classList.add('hidden');$('landing').classList.remove('hidden');adminToken=''};
+async function refreshAccounts(){adminAccounts=await rpc('medica_admin_accounts',{p_admin_token:adminToken})||[];$('adminPharmacist').innerHTML='<option value="">All</option>'+adminAccounts.map(a=>`<option value="${a.id}">${esc(a.full_name)}</option>`).join('');$('accounts').innerHTML=adminAccounts.map(a=>`<div style="padding:10px;border-top:1px solid #eee"><b>${esc(a.full_name)}</b><div class="sub">@${esc(a.username)} • ${a.is_active?'Active':'Disabled'}</div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn soft resetpw" data-id="${a.id}">Reset Password</button><button class="btn ${a.is_active?'red':'primary'} toggleuser" data-id="${a.id}" data-active="${a.is_active}">${a.is_active?'Disable':'Enable'}</button></div></div>`).join('');document.querySelectorAll('.resetpw').forEach(b=>b.onclick=async()=>{let p=prompt('New password (6+ characters)');if(!p)return;await rpc('medica_admin_reset_password',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_new_password:p});alert('Password reset')});document.querySelectorAll('.toggleuser').forEach(b=>b.onclick=async()=>{await rpc('medica_admin_set_active',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_active:b.dataset.active!=='true'});await refreshAccounts()})}
+$('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account',{p_admin_token:adminToken,p_username:$('newUser').value,p_full_name:$('newFullName').value,p_password:$('newPassword').value});$('newUser').value=$('newFullName').value=$('newPassword').value='';await refreshAccounts()}catch(e){alert(e.message)}};
+async function refreshAdmin(){if(!adminToken)return;try{adminLogs=await rpc('medica_admin_logs',{p_admin_token:adminToken,p_from:$('adminFrom').value,p_to:$('adminTo').value,p_hospital:$('adminHospital').value,p_pharmacy:$('adminPharmacy').value,p_pharmacist_id:$('adminPharmacist').value})||[];renderAdmin()}catch(e){$('adminLive').textContent='● '+e.message}}
+function renderAdmin(){
+ $('adminRows').innerHTML=adminLogs.map(x=>`<tr><td>${esc(fmtDT(x.dispensed_at))}</td><td>${esc(x.pharmacist_name)}</td><td>${esc(x.hospital)}</td><td>${esc(x.pharmacy)}</td><td>${esc(x.mrn)}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication)}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td></tr>`).join('');
+ let today=new Date().toISOString().slice(0,10),tod=adminLogs.filter(x=>String(x.dispensed_at).slice(0,10)===today);$('kpiToday').textContent=tod.length;$('kpiStaff').textContent=new Set(tod.map(x=>x.pharmacist_id)).size;$('kpiLatest').textContent=adminLogs[0]?adminLogs[0].pharmacist_name+' • '+fmtDT(adminLogs[0].dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
+}
+$('adminRefresh').onclick=refreshAdmin;$('adminAll').onclick=()=>{$('adminFrom').value=$('adminTo').value='';refreshAdmin()};
+['adminFrom','adminTo','adminHospital','adminPharmacy','adminPharmacist'].forEach(x=>$(x).onchange=refreshAdmin);
+$('adminExcel').onclick=()=>{if(!adminLogs.length)return alert('No records');let cols=['dispensed_at','pharmacist_name','pharmacist_username','hospital','pharmacy','mrn','patient_name','national_id','department','medication','dosage_form','dose','frequency','route','quantity','supply_days','directions_en','directions_ar','label_type'];let xml=`<html><head><meta charset="utf-8"></head><body><table><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>${adminLogs.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c]??'')}</td>`).join('')}</tr>`).join('')}</table></body></html>`;let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([xml],{type:'application/vnd.ms-excel'}));a.download='pharmacy-dispensing-export.xls';a.click();URL.revokeObjectURL(a.href)};
+setInterval(()=>{if(adminToken&&!$('adminPage').classList.contains('hidden'))refreshAdmin()},5000);
+
+cloudPing();setInterval(cloudPing,60000);
+</script>
+</body></html>
