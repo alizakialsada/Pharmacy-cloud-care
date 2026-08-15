@@ -300,13 +300,57 @@ function freqOptions(sel){return['','OD','BID','TID','QID','Q6H','Q8H','Q12H','Q
 function freqEn(f){return({OD:'once daily',BID:'twice daily',TID:'three times daily',QID:'four times daily',Q6H:'every 6 hours',Q8H:'every 8 hours',Q12H:'every 12 hours',QHS:'at bedtime',PRN:'as needed',WEEKLY:'once weekly'})[f]||f||''}
 function freqAr(f){return({OD:'مرة يوميًا',BID:'مرتين يوميًا',TID:'ثلاث مرات يوميًا',QID:'أربع مرات يوميًا',Q6H:'كل 6 ساعات',Q8H:'كل 8 ساعات',Q12H:'كل 12 ساعة',QHS:'عند النوم',PRN:'عند الحاجة',WEEKLY:'مرة أسبوعيًا'})[f]||f||''}
 function dayAr(n){n=+n||0;if(n===1)return'يوم واحد';if(n===2)return'يومين';if(n>=3&&n<=10)return n+' أيام';return n+' يومًا'}
+function normDoseUnit(u){
+  u=String(u||'').toUpperCase().replace(/µG|UG/g,'MCG').replace(/MGS?$/,'MG').replace(/GRAMS?$/,'G');
+  if(u==='GRAM')u='G'; if(u==='UNITS')u='UNIT'; return u;
+}
+function doseToBase(value,unit){
+  value=parseFloat(value);unit=normDoseUnit(unit);if(!Number.isFinite(value))return null;
+  if(unit==='G')return[value*1000,'MG'];
+  if(unit==='MG')return[value,'MG'];
+  if(unit==='MCG')return[value/1000,'MG'];
+  if(unit==='UNIT')return[value,'UNIT'];
+  if(unit==='MEQ')return[value,'MEQ'];
+  return[value,unit];
+}
+function niceNum(n){
+  if(!Number.isFinite(n))return'';
+  let v=Math.round(n*100)/100;return Number.isInteger(v)?String(v):String(v).replace(/0+$/,'').replace(/\.$/,'');
+}
+function arTablet(n){
+  if(Math.abs(n-0.5)<0.001)return'نصف حبة';if(Math.abs(n-1)<0.001)return'حبة واحدة';if(Math.abs(n-1.5)<0.001)return'حبة ونصف';if(Math.abs(n-2)<0.001)return'حبتين';return niceNum(n)+' حبات';
+}
+function arCapsule(n){
+  if(Math.abs(n-1)<0.001)return'كبسولة واحدة';if(Math.abs(n-2)<0.001)return'كبسولتين';return niceNum(n)+' كبسولات';
+}
+function administrationFromStrength(item){
+  let doseRaw=String(item.dose||'').trim(),drug=String(item.drug||item.medication||'').toUpperCase(),form=String(item.form||'').toUpperCase();
+  let dm=doseRaw.toUpperCase().match(/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\b/);
+  if(!dm)return null;
+  let db=doseToBase(dm[1],dm[2]);if(!db)return null;
+  // Oral solids: calculate number of tablets/capsules from prescribed dose ÷ strength per unit.
+  if(form==='TABLET'||form==='CAPSULE'){
+    let re=/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\b/g,arr=[],m;
+    while((m=re.exec(drug))!==null){let b=doseToBase(m[1],m[2]);if(b&&b[1]===db[1])arr.push(b[0]);}
+    // Prefer the last matching strength before the dosage-form wording; avoids many product-name numbers.
+    let strength=arr.length?arr[arr.length-1]:null;
+    if(strength&&strength>0){let n=db[0]/strength;if(n>0&&n<=20){let en=form==='TABLET'?(niceNum(n)+' tablet'+(Math.abs(n-1)<0.001?'':'s')):(niceNum(n)+' capsule'+(Math.abs(n-1)<0.001?'':'s'));let ar=form==='TABLET'?arTablet(n):arCapsule(n);return[en,ar];}}
+  }
+  // Liquids: concentration such as 125 MG/5 ML -> convert the prescribed dose to mL.
+  if(form==='LIQUID'){
+    let cm=drug.match(/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\s*\/\s*(\d+(?:\.\d+)?)\s*ML\b/);
+    if(cm){let cb=doseToBase(cm[1],cm[2]),den=parseFloat(cm[3]);if(cb&&cb[1]===db[1]&&den>0){let ml=db[0]*den/cb[0];if(ml>0&&ml<=1000)return[niceNum(ml)+' mL',niceNum(ml)+' مل'];}}
+  }
+  return null;
+}
 function unitDose(item){
   let raw=(item.dose||'').toUpperCase(),m,form=item.form;
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':m[1]+' tablets',n===1?'حبة واحدة':n===2?'حبتين':m[1]+' حبات']}
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':m[1]+' capsules',n===1?'كبسولة واحدة':n===2?'كبسولتين':m[1]+' كبسولات']}
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*ML/)))return[m[1]+' mL',m[1]+' مل'];
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(PUFF)/)))return[m[1]+' puff'+(+m[1]===1?'':'s'),m[1]+' بخة'];
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(DROP)/)))return[m[1]+' drop'+(+m[1]===1?'':'s'),m[1]+' قطرة'];
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':niceNum(n)+' tablets',arTablet(n)]}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':niceNum(n)+' capsules',arCapsule(n)]}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*ML/)))return[niceNum(+m[1])+' mL',niceNum(+m[1])+' مل'];
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(PUFF)/)))return[niceNum(+m[1])+' puff'+(+m[1]===1?'':'s'),niceNum(+m[1])+' بخة'];
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(DROP)/)))return[niceNum(+m[1])+' drop'+(+m[1]===1?'':'s'),niceNum(+m[1])+' قطرة'];
+  let calc=administrationFromStrength(item);if(calc)return calc;
   if(form==='TABLET')return['1 tablet','حبة واحدة'];if(form==='CAPSULE')return['1 capsule','كبسولة واحدة'];if(form==='SACHET')return['1 sachet','كيس واحد'];if(form==='INHALER')return['1 puff','بخة واحدة'];if(form==='DROPS')return['1 drop','قطرة واحدة'];
   return[item.dose||'',item.dose||'']
 }
