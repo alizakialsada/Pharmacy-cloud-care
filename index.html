@@ -64,7 +64,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   <div class="card">
     <div class="grid">
       <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select></div>
-      <div><label>MRN / رقم الملف</label><div style="display:flex;gap:8px"><input id="mrn"><button class="btn dark" id="loadMrn">Search</button></div></div>
+      <div><label>MRN or National ID / رقم الملف أو الهوية</label><div style="display:flex;gap:8px"><input id="mrn" placeholder="MRN or National ID"><button class="btn dark" id="loadMrn">Search</button></div></div>
       <div><label>Patient Name / اسم المريض</label><input id="pname"></div>
       <div><label>National ID / الهوية</label><input id="nid"></div>
       <div><label>Department / القسم</label><input id="dept"></div>
@@ -184,7 +184,22 @@ function buildMonths(){
 function buildMonthsFromSelection(){[...$('months').children].forEach((b,i)=>b.classList.toggle('active',selectedMonths.has(DATA.months[i])))}
 function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML=''}
 $('pharmacy').onchange=()=>{if(selectedMRN)loadPatient(selectedMRN)};
-$('loadMrn').onclick=()=>loadPatient(($('mrn').value||'').trim());$('mrn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();loadPatient(($('mrn').value||'').trim())}};
+$('loadMrn').onclick=()=>searchPatient(($('mrn').value||'').trim());$('mrn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchPatient(($('mrn').value||'').trim())}};
+
+function normID(v){return String(v||'').replace(/[\s-]/g,'').trim()}
+async function searchPatient(value){
+  value=String(value||'').trim();if(!value)return;
+  // MRN remains the fastest path. If it is not an MRN, search the embedded patient index by National ID.
+  if(DATA?.patients?.[value])return loadPatient(value);
+  let key=normID(value),matches=[];
+  for(const [mrn,p] of Object.entries(DATA?.patients||{})){if(normID(p?.[1])===key)matches.push(mrn)}
+  if(matches.length===1)return loadPatient(matches[0]);
+  if(matches.length>1){let pick=prompt('More than one patient matched this National ID. Enter MRN:\n'+matches.join('\n'),matches[0]);if(pick&&matches.includes(pick.trim()))return loadPatient(pick.trim());return}
+  // Also search patient profiles added later to Supabase.
+  try{let cp=await rpc('medica_find_profile_by_identifier',{p_token:pharmacist.token,p_hospital:hospital,p_identifier:value});if(cp?.mrn)return loadPatient(String(cp.mrn))}catch(e){}
+  // Last attempt treats the entered value as an MRN so the existing Add Patient workflow still works.
+  return loadPatient(value);
+}
 
 function staticProfile(mrn){return DATA?.patients?.[mrn]||null}
 function recordMeds(profile){
@@ -214,9 +229,15 @@ function rxOptions(sp,drug){
   if(!sp)return[];let di=DATA.drugs.indexOf(drug),rx=sp[7]||{};if((phMeta()[0]==='OPD'||phMeta()[0]==='OPD2')&&di>=0&&rx[String(di)])return rx[String(di)];
   return di>=0?(DATA.generalDirections?.[String(di)]||[]):[]
 }
+function calculateIVRate(med){
+  if(!med)return;let vol=parseFloat(med.querySelector('.ivvolume')?.value),mins=parseFloat(med.querySelector('.ivinfusion')?.value),rate=med.querySelector('.ivrate');
+  if(!rate)return;if(Number.isFinite(vol)&&vol>=0&&Number.isFinite(mins)&&mins>0){let v=vol*60/mins;rate.value=(Math.round(v*100)/100).toString()}else rate.value='';
+}
+function bindIVRate(){document.querySelectorAll('.ivmed').forEach(m=>{let v=m.querySelector('.ivvolume'),t=m.querySelector('.ivinfusion');[v,t].forEach(x=>{if(x)x.addEventListener('input',()=>calculateIVRate(m))});calculateIVRate(m)})}
 function renderMeds(names,sp){
   $('meds').innerHTML=names.length?names.map((drug,i)=>medCard(drug,i,sp)).join(''):'<div class="card sub">No medication records for the selected pharmacy/months. Use Add Medication.</div>';
-  document.querySelectorAll('.rxsel').forEach(s=>s.onchange=e=>{let med=e.target.closest('.med'),p=parseRx(e.target.value,med.dataset.drug);med.querySelector('.dose').value=p.dose;med.querySelector('.freq').value=p.freq;med.querySelector('.free').value=e.target.value})
+  document.querySelectorAll('.rxsel').forEach(s=>s.onchange=e=>{let med=e.target.closest('.med'),p=parseRx(e.target.value,med.dataset.drug);med.querySelector('.dose').value=p.dose;med.querySelector('.freq').value=p.freq;med.querySelector('.free').value=e.target.value});
+  bindIVRate();
 }
 function splitIVDrug(raw){
   raw=String(raw||'').trim();
@@ -252,7 +273,7 @@ function medCard(drug,i,sp){
   <div><div class="fieldcap">Solution / المحلول</div><select class="ivsolution">${ivSolutionOptions(split.solution)}</select></div><div><div class="fieldcap">Additive Dose / جرعة المضاف</div><input class="dose" value="${esc(p.dose)}" placeholder="Dose"></div><div><div class="fieldcap">IV Access</div><select class="ivaccess"><option>Peripheral</option><option>Central</option></select></div>
   <div><div class="fieldcap">Rate mL/hour</div><input class="ivrate"></div><div><div class="fieldcap">Volume mL</div><input class="ivvolume"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div>
   <div><div class="fieldcap">Duration days</div><input class="days" type="number" min="1" value="1"></div><div><div class="fieldcap">Infuse over minutes</div><input class="ivinfusion" placeholder="60"></div><div><div class="fieldcap">Ordered By</div><input class="orderedby"></div>
-  <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${dl(now)}"></div><div><div class="fieldcap">Expiry Date/Time — editable</div><input class="ivexpiry" type="datetime-local" value="${dl(tom)}"></div><div><div class="fieldcap">Route</div><input class="route" value="IV"></div>
+  <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${dl(now)}"></div><div><div class="fieldcap">Expiry Date/Time — editable</div><input class="ivexpiry" type="datetime-local" value="${dl(tom)}"></div><div><div class="fieldcap">Route</div><input class="route" value="IV Infusion"></div>
   </div>${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Instructions">${esc(opts[0]||'')}</textarea></div>`;
   return `<div class="med" data-drug="${esc(drug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(drug)}</div><span class="badge">${esc(p.form)}</span></div><div class="medgrid">
   <div><div class="fieldcap">Dosage Form</div><select class="form">${formOptions(p.form)}</select></div><div><div class="fieldcap">Dose</div><input class="dose" value="${esc(p.dose)}"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div><div><div class="fieldcap">Qty</div><input class="qty" type="number" min="0"></div><div><div class="fieldcap">Days</div><input class="days" type="number" min="1" value="${days}"></div>
@@ -279,7 +300,7 @@ function smartDirections(i){
   let ar=[da?'خذ '+da:'',freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):'',i.route?'('+routeAr(i.route)+')':''].filter(Boolean).join(' ');
   return{en,enRaw:i.free||'',ar}
 }
-function routeAr(r){return({PO:'عن طريق الفم',IV:'وريدي',IM:'عضلي',SC:'تحت الجلد',TOPICAL:'موضعي',INHALATION:'استنشاق'})[String(r||'').toUpperCase()]||r||''}
+function routeAr(r){return({PO:'عن طريق الفم',IV:'وريدي','IV INFUSION':'تسريب وريدي',IM:'عضلي',SC:'تحت الجلد',TOPICAL:'موضعي',INHALATION:'استنشاق'})[String(r||'').toUpperCase()]||r||''}
 function selectedItems(){
   return[...document.querySelectorAll('.med')].filter(m=>m.querySelector('.pick').checked).map(m=>{
     let iv=m.classList.contains('ivmed'),drug=m.dataset.drug,dose=m.querySelector('.dose')?.value||'',freq=m.querySelector('.freq')?.value||'',route=m.querySelector('.route')?.value||'',days=m.querySelector('.days')?.value||'';
