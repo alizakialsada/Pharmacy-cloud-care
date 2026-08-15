@@ -3,29 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pharmacy Dispensing Platform</title>
+<title>Pharmacy cloud care</title>
 <script src="supabase-config.js"></script>
 <style>
-:root{--bg:#f4f6f8;--card:#fff;--ink:#111827;--muted:#667085;--line:#d8dee8;--green:#14785f;--dark:#101828;--gold:#b78118;--red:#b42318;--soft:#eef2f6}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+:root{--bg:#f7f5f4;--card:#ffffff;--ink:#25212a;--muted:#756c73;--line:#eadfe1;--green:#2f7a68;--dark:#6f2230;--gold:#a98245;--red:#9f2437;--red2:#b6374a;--soft:#f4ecee;--blush:#fbf5f6}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,"Segoe UI",sans-serif;background:linear-gradient(180deg,#fbf9f8 0,#f5f2f1 100%);color:var(--ink);min-height:100vh}
 button,input,select,textarea{font:inherit}button{cursor:pointer}
-.hidden{display:none!important}.wrap{max-width:1500px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
-.brand{font-weight:900;font-size:26px}.sub{color:var(--muted);font-size:13px}.badge{padding:8px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:800;font-size:12px}
-.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 2px 10px rgba(16,24,40,.03)}
-.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800}.btn.primary{background:var(--green);color:#fff}.btn.dark{background:var(--dark);color:#fff}.btn.soft{background:var(--soft);color:var(--ink)}.btn.red{background:#fee4e2;color:var(--red)}
+.hidden{display:none!important}.wrap{max-width:1500px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;background:linear-gradient(135deg,var(--red) 0%,#7f1f2e 100%);padding:18px 20px;border-radius:20px;box-shadow:0 10px 28px rgba(126,31,46,.16);color:#fff}
+.top .brand{color:#fff}.top .sub{color:rgba(255,255,255,.82)}.brand{font-weight:900;font-size:26px;letter-spacing:-.2px}.sub{color:var(--muted);font-size:13px}.badge{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.7);color:#6f2230;font-weight:900;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,.06)}
+.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 7px 22px rgba(77,51,57,.055)}
+.btn{border:0;border-radius:13px;padding:12px 16px;font-weight:850;transition:.18s ease;box-shadow:0 2px 7px rgba(58,36,42,.05)}.btn:hover{transform:translateY(-1px)}.btn.primary{background:var(--red);color:#fff}.btn.primary:hover{background:var(--red2)}.btn.dark{background:#5f2630;color:#fff}.btn.soft{background:#f8eff1;color:#6f2230;border:1px solid #ead6da}.top .btn.soft{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;box-shadow:none}.top .btn.soft:hover{background:rgba(255,255,255,.24)}.top .btn.dark{background:#fff;color:#7f1f2e}.btn.red{background:#fff0f1;color:var(--red);border:1px solid #f0cbd1}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-label{display:block;font-weight:800;font-size:13px;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid #cfd7e4;border-radius:12px;padding:11px;background:#fff}textarea{min-height:72px;resize:vertical}
-.hospital-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1000px;margin:70px auto}.hospital-card{padding:42px 24px;text-align:center;background:#fff;border:2px solid transparent;border-radius:28px;box-shadow:0 12px 35px rgba(16,24,40,.08);transition:.2s}.hospital-card:hover{transform:translateY(-3px);border-color:#b7c4d6}.hospital-icon{font-size:64px}.hospital-card h2{font-size:25px;margin:12px 0 4px}.hospital-card .ar{font-size:20px;font-weight:800}
-.months{display:flex;gap:8px;flex-wrap:wrap}.month{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800}.month.active{background:var(--dark);color:#fff}
-.actionbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:14px 0}.med{border:1px solid var(--line);border-radius:18px;padding:15px;margin:12px 0;background:#fff}.medhead{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start}.medname{font-size:17px;font-weight:900;line-height:1.3}.medgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr .7fr;gap:9px;margin-top:12px}.ivgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.fieldcap{font-size:11px;font-weight:800;color:#596579;margin-bottom:4px}.note{padding:11px 13px;border-radius:12px;background:#fff7e6;border:1px solid #f2d59a;color:#79520c;font-size:13px}
-.info{padding:11px 13px;border-radius:12px;background:#edf7f3;border:1px solid #b7ddcf;color:#155e4b;font-size:13px}.error{background:#fef3f2;border-color:#fecdca;color:#b42318}
+label{display:block;font-weight:800;font-size:13px;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid #dfd2d5;border-radius:12px;padding:11px;background:#fff;outline:none;transition:.15s}input:focus,select:focus,textarea:focus{border-color:#bd7b88;box-shadow:0 0 0 3px rgba(159,36,55,.08)}textarea{min-height:72px;resize:vertical}
+.hospital-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1000px;margin:58px auto}.hospital-card{padding:44px 24px;text-align:center;background:linear-gradient(180deg,#fff 0%,#fcf7f8 100%);border:1px solid #eadadd;border-radius:28px;box-shadow:0 14px 36px rgba(91,54,63,.09);transition:.2s;color:var(--ink)}.hospital-card:hover{transform:translateY(-4px);border-color:#cf9eaa;box-shadow:0 18px 42px rgba(126,31,46,.13)}.hospital-icon{font-size:62px;filter:saturate(.7)}.hospital-card h2{font-size:25px;margin:12px 0 4px;color:#762332}.hospital-card .ar{font-size:20px;font-weight:900;color:#4b4145}
+.months{display:flex;gap:8px;flex-wrap:wrap}.month{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800}.month.active{background:var(--red);border-color:var(--red);color:#fff}
+.actionbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:14px 0}.med{border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0;background:#fff;box-shadow:0 5px 16px rgba(77,51,57,.04)}.medhead{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start}.medname{font-size:17px;font-weight:900;line-height:1.3}.medgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr .7fr;gap:9px;margin-top:12px}.ivgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}.fieldcap{font-size:11px;font-weight:800;color:#775c63;margin-bottom:4px}.note{padding:11px 13px;border-radius:12px;background:#fff7e6;border:1px solid #f2d59a;color:#79520c;font-size:13px}
+.info{padding:11px 13px;border-radius:12px;background:#eef8f4;border:1px solid #c6dfd6;color:#286a59;font-size:13px}.error{background:#fef3f2;border-color:#fecdca;color:#b42318}
 dialog{border:0;border-radius:20px;padding:0;box-shadow:0 25px 70px rgba(0,0,0,.28);max-width:950px;width:94%}dialog::backdrop{background:rgba(16,24,40,.55)}.modal{padding:20px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.calday,.calhead{padding:9px;text-align:center;border-radius:10px}.calhead{font-weight:900;font-size:12px}.calday{background:#f7f8fa;border:1px solid #edf0f4;min-height:43px}.calday.has{background:#eaf6f1;border-color:#9dcfbc;font-weight:900}.calday.sel{outline:2px solid var(--green)}.calday.empty{visibility:hidden}
 .histitem{padding:10px 0;border-bottom:1px solid var(--line)}.histtime{font-weight:900}.histmeta{color:var(--muted);font-size:12px;margin-top:3px}
 .admin-grid{display:grid;grid-template-columns:360px 1fr;gap:18px}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}.kpi{padding:14px;border-radius:15px;background:#fff;border:1px solid var(--line)}.kpi b{font-size:24px;display:block}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e7ebf0}th{background:#f7f8fa;position:sticky;top:0}.tablebox{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:14px}
 .loginbox{max-width:430px;margin:auto}
-#lockScreen{position:fixed;z-index:9999;inset:0;background:#f4f6f8;display:flex;align-items:center;justify-content:center}.lockcard{width:min(440px,92vw);background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(16,24,40,.12)}
+#lockScreen{position:fixed;z-index:9999;inset:0;background:linear-gradient(145deg,#f7f1f2,#f4f3f1);display:flex;align-items:center;justify-content:center}.lockcard{width:min(440px,92vw);background:#fff;border:1px solid #eadadd;border-radius:24px;padding:30px;box-shadow:0 22px 65px rgba(111,34,48,.13)}
 /* MEDICA-LIKE LABELS */
 .label-wrap{background:#fff;color:#111;font-family:Arial,sans-serif;width:9cm;min-height:10cm;margin:auto;padding:.22cm;border:1px dashed #999}
 .reg-head{display:grid;grid-template-columns:2.2cm 1fr 2.7cm;gap:5px;align-items:start}.barcode svg{width:2.05cm;height:.72cm}.barcode-num{text-align:center;font-weight:900;font-size:9px}.hosp{text-align:center}.hosp .ar{font-size:12px;font-weight:900}.hosp .en{font-size:8px;font-weight:800}.reg-right{text-align:right;font-size:7.5px;line-height:1.25;font-weight:800}.label-rule{border-top:1px dashed #222;margin:5px 0}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <body>
 <div id="lockScreen">
   <div class="lockcard">
-    <div style="font-size:26px;font-weight:900">Pharmacy Dispensing Platform</div>
+    <div style="font-size:26px;font-weight:900">Pharmacy cloud care</div>
     <p class="sub">Enter platform access code.</p>
     <input id="accessCode" type="password" autocomplete="off">
     <button class="btn dark" id="unlockBtn" style="width:100%;margin-top:10px">Open Platform</button>
@@ -47,7 +47,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 
 <div id="landing" class="wrap hidden">
   <div class="top">
-    <div><div class="brand">Pharmacy Dispensing Platform</div><div class="sub">Select hospital / اختر المستشفى</div></div>
+    <div><div class="brand">Pharmacy cloud care</div><div class="sub">Select hospital / اختر المستشفى</div></div>
     <div style="display:flex;gap:8px"><span id="cloudBadge" class="badge">☁ Checking Cloud...</span><button class="btn dark" id="adminOpen">Admin</button></div>
   </div>
   <div class="hospital-grid">
@@ -98,6 +98,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <label style="margin-top:9px">Full Name</label><input id="newFullName">
       <label style="margin-top:9px">Password</label><input id="newPassword" type="password">
       <button class="btn primary" id="createAccount" style="width:100%;margin-top:10px">Create Pharmacist Account</button>
+      <div id="pendingRequests" style="margin-top:15px"></div>
       <div id="accounts" style="margin-top:15px"></div>
     </div>
     <div>
@@ -121,7 +122,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   </div>
 </div>
 
-<dialog id="loginDialog"><div class="modal loginbox"><h2>Pharmacist Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser"><label style="margin-top:9px">Password</label><input id="loginPass" type="password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="loginDialog"><div class="modal loginbox"><h2>Pharmacist Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser"><label style="margin-top:9px">Password</label><input id="loginPass" type="password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" id="requestAccountOpen">Request Account</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div><div class="sub" style="margin-top:10px">New accounts require Admin approval before first login.</div></div></dialog>
+<dialog id="requestAccountDialog"><div class="modal loginbox"><h2>Request Pharmacist Account</h2><p class="sub" id="requestHospital"></p><label>Full Name</label><input id="requestFullName"><label style="margin-top:9px">Username</label><input id="requestUser"><label style="margin-top:9px">Password</label><input id="requestPass" type="password"><label style="margin-top:9px">Confirm Password</label><input id="requestPass2" type="password"><div id="requestError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="requestAccountGo">Submit Request</button><button class="btn soft" onclick="requestAccountDialog.close()">Cancel</button></div><div class="note" style="margin-top:12px">The account will remain Pending until approved by Admin.</div></div></dialog>
 <dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN</label><input id="newMrn"></div><div><label>Patient Name</label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"></div><div><label>National ID</label><input id="newNid"></div><div><label>Department</label><input id="newDept"></div><div><label>Age</label><input id="newAge"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="medDialog"><div class="modal"><h2>Add Medication</h2><label>Medication</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="saveMed">Add Medication</button><button class="btn soft" onclick="medDialog.close()">Cancel</button></div></div></dialog>
@@ -133,9 +135,9 @@ const $=id=>document.getElementById(id);
 const ACCESS='124620';
 let hospital=null, DATA=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null;
 
-function configOK(){const c=window.SUPABASE_CONFIG||{};return c.url&&c.publishableKey&&!String(c.url).includes('PASTE_')}
+function configOK(){const c=window.SUPABASE_CONFIG||{};return /^https:\/\/.+\.supabase\.co\/?$/.test(String(c.url||''))&&/^sb_publishable_/.test(String(c.publishableKey||''))}
 async function rpc(name,args={}){
-  if(!configOK())throw new Error('Supabase config missing');
+  if(!configOK()){const c=window.SUPABASE_CONFIG||{};if(!c.url||String(c.url).includes('PASTE_'))throw new Error('Supabase URL missing in supabase-config.js');if(!c.publishableKey||!String(c.publishableKey).startsWith('sb_publishable_'))throw new Error('Publishable Key missing in supabase-config.js');throw new Error('Supabase config invalid');}
   const c=window.SUPABASE_CONFIG, r=await fetch(c.url.replace(/\/$/,'')+'/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':c.publishableKey,'Authorization':'Bearer '+c.publishableKey},body:JSON.stringify(args)});
   const txt=await r.text(); if(!r.ok)throw new Error((()=>{try{return JSON.parse(txt).message}catch{return txt}})()||'Cloud error');
   if(!txt)return null; try{return JSON.parse(txt)}catch{return txt}
@@ -160,7 +162,9 @@ async function ensureHospitalData(code){
 }
 document.querySelectorAll('.hospital-card').forEach(b=>b.onclick=()=>chooseHospital(b.dataset.h));
 async function chooseHospital(code){pendingHospital=code;if(!pharmacist){$('loginHospital').textContent=code==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginError').textContent='';$('loginDialog').showModal();return}await enterHospital(code)}
-$('loginGo').onclick=async()=>{try{let x=await rpc('medica_pharmacist_login',{p_username:$('loginUser').value,p_password:$('loginPass').value});pharmacist=x;sessionStorage.setItem('medica_pharmacist',JSON.stringify(x));$('loginDialog').close();await enterHospital(pendingHospital)}catch(e){$('loginError').textContent=e.message}};
+$('loginGo').onclick=async()=>{try{let x=await rpc('medica_pharmacist_login_hospital',{p_username:$('loginUser').value,p_password:$('loginPass').value,p_hospital:pendingHospital});pharmacist=x;sessionStorage.setItem('medica_pharmacist',JSON.stringify(x));$('loginDialog').close();await enterHospital(pendingHospital)}catch(e){$('loginError').textContent=e.message}};
+$('requestAccountOpen').onclick=()=>{$('requestHospital').textContent=pendingHospital==='QCH'?'Qatif Central Hospital (QCH)':'Prince Mohammed Bin Fahd Hospital (PMFH)';$('requestFullName').value='';$('requestUser').value='';$('requestPass').value='';$('requestPass2').value='';$('requestError').textContent='';$('loginDialog').close();$('requestAccountDialog').showModal()};
+$('requestAccountGo').onclick=async()=>{let p1=$('requestPass').value,p2=$('requestPass2').value;if(p1!==p2){$('requestError').textContent='Passwords do not match';return}try{$('requestAccountGo').disabled=true;await rpc('medica_request_account',{p_hospital:pendingHospital,p_username:$('requestUser').value,p_full_name:$('requestFullName').value,p_password:p1});$('requestAccountDialog').close();alert('Account request submitted successfully. Please wait for Admin approval.');$('loginHospital').textContent=pendingHospital==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginDialog').showModal()}catch(e){$('requestError').textContent=e.message}finally{$('requestAccountGo').disabled=false}};
 try{let p=JSON.parse(sessionStorage.getItem('medica_pharmacist')||'null');if(p?.token)pharmacist=p}catch{}
 
 async function enterHospital(code){
@@ -214,11 +218,38 @@ function renderMeds(names,sp){
   $('meds').innerHTML=names.length?names.map((drug,i)=>medCard(drug,i,sp)).join(''):'<div class="card sub">No medication records for the selected pharmacy/months. Use Add Medication.</div>';
   document.querySelectorAll('.rxsel').forEach(s=>s.onchange=e=>{let med=e.target.closest('.med'),p=parseRx(e.target.value,med.dataset.drug);med.querySelector('.dose').value=p.dose;med.querySelector('.freq').value=p.freq;med.querySelector('.free').value=e.target.value})
 }
+function splitIVDrug(raw){
+  raw=String(raw||'').trim();
+  // Separate additive medication from the diluent/solution in combined Medica IV names.
+  // Example: cefazolin ... VIAL -TRD IN DEXTROSE ... BAG -TRD
+  const re=/\s+IN\s+(?=(?:SODIUM\s+CHLORIDE|DEXTROSE|NORMAL\s+SALINE|LACTATED\s+RINGER|RINGER(?:'S)?|STERILE\s+WATER|WATER\s+FOR\s+INJECTION|D5W|D10W))/ig;
+  let m,last=null;
+  while((m=re.exec(raw))!==null) last=m;
+  if(last){
+    return {additive:raw.slice(0,last.index).trim(),solution:raw.slice(last.index+last[0].length).trim()};
+  }
+  return {additive:raw,solution:''};
+}
+function looksLikeIVSolution(name){
+  let u=String(name||'').trim().toUpperCase();
+  return /^(SODIUM\s+CHLORIDE|DEXTROSE|NORMAL\s+SALINE|LACTATED\s+RINGER|RINGER(?:'S)?|STERILE\s+WATER|WATER\s+FOR\s+INJECTION|D5W|D10W)/.test(u);
+}
+function ivSolutions(){
+  let out=[],seen=new Set();
+  const add=x=>{x=String(x||'').trim();if(!x)return;let k=x.replace(/\s+/g,' ').toUpperCase();if(!seen.has(k)){seen.add(k);out.push(x)}};
+  (DATA?.drugs||[]).forEach(x=>{let q=splitIVDrug(x);if(q.solution)add(q.solution);else if(looksLikeIVSolution(x))add(x)});
+  return out.sort((a,b)=>a.localeCompare(b));
+}
+function ivSolutionOptions(selected){
+  let opts=ivSolutions();
+  if(selected && !opts.some(x=>x.toUpperCase()===String(selected).toUpperCase())) opts.unshift(selected);
+  return '<option value="">— Select solution / اختر المحلول —</option>'+opts.map(x=>`<option value="${esc(x)}" ${String(x).toUpperCase()===String(selected||'').toUpperCase()?'selected':''}>${esc(x)}</option>`).join('');
+}
 function medCard(drug,i,sp){
-  let opts=rxOptions(sp,drug),p=parseRx(opts[0]||'',drug),days=defaultDays(),iv=$('pharmacy').value==='IV',now=new Date(),tom=new Date(now.getTime()+24*3600e3);
+  let rawDrug=drug,split=splitIVDrug(rawDrug),displayDrug=split.additive||rawDrug,opts=rxOptions(sp,rawDrug),p=parseRx(opts[0]||'',displayDrug),days=defaultDays(),iv=$('pharmacy').value==='IV',now=new Date(),tom=new Date(now.getTime()+24*3600e3);
   let dl=x=>{let z=new Date(x),off=z.getTimezoneOffset()*60000;return new Date(z-off).toISOString().slice(0,16)};
-  if(iv)return `<div class="med ivmed" data-drug="${esc(drug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(drug)}</div><span class="badge">IV Label</span></div><div class="ivgrid">
-  <div><div class="fieldcap">Solution / المحلول</div><input class="ivsolution" placeholder="e.g. Sodium Chloride 0.9%"></div><div><div class="fieldcap">Additive / المضاف</div><input class="dose" value="${esc(p.dose)}" placeholder="Dose"></div><div><div class="fieldcap">IV Access</div><select class="ivaccess"><option>Peripheral</option><option>Central</option></select></div>
+  if(iv)return `<div class="med ivmed" data-drug="${esc(displayDrug)}" data-raw-drug="${esc(rawDrug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(displayDrug)}</div><span class="badge">IV Label</span></div><div class="ivgrid">
+  <div><div class="fieldcap">Solution / المحلول</div><select class="ivsolution">${ivSolutionOptions(split.solution)}</select></div><div><div class="fieldcap">Additive Dose / جرعة المضاف</div><input class="dose" value="${esc(p.dose)}" placeholder="Dose"></div><div><div class="fieldcap">IV Access</div><select class="ivaccess"><option>Peripheral</option><option>Central</option></select></div>
   <div><div class="fieldcap">Rate mL/hour</div><input class="ivrate"></div><div><div class="fieldcap">Volume mL</div><input class="ivvolume"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div>
   <div><div class="fieldcap">Duration days</div><input class="days" type="number" min="1" value="1"></div><div><div class="fieldcap">Infuse over minutes</div><input class="ivinfusion" placeholder="60"></div><div><div class="fieldcap">Ordered By</div><input class="orderedby"></div>
   <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${dl(now)}"></div><div><div class="fieldcap">Expiry Date/Time — editable</div><input class="ivexpiry" type="datetime-local" value="${dl(tom)}"></div><div><div class="fieldcap">Route</div><input class="route" value="IV"></div>
@@ -303,22 +334,33 @@ function renderCalendar(){
  let y=calCursor.getFullYear(),m=calCursor.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),days=new Set(currentHistory.map(x=>x.date));$('calTitle').textContent=first.toLocaleString('en-US',{month:'long',year:'numeric'});
  let h=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<div class="calhead">${x}</div>`).join('');for(let i=0;i<first.getDay();i++)h+='<div class="calday empty"></div>';for(let d=1;d<=last.getDate();d++){let ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;h+=`<button class="calday ${days.has(ds)?'has':''}" data-date="${ds}">${d}</button>`}$('calendar').innerHTML=h;document.querySelectorAll('.calday[data-date]').forEach(b=>b.onclick=()=>showHistoryDay(b.dataset.date));let firstEvent=currentHistory.find(x=>x.date.startsWith(`${y}-${String(m+1).padStart(2,'0')}`));if(firstEvent)showHistoryDay(firstEvent.date);else $('dayHistory').innerHTML='<div class="sub">No dispensing records in this month.</div>'
 }
-function showHistoryDay(date){document.querySelectorAll('.calday').forEach(x=>x.classList.toggle('sel',x.dataset.date===date));let rows=currentHistory.filter(x=>x.date===date);$('dayHistory').innerHTML=`<h3>${fmtDate(date)}</h3>`+(rows.length?rows.map(x=>`<div class="histitem"><div class="histtime">${x.source==='Platform'?fmtDT(x.dispensed_at):fmtDate(x.date)} — ${esc(x.medication)}</div><div class="histmeta">${esc(x.source)} • ${esc(x.pharmacy||'')} • ${esc(x.department||'')}${x.pharmacist_name?' • '+esc(x.pharmacist_name):''}</div></div>`).join(''):'<div class="sub">No records.</div>')}
+function showHistoryDay(date){document.querySelectorAll('.calday').forEach(x=>x.classList.toggle('sel',x.dataset.date===date));let rows=currentHistory.filter(x=>x.date===date);$('dayHistory').innerHTML=`<h3>${fmtDate(date)}</h3>`+(rows.length?rows.map(x=>`<div class="histitem" style="${x.is_void?'opacity:.7;border-left:4px solid #b42318':''}"><div class="histtime">${x.source==='Platform'?fmtDT(x.dispensed_at):fmtDate(x.date)} — ${esc(x.medication)} ${x.is_void?'<span style="color:#b42318;font-weight:900">[VOIDED]</span>':''}</div><div class="histmeta">${esc(x.source)} • ${esc(x.pharmacy||'')} • ${esc(x.department||'')}${x.pharmacist_name?' • '+esc(x.pharmacist_name):''}${x.is_void&&x.voided_by_name?' • Cancelled by '+esc(x.voided_by_name):''}${x.is_void&&x.void_reason?' • Reason: '+esc(x.void_reason):''}</div>${x.source==='Platform'&&!x.is_void?`<button class="btn red voiddisp" data-id="${x.id}" data-date="${date}" style="margin-top:8px">↶ Cancel Dispense</button>`:''}</div>`).join(''):'<div class="sub">No records.</div>');document.querySelectorAll('.voiddisp').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason for cancellation / سبب الإلغاء');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');if(!confirm('Cancel this dispensing record? The record will remain in the audit trail as VOIDED.'))return;try{let r=await rpc('medica_void_dispense',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.is_void=true;row.voided_at=r.voided_at;row.voided_by_name=r.voided_by;row.void_reason=reason}showHistoryDay(b.dataset.date);alert('Dispense cancelled successfully')}catch(e){alert('Cancellation failed: '+e.message)}})}
 $('calPrev').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};$('calNext').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};
 
 $('adminOpen').onclick=()=>{$('adminPass').value='';$('adminLoginError').textContent='';$('adminLoginDialog').showModal()};
 $('adminLoginGo').onclick=async()=>{try{let x=await rpc('medica_admin_login',{p_password:$('adminPass').value});adminToken=x.token;$('adminLoginDialog').close();$('landing').classList.add('hidden');$('adminPage').classList.remove('hidden');let today=new Date().toISOString().slice(0,10);$('adminFrom').value=today;$('adminTo').value=today;await refreshAccounts();await refreshAdmin()}catch(e){$('adminLoginError').textContent=e.message}};
 $('adminBack').onclick=()=>{$('adminPage').classList.add('hidden');$('landing').classList.remove('hidden');adminToken=''};
-async function refreshAccounts(){adminAccounts=await rpc('medica_admin_accounts',{p_admin_token:adminToken})||[];$('adminPharmacist').innerHTML='<option value="">All</option>'+adminAccounts.map(a=>`<option value="${a.id}">${esc(a.full_name)}</option>`).join('');$('accounts').innerHTML=adminAccounts.map(a=>`<div style="padding:10px;border-top:1px solid #eee"><b>${esc(a.full_name)}</b><div class="sub">@${esc(a.username)} • ${a.is_active?'Active':'Disabled'}</div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn soft resetpw" data-id="${a.id}">Reset Password</button><button class="btn ${a.is_active?'red':'primary'} toggleuser" data-id="${a.id}" data-active="${a.is_active}">${a.is_active?'Disable':'Enable'}</button></div></div>`).join('');document.querySelectorAll('.resetpw').forEach(b=>b.onclick=async()=>{let p=prompt('New password (6+ characters)');if(!p)return;await rpc('medica_admin_reset_password',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_new_password:p});alert('Password reset')});document.querySelectorAll('.toggleuser').forEach(b=>b.onclick=async()=>{await rpc('medica_admin_set_active',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_active:b.dataset.active!=='true'});await refreshAccounts()})}
+async function refreshAccounts(){
+ adminAccounts=await rpc('medica_admin_accounts',{p_admin_token:adminToken})||[];
+ let pending=adminAccounts.filter(a=>(a.approval_status||'approved')==='pending');
+ let approved=adminAccounts.filter(a=>(a.approval_status||'approved')!=='pending');
+ $('adminPharmacist').innerHTML='<option value="">All</option>'+approved.filter(a=>a.approval_status!=='rejected').map(a=>`<option value="${a.id}">${esc(a.full_name)}</option>`).join('');
+ $('pendingRequests').innerHTML=pending.length?`<div style="padding:10px;background:#fff7e6;border:1px solid #f0c36d;border-radius:12px"><b>Pending Account Requests (${pending.length})</b>${pending.map(a=>`<div style="padding:10px 0;border-top:1px solid #efd9a8;margin-top:8px"><b>${esc(a.full_name)}</b><div class="sub">@${esc(a.username)} • ${esc(a.hospital||'')} • Pending Approval</div><div style="display:flex;gap:6px;margin-top:7px"><button class="btn primary approveacct" data-id="${a.id}">✓ Approve</button><button class="btn red rejectacct" data-id="${a.id}">✕ Reject</button></div></div>`).join('')}</div>`:'';
+ $('accounts').innerHTML='<h4 style="margin:8px 0">Existing Accounts</h4>'+approved.map(a=>`<div style="padding:10px;border-top:1px solid #eee"><b>${esc(a.full_name)}</b><div class="sub">@${esc(a.username)} • ${esc(a.hospital||'All hospitals')} • ${(a.approval_status||'approved')==='rejected'?'Rejected':(a.is_active?'Active':'Disabled')}</div><div style="display:flex;gap:5px;margin-top:6px"><button class="btn soft resetpw" data-id="${a.id}">Reset Password</button>${(a.approval_status||'approved')!=='rejected'?`<button class="btn ${a.is_active?'red':'primary'} toggleuser" data-id="${a.id}" data-active="${a.is_active}">${a.is_active?'Disable':'Enable'}</button>`:''}</div></div>`).join('');
+ document.querySelectorAll('.approveacct').forEach(b=>b.onclick=async()=>{if(!confirm('Approve this account?'))return;await rpc('medica_admin_approve_account',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id});await refreshAccounts()});
+ document.querySelectorAll('.rejectacct').forEach(b=>b.onclick=async()=>{if(!confirm('Reject this account request?'))return;await rpc('medica_admin_reject_account',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id});await refreshAccounts()});
+ document.querySelectorAll('.resetpw').forEach(b=>b.onclick=async()=>{let p=prompt('New password (6+ characters)');if(!p)return;await rpc('medica_admin_reset_password',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_new_password:p});alert('Password reset')});
+ document.querySelectorAll('.toggleuser').forEach(b=>b.onclick=async()=>{await rpc('medica_admin_set_active',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_active:b.dataset.active!=='true'});await refreshAccounts()})
+}
 $('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account',{p_admin_token:adminToken,p_username:$('newUser').value,p_full_name:$('newFullName').value,p_password:$('newPassword').value});$('newUser').value=$('newFullName').value=$('newPassword').value='';await refreshAccounts()}catch(e){alert(e.message)}};
 async function refreshAdmin(){if(!adminToken)return;try{adminLogs=await rpc('medica_admin_logs',{p_admin_token:adminToken,p_from:$('adminFrom').value,p_to:$('adminTo').value,p_hospital:$('adminHospital').value,p_pharmacy:$('adminPharmacy').value,p_pharmacist_id:$('adminPharmacist').value})||[];renderAdmin()}catch(e){$('adminLive').textContent='● '+e.message}}
 function renderAdmin(){
- $('adminRows').innerHTML=adminLogs.map(x=>`<tr><td>${esc(fmtDT(x.dispensed_at))}</td><td>${esc(x.pharmacist_name)}</td><td>${esc(x.hospital)}</td><td>${esc(x.pharmacy)}</td><td>${esc(x.mrn)}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication)}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td></tr>`).join('');
- let today=new Date().toISOString().slice(0,10),tod=adminLogs.filter(x=>String(x.dispensed_at).slice(0,10)===today);$('kpiToday').textContent=tod.length;$('kpiStaff').textContent=new Set(tod.map(x=>x.pharmacist_id)).size;$('kpiLatest').textContent=adminLogs[0]?adminLogs[0].pharmacist_name+' • '+fmtDT(adminLogs[0].dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
+ $('adminRows').innerHTML=adminLogs.map(x=>`<tr style="${x.is_void?'opacity:.65;text-decoration:line-through':''}"><td>${esc(fmtDT(x.dispensed_at))}${x.is_void?'<br><b style="color:#b42318;text-decoration:none;display:inline-block">VOIDED</b>':''}</td><td>${esc(x.pharmacist_name)}</td><td>${esc(x.hospital)}</td><td>${esc(x.pharmacy)}</td><td>${esc(x.mrn)}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication)}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td></tr>`).join('');
+ let today=new Date().toISOString().slice(0,10),tod=adminLogs.filter(x=>String(x.dispensed_at).slice(0,10)===today&&!x.is_void);$('kpiToday').textContent=tod.length;$('kpiStaff').textContent=new Set(tod.map(x=>x.pharmacist_id)).size;let latest=adminLogs.find(x=>!x.is_void);$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
 }
 $('adminRefresh').onclick=refreshAdmin;$('adminAll').onclick=()=>{$('adminFrom').value=$('adminTo').value='';refreshAdmin()};
 ['adminFrom','adminTo','adminHospital','adminPharmacy','adminPharmacist'].forEach(x=>$(x).onchange=refreshAdmin);
-$('adminExcel').onclick=()=>{if(!adminLogs.length)return alert('No records');let cols=['dispensed_at','pharmacist_name','pharmacist_username','hospital','pharmacy','mrn','patient_name','national_id','department','medication','dosage_form','dose','frequency','route','quantity','supply_days','directions_en','directions_ar','label_type'];let xml=`<html><head><meta charset="utf-8"></head><body><table><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>${adminLogs.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c]??'')}</td>`).join('')}</tr>`).join('')}</table></body></html>`;let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([xml],{type:'application/vnd.ms-excel'}));a.download='pharmacy-dispensing-export.xls';a.click();URL.revokeObjectURL(a.href)};
+$('adminExcel').onclick=()=>{if(!adminLogs.length)return alert('No records');let cols=['dispensed_at','is_void','voided_at','voided_by_name','void_reason','pharmacist_name','pharmacist_username','hospital','pharmacy','mrn','patient_name','national_id','department','medication','dosage_form','dose','frequency','route','quantity','supply_days','directions_en','directions_ar','label_type'];let xml=`<html><head><meta charset="utf-8"></head><body><table><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>${adminLogs.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c]??'')}</td>`).join('')}</tr>`).join('')}</table></body></html>`;let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([xml],{type:'application/vnd.ms-excel'}));a.download='pharmacy-dispensing-export.xls';a.click();URL.revokeObjectURL(a.href)};
 setInterval(()=>{if(adminToken&&!$('adminPage').classList.contains('hidden'))refreshAdmin()},5000);
 
 cloudPing();setInterval(cloudPing,60000);
