@@ -206,10 +206,13 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </div>
     <div class="grid" style="margin-top:14px">
       <div><label>Medication</label><input id="dirMedication" list="drugList" placeholder="Search or enter exact medication"></div>
-      <div><label>Dosage Form</label><select id="dirForm"><option></option><option>TABLET</option><option>CAPSULE</option><option>LIQUID</option><option>DROPS</option><option>INHALER</option><option>SACHET</option><option>SUPPOSITORY</option><option>TOPICAL</option><option>INJECTION</option><option>OTHER</option></select></div>
+      <div><label>Dosage Form</label><select id="dirForm"><option></option><option>TABLET</option><option>CAPSULE</option><option>LIQUID</option><option>DROPS</option><option>OPHTHALMIC_GEL</option><option>INHALER</option><option>SACHET</option><option>SUPPOSITORY</option><option>TOPICAL</option><option>CREAM</option><option>OINTMENT</option><option>GEL</option><option>INJECTION</option><option>SYRINGE</option><option>PEN</option><option>OTHER</option></select></div>
       <div><label>Default Route</label><input id="dirRoute" list="routeList"></div>
       <div><label>Default Frequency</label><input id="dirFrequency" list="frequencyList"></div>
       <div><label>Administration Unit</label><input id="dirUnit" placeholder="tablet / mL / suppository..."></div>
+      <div><label>Dose Calculation</label><select id="dirDoseMode"><option value="AUTO">Auto calculate</option><option value="FIXED">Fixed administration amount</option><option value="PRESCRIBED">Print prescribed dose</option></select></div>
+      <div><label>Fixed Amount (optional)</label><input id="dirFixedAmount" placeholder="Example: 1"></div>
+      <div><label>Fixed Unit (optional)</label><input id="dirFixedUnit" placeholder="tablet / syringe / drop / application"></div>
       <div style="display:flex;align-items:end;gap:8px"><button class="btn primary" id="dirSave">Save / Update</button><button class="btn red" id="dirDelete">Delete Rule</button></div>
     </div>
     <div class="grid2" style="margin-top:10px"><div><label>English Direction Override (optional)</label><textarea id="dirEn" placeholder="Supports {dose}, {frequency}, {days}, {route}, {unit}"></textarea></div><div><label>Arabic Direction Override (optional)</label><textarea id="dirAr" placeholder="يدعم {dose} {frequency} {days} {route} {unit}"></textarea></div></div>
@@ -221,6 +224,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         <div><label>Test Days</label><input id="dirTestDays" type="number" min="1" value="30"></div>
       </div>
       <div id="dirDoseResult" class="note" style="margin-top:10px">Choose a medication, then enter a dose to see exactly how it will print.</div>
+      <div style="font-weight:900;margin:14px 0 8px">Full Label Test Preview</div>
+      <div id="dirLabelPreview" style="background:#fff;padding:12px;border:1px solid #ead7da;border-radius:14px;overflow:auto"></div>
     </div>
     <div class="grid2" style="margin-top:14px">
       <div><div style="display:flex;justify-content:space-between;align-items:end"><label>Route Library</label><button class="btn soft" id="addRoute">+ Add Route</button></div><div id="routeLibraryRows" class="tablebox" style="max-height:180px"></div></div>
@@ -262,7 +267,8 @@ function hospNames(){return hospital==='QCH'?['Qatif Central Hospital','مستش
 function phMeta(){return (DATA?.pharmacies||[]).find(x=>x[0]===$('pharmacy').value)||['','Pharmacy','الصيدلية',1]}
 function defaultDays(){return +phMeta()[3]||1}
 function prettyMonth(m){let [y,mo]=m.split('-');return new Date(+y,+mo-1,1).toLocaleString('en-US',{month:'short',year:'numeric'})}
-function ruleFor(drug){return directionRules[normDrug(splitIVDrug(drug).additive||drug)]||null}
+let previewDirectionRule=null;
+function ruleFor(drug){let k=normDrug(splitIVDrug(drug).additive||drug);if(previewDirectionRule&&previewDirectionRule.drug_key===k)return previewDirectionRule;return directionRules[k]||null}
 async function loadDirectionLibrary(){if(!pharmacist?.token)return;try{let x=await rpc('medica_get_direction_library',{p_token:pharmacist.token});directionRules={};for(const r of x?.rules||[])directionRules[r.drug_key]=r;routeLibrary=x?.routes||[];frequencyLibrary=x?.frequencies||[];renderLibraryLookups()}catch(e){console.warn('Directions library',e.message)}}
 function renderLibraryLookups(){let routes=routeLibrary.length?routeLibrary:[{code:'PO',label_en:'Oral',label_ar:'عن طريق الفم'},{code:'RECTAL',label_en:'Rectal',label_ar:'عن طريق المستقيم'},{code:'TOPICAL',label_en:'Topical',label_ar:'موضعي'},{code:'OPHTHALMIC',label_en:'Ophthalmic',label_ar:'للعين'},{code:'OTIC',label_en:'Otic',label_ar:'للأذن'},{code:'NASAL',label_en:'Nasal',label_ar:'عن طريق الأنف'},{code:'INHALATION',label_en:'Inhalation',label_ar:'استنشاق'},{code:'SC',label_en:'Subcutaneous',label_ar:'تحت الجلد'},{code:'IM',label_en:'Intramuscular',label_ar:'عضلي'},{code:'IV',label_en:'Intravenous',label_ar:'وريدي'},{code:'IV INFUSION',label_en:'IV Infusion',label_ar:'تسريب وريدي'}];let freqs=frequencyLibrary.length?frequencyLibrary:[{code:'OD',label_en:'once daily',label_ar:'مرة يوميًا'},{code:'BID',label_en:'twice daily',label_ar:'مرتين يوميًا'},{code:'TID',label_en:'three times daily',label_ar:'ثلاث مرات يوميًا'}];$('routeList').innerHTML=routes.map(x=>`<option value="${esc(x.code)}">${esc(x.label_en||'')} ${esc(x.label_ar||'')}</option>`).join('');$('frequencyList').innerHTML=freqs.map(x=>`<option value="${esc(x.code)}">${esc(x.label_en||'')} ${esc(x.label_ar||'')}</option>`).join('')}
 function applyTemplate(t,i,lang){if(!t)return'';let [de,da]=unitDose(i),map={dose:lang==='ar'?da:de,frequency:lang==='ar'?freqAr(i.freq):freqEn(i.freq),days:i.days||'',route:lang==='ar'?routeAr(i.route):i.route||'',unit:(ruleFor(i.drug)?.unit||'')};return String(t).replace(/\{(dose|frequency|days|route|unit)\}/g,(_,k)=>map[k]??'').replace(/\s+/g,' ').trim()}
@@ -522,7 +528,24 @@ async function loadPatient(mrn){
   renderPatientList();
 }
 function detectForm(drug){
-  let d=String(drug||'').toUpperCase();if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';if(/SACHET/.test(d))return'SACHET';if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';if(/EYE DROP|OPHTHALMIC|DROPS?/.test(d))return'DROPS';if(/INHALER|PUFF/.test(d))return'INHALER';if(/NASAL.*SPRAY|\bSPRAY\b/.test(d))return'SPRAY';if(/\bSTRIP(S)?\b/.test(d))return'STRIP';if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';if(/CREAM|OINTMENT|GEL/.test(d))return'TOPICAL';if(/VIAL|AMPOULE|AMP\b|INJECTION|PENFILL|FLEXPEN|PEN\b|INSULIN/.test(d))return'INJECTION';return'OTHER'
+  let d=String(drug||'').toUpperCase();
+  if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';
+  if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';
+  if(/SACHET/.test(d))return'SACHET';
+  if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';
+  if(/(EYE|OPHTHALMIC).*(GEL)|GEL.*(EYE|OPHTHALMIC)/.test(d))return'OPHTHALMIC_GEL';
+  if(/EYE DROP|OPHTHALMIC.*DROP|DROPS?/.test(d))return'DROPS';
+  if(/INHALER|PUFF/.test(d))return'INHALER';
+  if(/NASAL.*SPRAY|\bSPRAY\b/.test(d))return'SPRAY';
+  if(/\bSTRIP(S)?\b/.test(d))return'STRIP';
+  if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';
+  if(/CREAM/.test(d))return'CREAM';
+  if(/OINTMENT/.test(d))return'OINTMENT';
+  if(/GEL/.test(d))return'GEL';
+  if(/PRE[- ]?FILLED.*SYRINGE|SYRINGE/.test(d))return'SYRINGE';
+  if(/PENFILL|FLEXPEN|\bPEN\b/.test(d))return'PEN';
+  if(/VIAL|AMPOULE|AMP\b|INJECTION|INSULIN/.test(d))return'INJECTION';
+  return'OTHER'
 }
 function parseRx(txt,drug){
   txt=String(txt||'');let u=txt.toUpperCase(),form=detectForm(drug),dose='';
@@ -646,6 +669,31 @@ function arUnits(n){
   if(n===1)return'وحدة واحدة';if(n===2)return'وحدتين';if(n>=3&&n<=10)return arabicFeminineNumber(n)+' وحدات';if(n>=11&&n<=19)return arabicFeminineNumber(n)+' وحدة';if(n===20)return'عشرين وحدة';
   return arabicNumber(n)+' وحدة';
 }
+
+function snapAdministrationRatio(n){
+  if(!Number.isFinite(n)||n<=0)return n;
+  const common=[0.25,0.5,0.75,1,1.5,2,2.5,3,4,5,6,8,10];
+  if(n>=0.75&&n<=1.25)return 1; // prevents unsafe-looking values such as aspirin 81/100 = 0.81 tablet
+  let best=common.reduce((a,b)=>Math.abs(b-n)<Math.abs(a-n)?b:a,common[0]);
+  return Math.abs(best-n)<=0.06?best:n;
+}
+function adminUnitPhrase(amount,unit,lang='en'){
+  let n=parseFloat(amount),u=String(unit||'').trim().toLowerCase();
+  if(!Number.isFinite(n))return String(amount||'')+(unit?' '+unit:'');
+  if(lang==='en'){
+    const singular={tablet:'tablet',capsule:'capsule',syringe:'syringe',pen:'pen',drop:'drop',puff:'puff',suppository:'suppository',application:'application',dose:'dose',vial:'vial',ampoule:'ampoule',ml:'mL',unit:'unit'};
+    let w=singular[u]||unit||'dose'; if(Math.abs(n-1)>0.001&&!['mL'].includes(w))w+=(w.endsWith('s')?'':'s'); return niceNum(n)+' '+w;
+  }
+  if(u==='tablet')return arTablet(n); if(u==='capsule')return arCapsule(n); if(u==='unit')return arUnits(n);
+  if(u==='syringe')return n===1?'حقنة واحدة':n===2?'حقنتين':niceNum(n)+' حقن';
+  if(u==='pen')return n===1?'قلم واحد':n===2?'قلمين':niceNum(n)+' أقلام';
+  if(u==='drop')return n===1?'قطرة واحدة':n===2?'قطرتين':niceNum(n)+' قطرات';
+  if(u==='puff')return n===1?'بخة واحدة':n===2?'بختين':niceNum(n)+' بخات';
+  if(u==='suppository')return n===1?'تحميلة واحدة':n===2?'تحميلتين':niceNum(n)+' تحاميل';
+  if(u==='application')return n===1?'تطبيق واحد':n===2?'تطبيقين':niceNum(n)+' تطبيقات';
+  if(u==='ml')return niceNum(n)+' مل';
+  return niceNum(n)+' '+(unit||'جرعة');
+}
 function administrationFromStrength(item){
   let doseRaw=String(item.dose||'').trim(),drug=String(item.drug||item.medication||'').toUpperCase(),form=String(item.form||'').toUpperCase();
   let dm=doseRaw.toUpperCase().match(/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\b/);
@@ -657,7 +705,7 @@ function administrationFromStrength(item){
     while((m=re.exec(drug))!==null){let b=doseToBase(m[1],m[2]);if(b&&b[1]===db[1])arr.push(b[0]);}
     // Prefer the last matching strength before the dosage-form wording; avoids many product-name numbers.
     let strength=arr.length?arr[arr.length-1]:null;
-    if(strength&&strength>0){let n=db[0]/strength;if(n>0&&n<=20){let en,ar;if(form==='TABLET'){en=niceNum(n)+' tablet'+(Math.abs(n-1)<0.001?'':'s');ar=arTablet(n)}else if(form==='CAPSULE'){en=niceNum(n)+' capsule'+(Math.abs(n-1)<0.001?'':'s');ar=arCapsule(n)}else{let unit=/AMPOULE|\bAMP\b/.test(drug)?'ampoule':/VIAL/.test(drug)?'vial':'dose';en=niceNum(n)+' '+unit+(Math.abs(n-1)<0.001?'':'s');ar=unit==='dose'?(Math.abs(n-1)<0.001?'جرعة واحدة':Math.abs(n-2)<0.001?'جرعتين':niceNum(n)+' جرعات'):niceNum(n)+' '+(unit==='ampoule'?'أمبول':'فيال')}return[en,ar];}}
+    if(strength&&strength>0){let n=snapAdministrationRatio(db[0]/strength);if(n>0&&n<=20){let en,ar;if(form==='TABLET'){en=niceNum(n)+' tablet'+(Math.abs(n-1)<0.001?'':'s');ar=arTablet(n)}else if(form==='CAPSULE'){en=niceNum(n)+' capsule'+(Math.abs(n-1)<0.001?'':'s');ar=arCapsule(n)}else{let unit=/AMPOULE|\bAMP\b/.test(drug)?'ampoule':/VIAL/.test(drug)?'vial':'dose';en=niceNum(n)+' '+unit+(Math.abs(n-1)<0.001?'':'s');ar=unit==='dose'?(Math.abs(n-1)<0.001?'جرعة واحدة':Math.abs(n-2)<0.001?'جرعتين':niceNum(n)+' جرعات'):niceNum(n)+' '+(unit==='ampoule'?'أمبول':'فيال')}return[en,ar];}}
   }
   // Liquids: concentration such as 125 MG/5 ML -> convert the prescribed dose to mL.
   if(form==='LIQUID'){
@@ -667,7 +715,11 @@ function administrationFromStrength(item){
   return null;
 }
 function unitDose(item){
-  let raw=(item.dose||'').toUpperCase(),m,form=item.form,drug=String(item.drug||item.medication||'').toUpperCase();
+  let rule=ruleFor(item.drug||item.medication),raw=(item.dose||'').toUpperCase(),m,form=item.form,drug=String(item.drug||item.medication||'').toUpperCase();
+  if(rule?.dose_mode==='FIXED' && rule?.fixed_amount && rule?.fixed_unit){
+    return [adminUnitPhrase(rule.fixed_amount,rule.fixed_unit,'en'),adminUnitPhrase(rule.fixed_amount,rule.fixed_unit,'ar')];
+  }
+  if(rule?.dose_mode==='PRESCRIBED')return[item.dose||'',item.dose||''];
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(IU|UNITS?|UNIT)\b/))&&(/INSULIN|FLEXPEN|PENFILL/.test(drug))){let n=+m[1];return[niceNum(n)+' unit'+(Math.abs(n-1)<0.001?'':'s'),arUnits(n)];}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':niceNum(n)+' tablets',arTablet(n)]}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':niceNum(n)+' capsules',arCapsule(n)]}
@@ -679,15 +731,26 @@ function unitDose(item){
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(APPLY)/))){let n=+m[1];return[niceNum(n)+' application'+(n===1?'':'s'),n===1?'تطبيق واحد':n===2?'تطبيقين':niceNum(n)+' تطبيقات'];}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(PIECE)/))){let n=+m[1];return[niceNum(n)+' piece'+(n===1?'':'s'),n===1?'قطعة واحدة':n===2?'قطعتين':niceNum(n)+' قطع'];}
   let calc=administrationFromStrength(item);if(calc)return calc;
-  if(form==='TABLET')return['1 tablet','حبة واحدة'];if(form==='CAPSULE')return['1 capsule','كبسولة واحدة'];if(form==='SACHET')return['1 sachet','كيس واحد'];if(form==='INHALER')return['1 puff','بخة واحدة'];if(form==='DROPS')return['1 drop','قطرة واحدة'];
+  if(form==='TABLET')return['1 tablet','حبة واحدة'];if(form==='CAPSULE')return['1 capsule','كبسولة واحدة'];if(form==='SACHET')return['1 sachet','كيس واحد'];if(form==='INHALER')return['1 puff','بخة واحدة'];if(form==='DROPS')return['1 drop','قطرة واحدة'];if(form==='SYRINGE')return['1 syringe','حقنة واحدة'];if(form==='PEN')return['1 pen','قلم واحد'];
   return[item.dose||'',item.dose||'']
 }
 function routeEnDirection(r){let k=String(r||'').toUpperCase();return({PO:'by mouth',RECTAL:'rectally',OPHTHALMIC:'into the eye',OTIC:'into the ear',NASAL:'nasally',IV:'intravenously','IV INFUSION':'by intravenous infusion',IM:'intramuscularly',SC:'subcutaneously',TOPICAL:'topically',INHALATION:'by inhalation'})[k]||r||''}
 function routeArDirection(r){let k=String(r||'').toUpperCase();return({PO:'بالفم',RECTAL:'عن طريق المستقيم',OPHTHALMIC:'في العين',OTIC:'في الأذن',NASAL:'عن طريق الأنف',IV:'وريديًا','IV INFUSION':'بالتسريب الوريدي',IM:'عضليًا',SC:'تحت الجلد',TOPICAL:'موضعيًا',INHALATION:'بالاستنشاق'})[k]||routeAr(r)||''}
 function smartDirections(i){
-  let rule=ruleFor(i.drug),[de,da]=unitDose(i),form=String(i.form||detectForm(i.drug)).toUpperCase(),verbEn=form==='INJECTION'?'Inject':form==='SUPPOSITORY'?'Insert':form==='TOPICAL'?'Apply':form==='DROPS'?'Instill':form==='INHALER'?'Inhale':form==='SPRAY'?'Spray':form==='STRIP'?'Use':'Take',verbAr=form==='INJECTION'?'احقن':form==='SUPPOSITORY'?'استخدم':form==='TOPICAL'?'ضع':form==='DROPS'?'استخدم':form==='INHALER'?'استنشق':form==='SPRAY'?'استخدم':form==='STRIP'?'استخدم':'خذ';
-  let en=[de?verbEn+' '+de:'',routeEnDirection(i.route),freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):''].filter(Boolean).join(' ');
-  let ar=[da?verbAr+' '+da:'',routeArDirection(i.route),freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):''].filter(Boolean).join(' ');
+  let rule=ruleFor(i.drug),[de,da]=unitDose(i),form=String(i.form||detectForm(i.drug)).toUpperCase();
+  let verbEn=['INJECTION','SYRINGE','PEN'].includes(form)?'Inject':form==='SUPPOSITORY'?'Insert':['TOPICAL','CREAM','OINTMENT','GEL','OPHTHALMIC_GEL'].includes(form)?'Apply':form==='DROPS'?'Instill':form==='INHALER'?'Inhale':form==='SPRAY'?'Spray':form==='STRIP'?'Use':'Take';
+  let verbAr=['INJECTION','SYRINGE','PEN'].includes(form)?'احقن':form==='SUPPOSITORY'?'استخدم':['TOPICAL','CREAM','OINTMENT','GEL','OPHTHALMIC_GEL'].includes(form)?'ضع':form==='DROPS'?'ضع':form==='INHALER'?'استنشق':form==='SPRAY'?'استخدم':form==='STRIP'?'استخدم':'خذ';
+  let en,ar;
+  if(form==='OPHTHALMIC_GEL'){
+    en=['Apply gel into the eye',freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):''].filter(Boolean).join(' ');
+    ar=['ضع الجل في العين',freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):''].filter(Boolean).join(' ');
+  }else if(['TOPICAL','CREAM','OINTMENT','GEL'].includes(form)){
+    en=['Apply a thin layer',routeEnDirection(i.route)||'topically',freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):''].filter(Boolean).join(' ');
+    ar=['ضع طبقة رقيقة',routeArDirection(i.route)||'موضعيًا',freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):''].filter(Boolean).join(' ');
+  }else{
+    en=[de?verbEn+' '+de:'',routeEnDirection(i.route),freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):''].filter(Boolean).join(' ');
+    ar=[da?verbAr+' '+da:'',routeArDirection(i.route),freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):''].filter(Boolean).join(' ');
+  }
   if(rule?.directions_en)en=applyTemplate(rule.directions_en,i,'en');if(rule?.directions_ar)ar=applyTemplate(rule.directions_ar,i,'ar');
   return{en,enRaw:i.free||'',ar}
 }
@@ -825,14 +888,23 @@ $('adminExcel').onclick=()=>{if(!adminLogs.length)return alert('No records');let
 function loadDirectionRuleIntoForm(medication){
   let med=String(medication||'').trim();if(!med)return;
   let r=directionRules[normDrug(med)]||null, form=r?.dosage_form||detectForm(med), route=r?.route||defaultRouteForDrug(med,form);
-  $('dirForm').value=form||'OTHER';$('dirRoute').value=route||'';$('dirFrequency').value=r?.frequency||'';$('dirUnit').value=r?.unit||defaultUnitForForm(form);$('dirEn').value=r?.directions_en||'';$('dirAr').value=r?.directions_ar||'';updateDirectionDosePreview();
+  $('dirForm').value=form||'OTHER';$('dirRoute').value=route||'';$('dirFrequency').value=r?.frequency||'';$('dirUnit').value=r?.unit||defaultUnitForForm(form);$('dirDoseMode').value=r?.dose_mode||'AUTO';$('dirFixedAmount').value=r?.fixed_amount||'';$('dirFixedUnit').value=r?.fixed_unit||'';$('dirEn').value=r?.directions_en||'';$('dirAr').value=r?.directions_ar||'';updateDirectionDosePreview();
 }
-function defaultUnitForForm(form){return({TABLET:'tablet',CAPSULE:'capsule',LIQUID:'mL',DROPS:'drop',INHALER:'puff',SACHET:'sachet',SUPPOSITORY:'suppository',TOPICAL:'application',INJECTION:'dose'})[String(form||'').toUpperCase()]||''}
+function defaultUnitForForm(form){return({TABLET:'tablet',CAPSULE:'capsule',LIQUID:'mL',DROPS:'drop',OPHTHALMIC_GEL:'application',INHALER:'puff',SACHET:'sachet',SUPPOSITORY:'suppository',TOPICAL:'application',CREAM:'application',OINTMENT:'application',GEL:'application',INJECTION:'dose',SYRINGE:'syringe',PEN:'pen'})[String(form||'').toUpperCase()]||''}
 function updateDirectionDosePreview(){
   let drug=$('dirMedication').value.trim(),dose=$('dirTestDose').value.trim(),freq=$('dirTestFrequency').value.trim()||$('dirFrequency').value.trim(),days=$('dirTestDays').value||'30';
   if(!drug){$('dirDoseResult').innerHTML='Choose a medication first.';return}
-  let form=$('dirForm').value||detectForm(drug),route=$('dirRoute').value.trim()||defaultRouteForDrug(drug,form),tmp={drug,form,dose,freq,route,days,free:''},calc=administrationFromStrength(tmp),[de,da]=unitDose(tmp),dirs=smartDirections(tmp);
+  let form=$('dirForm').value||detectForm(drug),route=$('dirRoute').value.trim()||defaultRouteForDrug(drug,form);
+  previewDirectionRule={drug_key:normDrug(drug),medication_name:drug,dosage_form:form,route,frequency:$('dirFrequency').value.trim(),unit:$('dirUnit').value.trim(),dose_mode:$('dirDoseMode').value,fixed_amount:$('dirFixedAmount').value.trim(),fixed_unit:$('dirFixedUnit').value.trim(),directions_en:$('dirEn').value.trim(),directions_ar:$('dirAr').value.trim()};
+  let tmp={drug,form,dose,freq,route,days,free:''},calc=administrationFromStrength(tmp),[de,da]=unitDose(tmp),dirs=smartDirections(tmp);
   $('dirDoseResult').innerHTML=`<b>Calculated administration:</b> ${esc(de||'—')} ${da?'<span dir="rtl"> / '+esc(da)+'</span>':''}<br><b>English print:</b> ${esc(dirs.en||'—')}<br><b>Arabic print:</b> <span dir="rtl">${esc(dirs.ar||'—')}</span>${!dose?'<br><span style="color:#b42318">Enter a test dose such as 1000 mg.</span>':''}`;
+  $('dirLabelPreview').innerHTML=`<div style="width:9cm;height:10cm;transform:scale(.78);transform-origin:top left;border:1px dashed #999;padding:.22cm;background:#fff;color:#111;font-family:Arial;margin-bottom:-2.1cm">
+    <div style="display:grid;grid-template-columns:2.2cm 1fr 2.7cm;gap:5px"><div>${code39SVG('123456')}<div style="text-align:center;font-weight:900;font-size:9px">123456</div></div><div style="text-align:center"><div dir="rtl" style="font-size:12px;font-weight:900">مستشفى القطيف المركزي</div><div style="font-size:8px;font-weight:800">Qatif Central Hospital</div></div><div style="text-align:right;font-size:8px;font-weight:800">Outpatient Pharmacy<br>TEST CLINIC<br>${new Date().toLocaleDateString('en-GB')}</div></div>
+    <div class="label-rule"></div><div class="reg-line"><span class="lab">NAME</span><span class="reg-name">TEST PATIENT</span></div><div class="reg-ar" dir="rtl">مريض تجريبي</div>
+    <div class="label-rule"></div><div class="reg-line"><span class="lab">Drug</span><span class="reg-drug">${esc(drug||'Choose medication')}</span></div><div class="label-rule"></div>
+    <div class="how-ar" dir="rtl">${esc(dirs.ar||'—')}</div><div class="label-rule"></div><div class="how-en">${esc(dirs.en||'—')}</div><div class="label-rule"></div>
+    <div style="font-size:8px"><b>Note</b></div><div class="flags"><div>Keep Refrigerated □</div><div>High Risk □</div><div>High Alert □</div><div><b>Qty 1</b></div></div></div>`;
+  previewDirectionRule=null;
 }
 async function refreshAdminDirectionLibrary(){if(!adminToken)return;try{let x=await rpc('medica_admin_get_direction_library',{p_admin_token:adminToken});directionRules={};for(const r of x?.rules||[])directionRules[r.drug_key]=r;routeLibrary=x?.routes||[];frequencyLibrary=x?.frequencies||[];renderLibraryLookups();renderAdminDirectionLibrary()}catch(e){console.warn(e.message)}}
 function renderAdminDirectionLibrary(){let rules=Object.values(directionRules).sort((a,b)=>String(a.medication_name).localeCompare(String(b.medication_name)));$('dirRows').innerHTML=rules.map(r=>`<tr class="dirrule" data-key="${esc(r.drug_key)}"><td>${esc(r.medication_name)}</td><td>${esc(r.dosage_form||'')}</td><td>${esc(r.route||'')}</td><td>${esc(r.frequency||'')}</td><td>${esc(r.unit||'')}</td><td>${esc(fmtDT(r.updated_at))}</td></tr>`).join('');document.querySelectorAll('.dirrule').forEach(tr=>tr.onclick=()=>{let r=directionRules[tr.dataset.key];$('dirMedication').value=r.medication_name||'';loadDirectionRuleIntoForm(r.medication_name||'')});$('routeLibraryRows').innerHTML='<table><tbody>'+routeLibrary.map(r=>`<tr><td><b>${esc(r.code)}</b></td><td>${esc(r.label_en||'')}</td><td dir="rtl">${esc(r.label_ar||'')}</td></tr>`).join('')+'</tbody></table>';$('frequencyLibraryRows').innerHTML='<table><tbody>'+frequencyLibrary.map(r=>`<tr><td><b>${esc(r.code)}</b></td><td>${esc(r.label_en||'')}</td><td dir="rtl">${esc(r.label_ar||'')}</td></tr>`).join('')+'</tbody></table>'}
@@ -841,7 +913,7 @@ $('dirMedication').addEventListener('input',()=>{let v=$('dirMedication').value.
 ['dirForm','dirRoute','dirFrequency','dirEn','dirAr','dirTestDose','dirTestFrequency','dirTestDays'].forEach(id=>$(id).addEventListener('input',updateDirectionDosePreview));
 $('dirForm').addEventListener('change',()=>{let f=$('dirForm').value;$('dirRoute').value=defaultRouteForDrug($('dirMedication').value,f);if(!$('dirUnit').value)$('dirUnit').value=defaultUnitForForm(f);updateDirectionDosePreview()});
 $('dirRefresh').onclick=refreshAdminDirectionLibrary;
-$('dirSave').onclick=async()=>{let medication=$('dirMedication').value.trim();if(!medication)return alert('Medication is required');try{await rpc('medica_admin_save_direction_rule',{p_admin_token:adminToken,p_rule:{medication_name:medication,dosage_form:$('dirForm').value,route:($('dirRoute').value.trim()||defaultRouteForDrug(medication,$('dirForm').value)),frequency:$('dirFrequency').value.trim(),unit:$('dirUnit').value.trim(),directions_en:$('dirEn').value.trim(),directions_ar:$('dirAr').value.trim()}});await refreshAdminDirectionLibrary();alert('Saved directly to Directions Library')}catch(e){alert(e.message)}};
+$('dirSave').onclick=async()=>{let medication=$('dirMedication').value.trim();if(!medication)return alert('Medication is required');try{await rpc('medica_admin_save_direction_rule',{p_admin_token:adminToken,p_rule:{medication_name:medication,dosage_form:$('dirForm').value,route:($('dirRoute').value.trim()||defaultRouteForDrug(medication,$('dirForm').value)),frequency:$('dirFrequency').value.trim(),unit:$('dirUnit').value.trim(),dose_mode:$('dirDoseMode').value,fixed_amount:$('dirFixedAmount').value.trim(),fixed_unit:$('dirFixedUnit').value.trim(),directions_en:$('dirEn').value.trim(),directions_ar:$('dirAr').value.trim()}});await refreshAdminDirectionLibrary();alert('Saved directly to Directions Library')}catch(e){alert(e.message)}};
 $('dirDelete').onclick=async()=>{let medication=$('dirMedication').value.trim();if(!medication)return;if(!confirm('Delete this medication rule?'))return;try{await rpc('medica_admin_delete_direction_rule',{p_admin_token:adminToken,p_medication_name:medication});await refreshAdminDirectionLibrary();alert('Rule deleted')}catch(e){alert(e.message)}};
 $('addRoute').onclick=async()=>{let code=prompt('Route code (example: RECTAL)');if(!code)return;let en=prompt('English label',code)||'',ar=prompt('Arabic label','')||'';try{await rpc('medica_admin_save_route',{p_admin_token:adminToken,p_code:code.trim(),p_label_en:en.trim(),p_label_ar:ar.trim()});await refreshAdminDirectionLibrary()}catch(e){alert(e.message)}};
 $('addFrequency').onclick=async()=>{let code=prompt('Frequency code (example: Q4H)');if(!code)return;let en=prompt('English wording (example: every 4 hours)',code)||'',ar=prompt('Arabic wording','')||'';try{await rpc('medica_admin_save_frequency',{p_admin_token:adminToken,p_code:code.trim(),p_label_en:en.trim(),p_label_ar:ar.trim()});await refreshAdminDirectionLibrary()}catch(e){alert(e.message)}};
