@@ -41,10 +41,15 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .patient-main .patient-name{font-size:19px;font-weight:900;color:#17384a}.patient-main .patient-mrn{font-weight:900;color:#526872;margin-top:3px}
 .patient-facts{font-size:12px;line-height:1.6;color:#455861}.patient-facts b{color:#182a31}
 .patient-doctor{padding:9px 11px;border-radius:12px;background:#f7fafb;border:1px solid #dce6e9;font-size:12px;line-height:1.45}
-.medica-work{display:grid;grid-template-columns:minmax(0,1fr) 265px;min-height:470px;background:#fff}
+.medica-work{display:grid;grid-template-columns:265px minmax(0,1fr);min-height:470px;background:#fff;transition:grid-template-columns .18s ease}
+.medica-work.patient-list-collapsed{grid-template-columns:0 minmax(0,1fr)}
 .orders-pane{min-width:0;padding:12px}
-.patient-side{border-left:1px solid #d8e1e4;background:#f8fbfc;min-width:0}
-.patient-side-head{padding:12px;border-bottom:1px solid #d8e1e4;background:#edf4f6;font-weight:900;color:#294750}
+.patient-side{border-right:1px solid #d8e1e4;background:#f8fbfc;min-width:0;overflow:hidden;transition:opacity .15s ease}
+.medica-work.patient-list-collapsed .patient-side{opacity:0;pointer-events:none}
+.patient-side-head{padding:8px 9px 8px 12px;border-bottom:1px solid #d8e1e4;background:#edf4f6;font-weight:900;color:#294750;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.patient-toggle{padding:6px 9px!important;border-radius:8px!important;white-space:nowrap}
+.show-patients-btn{display:none;margin:0 0 7px 0;padding:7px 10px!important}
+.medica-work.patient-list-collapsed .show-patients-btn{display:inline-flex}
 .patient-side-search{padding:9px}.patient-side-search input{padding:9px;background:#fff}
 .patient-list{max-height:560px;overflow:auto}
 .patient-list button{width:100%;border:0;border-bottom:1px solid #e4ebee;background:transparent;padding:10px 12px;text-align:left;font-weight:750;color:#263e47}
@@ -64,8 +69,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 #meds .card.sub{margin-top:0}
 .history-stopped{background:#fff0f0!important;border-left:5px solid #b42318!important}.history-stopped .histtime{color:#9f1f2f}
 .stopped-badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#b42318;color:#fff;font-size:10px;font-weight:900;margin-left:6px}
-.history-dispensed{background:#fff9df;border-left:5px solid #d6a928;padding-left:10px}
-@media(max-width:1100px){.medica-toolbar{grid-template-columns:1fr 1fr}.medica-work{grid-template-columns:1fr}.patient-side{border-left:0;border-top:1px solid #d8e1e4}.patient-banner{grid-template-columns:50px 1fr 1fr}.patient-doctor{grid-column:2/-1}.order-head,.medica-order{grid-template-columns:28px minmax(240px,2fr) 75px 75px 90px 60px 55px 55px 110px minmax(130px,1fr);min-width:1050px}.orders-scroll{overflow:auto}}
+.history-dispensed{background:#fff;border-left:5px solid #d9dee3;padding-left:10px}
+@media(max-width:1100px){.medica-toolbar{grid-template-columns:1fr 1fr}.medica-work{grid-template-columns:1fr}.medica-work.patient-list-collapsed{grid-template-columns:1fr}.patient-side{border-right:0;border-bottom:1px solid #d8e1e4}.medica-work.patient-list-collapsed .patient-side{display:none}.patient-banner{grid-template-columns:50px 1fr 1fr}.patient-doctor{grid-column:2/-1}.order-head,.medica-order{grid-template-columns:28px minmax(240px,2fr) 75px 75px 90px 60px 55px 55px 110px minmax(130px,1fr);min-width:1050px}.orders-scroll{overflow:auto}}
 
 @media(max-width:900px){.grid,.grid2,.admin-grid,.medgrid,.ivgrid,.hospital-grid{grid-template-columns:1fr}.wrap{padding:12px}.brand{font-size:20px}}
 </style>
@@ -118,8 +123,14 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div id="months"></div>
     </div>
 
-    <div class="medica-work">
+    <div class="medica-work" id="medicaWork">
+      <aside class="patient-side" id="patientSide">
+        <div class="patient-side-head"><span>Patients / المرضى <span id="patientListCount" class="sub"></span></span><button class="btn soft patient-toggle" id="hidePatients" type="button">◀ Hide</button></div>
+        <div class="patient-side-search"><input id="patientListSearch" placeholder="Filter names / MRN"></div>
+        <div id="patientList" class="patient-list"><div class="sub" style="padding:12px">Loading patient list…</div></div>
+      </aside>
       <main class="orders-pane">
+        <button class="btn soft show-patients-btn" id="showPatients" type="button">☰ Patients</button>
         <div class="medica-actions">
           <button class="btn soft" id="addMedication">＋ Add Medication</button>
           <button class="btn soft" id="selectAll">Select All</button>
@@ -135,11 +146,6 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
           <div id="meds"></div>
         </div>
       </main>
-      <aside class="patient-side">
-        <div class="patient-side-head">Patients / المرضى <span id="patientListCount" class="sub"></span></div>
-        <div class="patient-side-search"><input id="patientListSearch" placeholder="Filter names / MRN"></div>
-        <div id="patientList" class="patient-list"><div class="sub" style="padding:12px">Loading patient list…</div></div>
-      </aside>
     </div>
   </div>
 </div>
@@ -309,25 +315,50 @@ function parseRxEnhanced(txt,drug){
 function timesPerDay(freq){
   return ({OD:1,BID:2,TID:3,QID:4,Q4H:6,Q6H:4,Q8H:3,Q12H:2,QHS:1,WEEKLY:1/7,'3 TIMES WEEKLY':3/7})[String(freq||'').toUpperCase()]||null;
 }
-function supplyDaysForOrder(o){
-  let p=parseRxEnhanced(o.rx,o.drug),form=p.form||detectForm(o.drug),tmp={drug:o.drug,form,dose:p.dose},calc=administrationFromStrength(tmp),n=null;
-  if(calc){let m=String(calc[0]).match(/^(\d+(?:\.\d+)?)/);if(m)n=+m[1]}
-  if(n==null){
-    let m=String(p.dose||'').match(/^(\d+(?:\.\d+)?)\s*(TAB|TABLET|CAP|CAPSULE|ML|PUFF|DROP|SACHET|AMP|VIAL)/i);if(m)n=+m[1];
-  }
-  let t=timesPerDay(p.freq),qty=parseFloat(o.qty);
-  if(Number.isFinite(qty)&&qty>0&&n&&t){let d=Math.round(qty/(n*t));if(d>0&&d<=120)return d}
-  return defaultDays();
+function plannedCyclesForOrder(o){return Math.max(1,Math.ceil((+o.duration_days||30)/30))}
+function orderBaseQty(o){let q=parseFloat(o.qty);return Number.isFinite(q)&&q>0?q:1}
+function platformQtyForOrder(o,cloudHist=[]){
+  let key=normDrug(splitIVDrug(o.drug).additive||o.drug),start=isoFromDMY(o.order_date),sum=0;
+  for(const x of cloudHist||[]){if(x.is_void||x.pharmacy!==o.pharmacy||normDrug(x.medication)!==key)continue;let d=x.dispensed_local_date||localDateKey(x.dispensed_at);if(start&&d<start)continue;let q=parseFloat(x.quantity);if(Number.isFinite(q)&&q>0)sum+=q}
+  return sum
 }
-function qOrderCard(o,idx){
-  let p=parseRxEnhanced(o.rx,o.drug),rule=ruleFor(o.drug),form=rule?.dosage_form||p.form||detectForm(o.drug),route=rule?.route||defaultRouteForDrug(o.drug,form),freq=rule?.frequency||p.freq||'',days=supplyDaysForOrder(o);
-  let orderdt=[o.order_date,o.order_time].filter(Boolean).join(' ');
-  return `<div class="med medica-order" data-drug="${esc(o.drug)}" data-order-index="${idx}">
+function importedQtyForOrder(o){return (o.events||[]).reduce((a,e)=>{let q=parseFloat(e.qty);return a+(Number.isFinite(q)&&q>0?q:0)},0)}
+function refillStats(o,cloudHist=[]){
+  let base=orderBaseQty(o),cycles=plannedCyclesForOrder(o),plannedQty=base*cycles,usedQty=importedQtyForOrder(o)+platformQtyForOrder(o,cloudHist),usedCycles=Math.min(cycles,usedQty/base),remainingQty=Math.max(0,plannedQty-usedQty),remainingCycles=Math.max(0,cycles-usedCycles);
+  return{base,cycles,plannedQty,usedQty,usedCycles,remainingQty,remainingCycles}
+}
+function completedQOrderEvents(mrn,cloudHist=[]){
+  if(hospital!=='QCH')return[];
+  let out=[];
+  for(const o of qOrdersFor(String(mrn||''))){
+    if(o.status==='Stopped')continue;
+    const st=refillStats(o,cloudHist);if(st.remainingQty>0)continue;
+    let dates=[];for(const e of o.events||[])if(e.date)dates.push(e.date);
+    const key=normDrug(splitIVDrug(o.drug).additive||o.drug);
+    for(const x of cloudHist||[]){if(x.is_void||x.pharmacy!==o.pharmacy||normDrug(x.medication)!==key)continue;let d=x.dispensed_local_date||localDateKey(x.dispensed_at);if(d)dates.push(d)}
+    let d=dates.sort().at(-1)||isoFromDMY(o.end_date)||isoFromDMY(o.order_date)||localDateKey(new Date());
+    let pr=parseRxEnhanced(o.rx,o.drug),form=ruleFor(o.drug)?.dosage_form||pr.form||detectForm(o.drug),route=ruleFor(o.drug)?.route||defaultRouteForDrug(o.drug,form),freq=ruleFor(o.drug)?.frequency||pr.freq||'';
+    out.push({date:d,pharmacy:o.pharmacy,medication:o.drug,source:'Order Status',department:qPatient(mrn)?.location||'',dose:pr.dose,frequency:freq,route,quantity:'',unit:o.unit,prescriber:o.prescriber,ordered_by:o.ordered_by,order_date:o.order_date,order_time:o.order_time,order_status:'Stopped',end_date:o.end_date,prescription:o.rx,event_kind:'completed',completion_reason:'All scheduled fills completed',planned_cycles:st.cycles});
+  }
+  return out
+}
+function supplyDaysForQty(o,qty){let base=orderBaseQty(o),q=parseFloat(qty);if(!Number.isFinite(q)||q<=0)return 30;return Math.max(1,Math.round(30*q/base))}
+function supplyDaysForOrder(o){return supplyDaysForQty(o,o.qty)}
+function qOrderCard(o,idx,cloudHist=[]){
+  let p=parseRxEnhanced(o.rx,o.drug),rule=ruleFor(o.drug),form=rule?.dosage_form||p.form||detectForm(o.drug),route=rule?.route||defaultRouteForDrug(o.drug,form),freq=rule?.frequency||p.freq||'',stats=refillStats(o,cloudHist),qty=Math.min(stats.base,stats.remainingQty||stats.base),days=supplyDaysForQty(o,qty),orderdt=[o.order_date,o.order_time].filter(Boolean).join(' ');
+  let remainingTxt=stats.remainingCycles<=0?'Completed':`${niceNum(stats.remainingCycles)} of ${stats.cycles} monthly fill(s) remaining`;
+  return `<div class="med medica-order" data-drug="${esc(o.drug)}" data-order-index="${idx}" data-base-qty="${esc(stats.base)}" data-total-cycles="${esc(stats.cycles)}" data-used-qty="${esc(stats.usedQty)}" data-planned-qty="${esc(stats.plannedQty)}">
     <div><input class="pick" type="checkbox" checked></div>
-    <div><div class="medname">${esc(o.drug)}</div><div class="sub">${esc(o.speciality||'')}</div><span class="status-pill">ACTIVE</span></div>
-    <div>${esc(p.dose||'—')}</div><div>${esc(route||'—')}</div><div>${esc(freqEn(freq)||freq||'—')}</div><div>${esc(days)} day(s)</div><div><b>${esc(o.qty||'—')}</b></div><div>${esc(o.unit||'—')}</div><div>${esc(orderdt)}</div><div class="order-doctor">${esc(o.prescriber||o.ordered_by||'—')}</div>
-    <div class="hidden-order-inputs"><select class="form"><option selected>${esc(form)}</option></select><input class="dose" value="${esc(p.dose)}"><select class="freq"><option selected>${esc(freq)}</option></select><input class="route" value="${esc(route)}"><input class="qty" value="${esc(o.qty)}" readonly><input class="days" value="${esc(days)}"><input class="expiry"><input class="refrig" type="checkbox"><input class="alert" type="checkbox"><input class="risk" type="checkbox"><textarea class="free">${esc(o.rx)}</textarea></div>
+    <div><div class="medname">${esc(o.drug)}</div><div class="sub">${esc(o.speciality||'')}</div><span class="status-pill">ACTIVE</span><div class="sub refill-status" style="margin-top:5px"><b>${esc(remainingTxt)}</b> • Order ${esc(o.duration_days||30)} days • Ends ${esc(o.end_date||'—')}</div></div>
+    <div><b>${esc(p.dose||'—')}</b></div><div><b>${esc(route||'—')}</b></div><div><b>${esc(freqEn(freq)||freq||'—')}</b></div><div class="supply-visible">${esc(days)} day(s)</div><div><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:72px;padding:7px;border:1px solid #cfd6dc;border-radius:8px;font-weight:800"><div class="sub qty-help">Base ${esc(stats.base)} / 30d</div></div><div>${esc(o.unit||'—')}</div><div>${esc(orderdt)}</div><div class="order-doctor">${esc(o.prescriber||o.ordered_by||'—')}</div>
+    <div class="hidden-order-inputs"><select class="form"><option selected>${esc(form)}</option></select><input class="dose" value="${esc(p.dose)}"><select class="freq"><option selected>${esc(freq)}</option></select><input class="route" value="${esc(route)}"><input class="qty qty-hidden" value="${esc(qty)}"><input class="days" value="${esc(days)}"><input class="expiry"><input class="refrig" type="checkbox"><input class="alert" type="checkbox"><input class="risk" type="checkbox"><textarea class="free">${esc(o.rx)}</textarea></div>
   </div>`;
+}
+function bindQOrderQty(){
+ document.querySelectorAll('.medica-order').forEach(m=>{let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden'),days=m.querySelector('.days'),sv=m.querySelector('.supply-visible'),rs=m.querySelector('.refill-status');if(!q)return;
+   const update=()=>{let base=parseFloat(m.dataset.baseQty)||1,total=+m.dataset.totalCycles||1,used=parseFloat(m.dataset.usedQty)||0,planned=parseFloat(m.dataset.plannedQty)||base*total,v=Math.max(0,parseFloat(q.value)||0),supply=Math.max(1,Math.round(30*v/base)),after=Math.max(0,planned-used-v),rem=after/base;qh.value=String(v);days.value=String(supply);sv.textContent=supply+' day(s)';rs.innerHTML='<b>'+niceNum(rem)+' of '+total+' monthly fill(s) remaining after this dispense</b>';
+   };q.addEventListener('input',update);update();
+ })
 }
 function updatePatientBanner(mrn,profile,orders=[]){
   if(!profile){$('patientBanner').classList.add('hidden');return}
@@ -389,6 +420,13 @@ function buildMonthsFromSelection(){}
 function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');renderPatientList()}
 $('pharmacy').onchange=()=>{buildPatientList();if(selectedMRN)loadPatient(selectedMRN)};
 $('patientListSearch').oninput=renderPatientList;
+function setPatientListCollapsed(v){
+  const w=$('medicaWork');if(!w)return;w.classList.toggle('patient-list-collapsed',!!v);
+  try{localStorage.setItem('pharmacyCloudPatientListCollapsed',v?'1':'0')}catch(e){}
+}
+$('hidePatients').onclick=()=>setPatientListCollapsed(true);
+$('showPatients').onclick=()=>setPatientListCollapsed(false);
+try{setPatientListCollapsed(localStorage.getItem('pharmacyCloudPatientListCollapsed')==='1')}catch(e){}
 $('loadMrn').onclick=()=>searchPatient(($('mrn').value||'').trim());$('mrn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchPatient(($('mrn').value||'').trim())}};
 
 function normID(v){return String(v||'').replace(/[\s-]/g,'').trim()}
@@ -422,13 +460,13 @@ async function loadPatient(mrn){
   let cloudHist=[];try{cloudHist=await rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})||[]}catch{}
   let today=localDateKey(new Date()),ph=$('pharmacy').value;
   if(hospital==='QCH'&&qprof){
-    let orders=qOrdersFor(selectedMRN),active=orders.filter(o=>orderIsCurrent(o)&&o.pharmacy===ph);
+    let orders=qOrdersFor(selectedMRN),active=orders.filter(o=>orderIsCurrent(o)&&o.pharmacy===ph&&refillStats(o,cloudHist).remainingQty>0);
     active=active.filter(o=>{
       let key=normDrug(splitIVDrug(o.drug).additive||o.drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);
       if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp;
     });
-    $('meds').innerHTML=active.length?active.map((o,i)=>qOrderCard(o,i)).join(''):'<div class="card sub">No current Active Orders for this pharmacy. Check History for stopped/previous orders.</div>';
-    $('activeOrderCount').textContent=String(active.length);updatePatientBanner(selectedMRN,{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept},orders);bindIVRate();
+    $('meds').innerHTML=active.length?active.map((o,i)=>qOrderCard(o,i,cloudHist)).join(''):'<div class="card sub">No current Active Orders for this pharmacy. Check History for stopped/previous orders.</div>';
+    $('activeOrderCount').textContent=String(active.length);updatePatientBanner(selectedMRN,{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept},orders);bindIVRate();bindQOrderQty();
     $('patientStatus').className='info';$('patientStatus').textContent=`${active.length} Active Order(s) • ${phMeta()[2]}${cloudHist.length?' • Orders dispensed today are hidden':''}`;
   }else{
     let medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:ph});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
@@ -438,12 +476,12 @@ async function loadPatient(mrn){
   renderPatientList();
 }
 function detectForm(drug){
-  let d=drug.toUpperCase();if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';if(/SACHET/.test(d))return'SACHET';if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';if(/EYE DROP|OPHTHALMIC|DROPS?/.test(d))return'DROPS';if(/INHALER|PUFF/.test(d))return'INHALER';if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';if(/CREAM|OINTMENT|GEL/.test(d))return'TOPICAL';if(/VIAL|AMPOULE|AMP\b|INJECTION/.test(d))return'INJECTION';return'OTHER'
+  let d=String(drug||'').toUpperCase();if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';if(/SACHET/.test(d))return'SACHET';if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';if(/EYE DROP|OPHTHALMIC|DROPS?/.test(d))return'DROPS';if(/INHALER|PUFF/.test(d))return'INHALER';if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';if(/CREAM|OINTMENT|GEL/.test(d))return'TOPICAL';if(/VIAL|AMPOULE|AMP\b|INJECTION|PENFILL|FLEXPEN|PEN\b|INSULIN/.test(d))return'INJECTION';return'OTHER'
 }
 function parseRx(txt,drug){
   txt=String(txt||'');let u=txt.toUpperCase(),form=detectForm(drug),dose='';
-  let m=u.match(/(\d+(?:\.\d+)?)\s*(ML|MG|MCG|GRAM|G|TABLET|TAB|CAPSULE|CAP|SACHET|PUFF|DROP)/);if(m)dose=m[1]+' '+m[2];
-  let freq='';if(/ONCE DAILY|\bOD\b/.test(u))freq='OD';else if(/TWICE DAILY|\bBID\b/.test(u))freq='BID';else if(/THREE TIMES DAILY|\bTID\b/.test(u))freq='TID';else if(/FOUR TIMES DAILY|\bQID\b/.test(u))freq='QID';else if(/EVERY 6 HOUR|Q6H/.test(u))freq='Q6H';else if(/EVERY 8 HOUR|Q8H/.test(u))freq='Q8H';else if(/EVERY 12 HOUR|Q12H/.test(u))freq='Q12H';else if(/AT BEDTIME|QHS/.test(u))freq='QHS';else if(/AS NEEDED|PRN/.test(u))freq='PRN';else if(/ONCE WEEKLY|WEEKLY/.test(u))freq='WEEKLY';
+  let m=u.match(/(\d+(?:\.\d+)?)\s*(ML|MG|MCG|IU|UNITS?|UNIT|GRAMS?|GRAM|G|TABLETS?|TAB|CAPSULES?|CAP|SACHETS?|SACHET|PUFFS?|PUFF|DROPS?|DROP)/);if(m){let un=m[2].replace(/^IU$/,'UNIT').replace(/^UNITS$/,'UNIT').replace(/^TABLETS?$/,'TABLET').replace(/^CAPSULES?$/,'CAPSULE').replace(/^SACHETS?$/,'SACHET').replace(/^PUFFS?$/,'PUFF').replace(/^DROPS?$/,'DROP');dose=m[1]+' '+un}
+  let freq='';if(/EVERY\s*DAY\s+AT\s+BED\s*TIME|EVRYDAY\s+AT\s+BED\s*TIME|EVERYDAY\s+AT\s+BED\s*TIME|AT\s+BED\s*TIME|AT BEDTIME|QHS/.test(u))freq='QHS';else if(/ONCE DAILY|EVERYDAY|EVERY DAY|\bOD\b/.test(u))freq='OD';else if(/TWICE DAILY|\bBID\b/.test(u))freq='BID';else if(/THREE TIMES DAILY|\bTID\b/.test(u))freq='TID';else if(/FOUR TIMES DAILY|\bQID\b/.test(u))freq='QID';else if(/EVERY 4 HOUR|Q4H/.test(u))freq='Q4H';else if(/EVERY 6 HOUR|Q6H/.test(u))freq='Q6H';else if(/EVERY 8 HOUR|Q8H/.test(u))freq='Q8H';else if(/EVERY 12 HOUR|Q12H/.test(u))freq='Q12H';else if(/AS NEEDED|PRN/.test(u))freq='PRN';else if(/ONCE WEEKLY|WEEKLY/.test(u))freq='WEEKLY';
   return{dose,freq,form}
 }
 function rxOptions(sp,drug){
@@ -514,7 +552,7 @@ function defaultRouteForDrug(drug,form){
   if(/NASAL|NOSE/.test(d))return'NASAL';
   if(/CREAM|OINTMENT|GEL|LOTION|TOPICAL/.test(d)||f==='TOPICAL')return'TOPICAL';
   if(/INHALER|INHALATION|NEBUL|PUFF/.test(d)||f==='INHALER')return'INHALATION';
-  if(/SUBCUT|SUBCUTANEOUS|\bSC\b/.test(d))return'SC';
+  if(/SUBCUT|SUBCUTANEOUS|\bSC\b|INSULIN|FLEXPEN|PENFILL/.test(d))return'SC';
   if(/INTRAMUSCULAR|\bIM\b/.test(d))return'IM';
   if(/INTRAVENOUS|\bIV\b/.test(d))return'IV';
   if(['TABLET','CAPSULE','LIQUID','SACHET'].includes(f))return'PO';
@@ -566,7 +604,8 @@ function administrationFromStrength(item){
   return null;
 }
 function unitDose(item){
-  let raw=(item.dose||'').toUpperCase(),m,form=item.form;
+  let raw=(item.dose||'').toUpperCase(),m,form=item.form,drug=String(item.drug||item.medication||'').toUpperCase();
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(IU|UNITS?|UNIT)\b/))&&(/INSULIN|FLEXPEN|PENFILL/.test(drug))){let n=+m[1];return[niceNum(n)+' unit'+(Math.abs(n-1)<0.001?'':'s'),niceNum(n)+' وحدة'];}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':niceNum(n)+' tablets',arTablet(n)]}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':niceNum(n)+' capsules',arCapsule(n)]}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*ML/)))return[niceNum(+m[1])+' mL',niceNum(+m[1])+' مل'];
@@ -577,7 +616,7 @@ function unitDose(item){
   return[item.dose||'',item.dose||'']
 }
 function smartDirections(i){
-  let rule=ruleFor(i.drug),[de,da]=unitDose(i),form=String(i.form||detectForm(i.drug)).toUpperCase(),verbEn=form==='INJECTION'?'Administer':form==='SUPPOSITORY'?'Insert':form==='TOPICAL'?'Apply':form==='DROPS'?'Instill':form==='INHALER'?'Inhale':'Take',verbAr=form==='INJECTION'?'استخدم':form==='SUPPOSITORY'?'استخدم':form==='TOPICAL'?'ضع':form==='DROPS'?'استخدم':form==='INHALER'?'استنشق':'خذ',en=[de?verbEn+' '+de:'',freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):'',i.route?'('+i.route+')':''].filter(Boolean).join(' ');
+  let rule=ruleFor(i.drug),[de,da]=unitDose(i),form=String(i.form||detectForm(i.drug)).toUpperCase(),verbEn=form==='INJECTION'?'Inject':form==='SUPPOSITORY'?'Insert':form==='TOPICAL'?'Apply':form==='DROPS'?'Instill':form==='INHALER'?'Inhale':'Take',verbAr=form==='INJECTION'?'احقن':form==='SUPPOSITORY'?'استخدم':form==='TOPICAL'?'ضع':form==='DROPS'?'استخدم':form==='INHALER'?'استنشق':'خذ',en=[de?verbEn+' '+de:'',freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):'',i.route?'('+i.route+')':''].filter(Boolean).join(' ');
   let ar=[da?verbAr+' '+da:'',freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):'',i.route?'('+routeAr(i.route)+')':''].filter(Boolean).join(' ');
   if(rule?.directions_en)en=applyTemplate(rule.directions_en,i,'en');if(rule?.directions_ar)ar=applyTemplate(rule.directions_ar,i,'ar');
   return{en,enRaw:i.free||'',ar}
@@ -587,7 +626,7 @@ function selectedItems(){
   return[...document.querySelectorAll('.med')].filter(m=>m.querySelector('.pick').checked).map(m=>{
     let iv=m.classList.contains('ivmed'),drug=m.dataset.drug,dose=m.querySelector('.dose')?.value||'',freq=m.querySelector('.freq')?.value||'',route=m.querySelector('.route')?.value||'',days=m.querySelector('.days')?.value||'';
     if(iv)return{medication:drug,drug,form:'INJECTION',dosage_form:'INJECTION',dose,frequency:freq,freq,route,quantity:'',days,supply_days:days,free:m.querySelector('.free')?.value||'',label_type:'IV',iv_solution:m.querySelector('.ivsolution')?.value||'',iv_rate:m.querySelector('.ivrate')?.value||'',iv_volume:m.querySelector('.ivvolume')?.value||'',iv_infusion_time:m.querySelector('.ivinfusion')?.value||'',iv_access:m.querySelector('.ivaccess')?.value||'',iv_production_at:m.querySelector('.ivprod')?.value||'',iv_expiry_at:m.querySelector('.ivexpiry')?.value||'',ordered_by:m.querySelector('.orderedby')?.value||''};
-    let form=m.querySelector('.form')?.value||detectForm(drug),qty=m.querySelector('.qty')?.value||'',dir=smartDirections({drug,form,dose,freq,route,days});
+    let form=m.querySelector('.form')?.value||detectForm(drug),qty=m.querySelector('.qty-visible')?.value||m.querySelector('.qty')?.value||'',dir=smartDirections({drug,form,dose,freq,route,days});
     return{medication:drug,drug,form,dosage_form:form,dose,frequency:freq,freq,route,quantity:qty,days,supply_days:days,free:m.querySelector('.free')?.value||'',directions_en:dir.en,directions_ar:dir.ar,expiry_date:m.querySelector('.expiry')?.value||'',refrigerated:m.querySelector('.refrig')?.checked||false,high_alert:m.querySelector('.alert')?.checked||false,high_risk:m.querySelector('.risk')?.checked||false,label_type:'REGULAR'}
   })
 }
@@ -639,7 +678,9 @@ $('historyBtn').onclick=async()=>{
   if(hospital==='QCH'&&QORD)src=qchHistoryForPatient(selectedMRN);
   else {let hist=await ensureHistory();src=(hist?.[selectedMRN]||[]).map(x=>({date:x[0],pharmacy:x[1],medication:DATA.drugs[x[2]]||'',department:DATA.depts[x[3]]||'',source:'Medica'}))}
   let cloud=[];try{cloud=await rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})||[]}catch{}
-  currentHistory=[...src,...cloud.map(x=>({...x,date:x.dispensed_local_date||localDateKey(x.dispensed_at),source:'Platform'}))];applyHistoryFilters()
+  currentHistory=[...src,...cloud.map(x=>({...x,date:x.dispensed_local_date||localDateKey(x.dispensed_at),source:'Platform'}))];
+  if(hospital==='QCH')currentHistory.push(...completedQOrderEvents(selectedMRN,cloud));
+  applyHistoryFilters()
 };
 function setHistoryQuickRange(range,apply=true){
  let today=new Date(),from=new Date(today),to=new Date(today);
@@ -657,7 +698,7 @@ $('historyApply').onclick=()=>{document.querySelectorAll('.historyQuickBtn').for
 function renderLastDispenseSummary(rows){
  let active=rows.filter(x=>!x.is_void&&x.event_kind!=='stopped'),map=new Map();for(const x of active){let k=normDrug(x.medication),old=map.get(k),tx=new Date((x.dispensed_at||x.date)+' '+(x.dispense_time||'')).getTime()||0,ot=old?(new Date((old.dispensed_at||old.date)+' '+(old.dispense_time||'')).getTime()||0):-1;if(!old||tx>ot)map.set(k,x)}
  let vals=[...map.values()].sort((a,b)=>String(a.medication).localeCompare(String(b.medication)));
- $('lastDispenseSummary').innerHTML='<b>Last dispense by medication — within selected date range</b>'+(vals.length?'<div class="tablebox" style="margin-top:8px"><table><thead><tr><th>Medication</th><th>Last Dispense</th><th>Status</th><th>Dose / Frequency / Route</th><th>Qty</th><th>Doctor</th><th>Directions</th></tr></thead><tbody>'+vals.map(x=>`<tr class="${x.order_status==='Stopped'?'history-stopped':''}"><td>${esc(x.medication)}</td><td>${x.source==='Platform'?esc(fmtDT(x.dispensed_at)):esc(fmtDate(x.date))}${x.dispense_time?' '+esc(x.dispense_time):''}</td><td>${x.order_status==='Stopped'?'<span class="stopped-badge">STOPPED — Need to Renew</span>':esc(x.order_status||'Dispensed')}</td><td>${esc([x.dose,x.frequency,x.route].filter(Boolean).join(' • '))}</td><td>${esc(x.quantity||'—')} ${esc(x.unit||'')}</td><td>${esc(x.prescriber||'—')}</td><td>${esc(x.directions_en||'')}${x.directions_ar?'<br><span dir="rtl">'+esc(x.directions_ar)+'</span>':''}</td></tr>`).join('')+'</tbody></table></div>':'<div class="sub" style="margin-top:6px">No records in this range for the current pharmacy.</div>')
+ $('lastDispenseSummary').innerHTML='<b>Last dispense by medication — within selected date range</b>'+(vals.length?'<div class="tablebox" style="margin-top:8px"><table><thead><tr><th>Medication</th><th>Last Dispense</th><th>Status</th><th>Dose / Frequency / Route</th><th>Qty</th><th>Doctor</th><th>Directions</th></tr></thead><tbody>'+vals.map(x=>`<tr class="${x.order_status==='Stopped'?'history-stopped':''}"><td>${esc(x.medication)}</td><td>${x.source==='Platform'?esc(fmtDT(x.dispensed_at)):esc(fmtDate(x.date))}${x.dispense_time?' '+esc(x.dispense_time):''}</td><td>${x.order_status==='Stopped'?'<span class="stopped-badge">STOPPED — Need to Renew</span>'+(x.completion_reason?'<div class="sub" style="margin-top:4px">'+esc(x.completion_reason)+'</div>':''):esc(x.order_status||'Dispensed')}</td><td>${esc([x.dose,x.frequency,x.route].filter(Boolean).join(' • '))}</td><td>${esc(x.quantity||'—')} ${esc(x.unit||'')}</td><td>${esc(x.prescriber||'—')}</td><td>${esc(x.directions_en||'')}${x.directions_ar?'<br><span dir="rtl">'+esc(x.directions_ar)+'</span>':''}</td></tr>`).join('')+'</tbody></table></div>':'<div class="sub" style="margin-top:6px">No records in this range for the current pharmacy.</div>')
 }
 function renderCalendar(){
  let y=calCursor.getFullYear(),m=calCursor.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),filtered=historyFiltered(),days=new Set(filtered.map(x=>x.date));$('calTitle').textContent=first.toLocaleString('en-US',{month:'long',year:'numeric'});
@@ -673,9 +714,9 @@ function printHistoryLabel(row){let w=window.open('','_blank','width=650,height=
 function showHistoryDay(date){
  document.querySelectorAll('.calday').forEach(x=>x.classList.toggle('sel',x.dataset.date===date));let rows=historyFiltered().filter(x=>x.date===date);
  $('dayHistory').innerHTML=`<h3>${fmtDate(date)}</h3>`+(rows.length?rows.map(x=>{
-   let stopped=x.order_status==='Stopped'||x.event_kind==='stopped',platform=x.source==='Platform';
+   let stopped=x.order_status==='Stopped'||x.event_kind==='stopped'||x.event_kind==='completed',platform=x.source==='Platform';
    return `<div class="histitem ${stopped?'history-stopped':'history-dispensed'}" style="${x.is_void?'opacity:.7;border-left:4px solid #b42318':''}">
-   <div class="histtime">${platform?fmtDT(x.dispensed_at):esc((x.dispense_time?fmtDate(x.date)+' '+x.dispense_time:fmtDate(x.date)))} — ${esc(x.medication)} ${stopped?'<span class="stopped-badge">STOPPED — Need to Renew</span>':''}${x.is_void?'<span style="color:#b42318;font-weight:900"> [VOIDED]</span>':''}</div>
+   <div class="histtime">${platform?fmtDT(x.dispensed_at):esc((x.dispense_time?fmtDate(x.date)+' '+x.dispense_time:fmtDate(x.date)))} — ${esc(x.medication)} ${stopped?'<span class="stopped-badge">STOPPED — Need to Renew</span>':''}${x.completion_reason?'<div class="sub" style="margin-top:4px">'+esc(x.completion_reason)+'</div>':''}${x.is_void?'<span style="color:#b42318;font-weight:900"> [VOIDED]</span>':''}</div>
    <div class="histmeta">${esc(x.source)} • ${esc(x.pharmacy||'')} • ${esc(x.department||'')}${x.dispensed_by?' • Dispensed by '+esc(x.dispensed_by):''}${x.pharmacist_name?' • '+esc(x.pharmacist_name):''}</div>
    <div class="histmeta" style="margin-top:5px"><b>Order:</b> ${esc([x.order_date,x.order_time].filter(Boolean).join(' ')||'—')} • <b>Doctor:</b> ${esc(x.prescriber||x.ordered_by||'—')}<br><b>Prescription:</b> ${esc(x.prescription||'—')}<br><b>Dose:</b> ${esc(x.dose||'—')} • <b>Frequency:</b> ${esc(x.frequency||'—')} • <b>Route:</b> ${esc(x.route||'—')} • <b>Qty:</b> ${esc(x.quantity||'—')} ${esc(x.unit||'')} ${x.prescription_no?' • <b>Rx No:</b> '+esc(x.prescription_no):''}<br>${x.directions_en?'<b>Label:</b> '+esc(x.directions_en):''}${x.directions_ar?'<br><span dir="rtl">'+esc(x.directions_ar)+'</span>':''}</div>
    ${platform?`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${!x.is_void?`<button class="btn red voiddisp" data-id="${x.id}" data-date="${date}">↶ Cancel Dispense</button><button class="btn soft showagain" data-id="${x.id}" data-date="${date}">↻ Show Order Again</button>`:''}<button class="btn dark reprintlabel" data-id="${x.id}">▣ Reprint Label</button></div>`:''}</div>`
