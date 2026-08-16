@@ -58,21 +58,33 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .medica-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 11px;border-bottom:1px solid #e1e7ea;margin-bottom:8px}
 .medica-actions .btn{padding:9px 12px;border-radius:9px}
 .orders-titlebar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 10px;background:#edf3f5;border:1px solid #d4e0e4;border-radius:10px 10px 0 0;font-weight:900;color:#25424c}
-.order-head,.medica-order{display:grid;grid-template-columns:30px minmax(280px,2.2fr) 85px 85px 105px 75px 65px 65px 125px minmax(150px,1fr);align-items:center}
+.order-head,.medica-order{display:grid;grid-template-columns:30px minmax(280px,2.2fr) 85px 85px 105px 75px 78px 65px 125px minmax(150px,1fr) 112px;align-items:center}
 .order-head{background:#f3f6f7;border:1px solid #dce4e7;border-top:0;font-size:11px;font-weight:900;color:#4b6068}
 .order-head>div{padding:8px 6px;border-right:1px solid #dde5e8}
 .medica-order{border:1px solid #e1e6e8;border-top:0;background:#fff;min-height:58px;margin:0;border-radius:0;padding:0;box-shadow:none}
-.medica-order:hover{background:#fbfdfe}.medica-order>div{padding:8px 6px;font-size:11px;border-right:1px solid #edf0f2;min-width:0;overflow-wrap:anywhere}
-.medica-order .medname{font-size:12px;color:#226889;font-weight:850}.medica-order .order-doctor{font-size:10px;line-height:1.35}
-.medica-order input.pick{width:auto;margin:auto}.medica-order .status-pill{display:inline-block;border-radius:999px;padding:3px 7px;background:#eaf6ef;color:#217253;font-size:10px;font-weight:900}
+.medica-order:hover{background:#fbfdfe}.medica-order.refill-order{background:#fff6cf;border-color:#eadb91}.medica-order.refill-order:hover{background:#fff2b9}.medica-order>div{padding:8px 6px;font-size:11px;border-right:1px solid #edf0f2;min-width:0;overflow-wrap:anywhere}
+.medica-order .medname{font-size:12px;color:#226889;font-weight:850}.medica-order .order-doctor{font-size:10px;line-height:1.35}.medica-order .last-dispense{font-size:10px;line-height:1.25;text-align:center;font-weight:800;color:#445b64}
+.medica-order input.pick{width:auto;margin:auto}.medica-order .status-pill{display:inline-block;border-radius:999px;padding:3px 7px;background:#eaf6ef;color:#217253;font-size:10px;font-weight:900}.medica-order.refill-order .status-pill{background:#f4d35e;color:#654d00}
 .medica-order .hidden-order-inputs{display:none}
 #meds .card.sub{margin-top:0}
 .history-stopped{background:#fff0f0!important;border-left:5px solid #b42318!important}.history-stopped .histtime{color:#9f1f2f}
 .stopped-badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#b42318;color:#fff;font-size:10px;font-weight:900;margin-left:6px}
 .history-dispensed{background:#fff;border-left:5px solid #d9dee3;padding-left:10px}
-@media(max-width:1100px){.medica-toolbar{grid-template-columns:1fr 1fr}.medica-work{grid-template-columns:1fr}.medica-work.patient-list-collapsed{grid-template-columns:1fr}.patient-side{border-right:0;border-bottom:1px solid #d8e1e4}.medica-work.patient-list-collapsed .patient-side{display:none}.patient-banner{grid-template-columns:50px 1fr 1fr}.patient-doctor{grid-column:2/-1}.order-head,.medica-order{grid-template-columns:28px minmax(240px,2fr) 75px 75px 90px 60px 55px 55px 110px minmax(130px,1fr);min-width:1050px}.orders-scroll{overflow:auto}}
+@media(max-width:1100px){.medica-toolbar{grid-template-columns:1fr 1fr}.medica-work{grid-template-columns:1fr}.medica-work.patient-list-collapsed{grid-template-columns:1fr}.patient-side{border-right:0;border-bottom:1px solid #d8e1e4}.medica-work.patient-list-collapsed .patient-side{display:none}.patient-banner{grid-template-columns:50px 1fr 1fr}.patient-doctor{grid-column:2/-1}.order-head,.medica-order{grid-template-columns:28px minmax(240px,2fr) 75px 75px 90px 60px 72px 55px 110px minmax(130px,1fr) 105px;min-width:1160px}.orders-scroll{overflow:auto}}
 
 @media(max-width:900px){.grid,.grid2,.admin-grid,.medgrid,.ivgrid,.hospital-grid{grid-template-columns:1fr}.wrap{padding:12px}.brand{font-size:20px}}
+
+/* UI hierarchy update: patient/add-medication primary navigation, history in dispensing actions */
+.btn.patient-nav{background:#0f5f73;color:#fff;border-color:#0f5f73;box-shadow:0 4px 12px rgba(15,95,115,.16)}
+.btn.med-nav{background:#6f4778;color:#fff;border-color:#6f4778;box-shadow:0 4px 12px rgba(111,71,120,.16)}
+.btn.history-action{background:#86521f;color:#fff;border-color:#86521f}
+.btn.selection-action{background:#eef4f5;color:#24454e;border:1px solid #cbdadd}
+.role-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.role-card{border:1px solid #e2d7d8;border-radius:14px;padding:12px;background:#fff}
+.role-card b{display:block;margin-bottom:4px}.role-card.admin-role{background:#fff5f6;border-color:#efc8cd}.role-card.doctor-role{background:#f5f8ff;border-color:#cbd7f1}.role-card.pharmacist-role{background:#f4fbf9;border-color:#c9e6dc}
+.admin-identity{font-weight:850;color:#7f1d2d;margin-top:4px}
+@media(max-width:800px){.role-strip{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -107,7 +119,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="medica-toolbar">
       <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select></div>
       <div><label>Patient Search / بحث المريض</label><div style="display:flex;gap:7px"><input id="mrn" placeholder="MRN or National ID / رقم الملف أو الهوية"><button class="btn dark" id="loadMrn">Search</button></div></div>
-      <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn dark" id="historyBtn">◷ Orders History</button><button class="btn soft" id="addPatient">＋ Patient</button></div>
+      <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn patient-nav" id="addPatient">👤 Patient</button><button class="btn med-nav" id="addMedication">＋ Add Medication</button></div>
     </div>
 
     <div id="patientBanner" class="patient-banner hidden">
@@ -132,9 +144,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <main class="orders-pane">
         <button class="btn soft show-patients-btn" id="showPatients" type="button">☰ Patients</button>
         <div class="medica-actions">
-          <button class="btn soft" id="addMedication">＋ Add Medication</button>
-          <button class="btn soft" id="selectAll">Select All</button>
-          <button class="btn soft" id="deselectAll">Deselect All</button>
+          <button class="btn history-action" id="historyBtn">◷ Order History</button>
+          <button class="btn selection-action" id="selectAll">Select All</button>
+          <button class="btn selection-action" id="deselectAll">Deselect All</button>
           <button class="btn dark" id="previewBtn">◎ Preview</button>
           <button class="btn primary" id="printBtn">▣ Print Labels</button>
           <button class="btn primary" id="dispenseBtn">✓ Dispense Selected</button>
@@ -142,7 +154,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
         <div id="patientStatus" class="note">Choose a pharmacy and search the patient MRN.</div>
         <div class="orders-scroll" style="margin-top:10px">
           <div class="orders-titlebar"><span>Active Medication Orders</span><span id="activeOrderCount" class="badge">0</span></div>
-          <div class="order-head"><div></div><div>Drug Name</div><div>Dose</div><div>Route</div><div>Frequency</div><div>For</div><div>Qty.</div><div>Unit</div><div>Order Date/Time</div><div>Order By</div></div>
+          <div class="order-head"><div></div><div>Drug Name</div><div>Dose</div><div>Route</div><div>Frequency</div><div>For</div><div>Qty.</div><div>Unit</div><div>Order Date/Time</div><div>Order By</div><div>Last Dispense</div></div>
           <div id="meds"></div>
         </div>
       </main>
@@ -151,10 +163,16 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 </div>
 
 <div id="adminPage" class="wrap hidden">
-  <div class="top"><div><button class="btn soft" id="adminBack">← Back</button><div class="brand" style="margin-top:10px">Admin — Live Pharmacy Activity</div><div class="sub">Auto-refresh every 5 seconds</div></div><span class="badge" id="adminLive">● LIVE</span></div>
+  <div class="top"><div><button class="btn soft" id="adminBack">← Back</button><div class="brand" style="margin-top:10px">Admin — Live Pharmacy Activity</div><div class="admin-identity">System Administrators: Ali Alsada • Aref</div><div class="sub">Accounts, roles, today's dispensing activity, audit and Directions Library • Auto-refresh every 5 seconds</div></div><span class="badge" id="adminLive">● LIVE</span></div>
   <div class="admin-grid">
     <div class="card">
-      <h3>Pharmacist Accounts</h3>
+      <h3>Accounts & Roles</h3>
+      <div class="role-strip">
+        <div class="role-card pharmacist-role"><b>💊 Pharmacist</b><span class="sub">Dispense, print labels and patient history.</span></div>
+        <div class="role-card doctor-role"><b>🩺 Doctor</b><span class="sub">Patient medications, allergies, renew and new orders. Doctor login will be enabled with the role database update.</span></div>
+        <div class="role-card admin-role"><b>⚙ Admin</b><span class="sub">Ali Alsada • Aref — accounts, audit, activity and medication directions.</span></div>
+      </div>
+      <h3 style="margin-top:18px">Pharmacist Accounts</h3>
       <label>Username</label><input id="newUser">
       <label style="margin-top:9px">Full Name</label><input id="newFullName">
       <label style="margin-top:9px">Password</label><input id="newPassword" type="password">
@@ -299,17 +317,26 @@ function orderIsCurrent(o){
 }
 function qOrdersFor(mrn){let p=qPatient(mrn);return p?(p.orders||[]).map(orderDecoded):[]}
 function parseRxEnhanced(txt,drug){
-  let p=parseRx(txt,drug),u=String(txt||'').toUpperCase();
-  if(!p.freq){
-    if(/EVERY\s+FOUR\s+HOURS|EVERY\s+4\s+HOURS|\bQ4H\b/.test(u))p.freq='Q4H';
-    else if(/EVERY\s+SIX\s+HOURS|EVERY\s+6\s+HOURS|\bQ6H\b/.test(u))p.freq='Q6H';
-    else if(/EVERY\s+EIGHT\s+HOURS|EVERY\s+8\s+HOURS|\bQ8H\b/.test(u))p.freq='Q8H';
-    else if(/EVERY\s+TWELVE\s+HOURS|EVERY\s+12\s+HOURS|\bQ12H\b/.test(u))p.freq='Q12H';
-    else if(/\bTHREE TIMES DAILY\b/.test(u))p.freq='TID';
-    else if(/\bTWICE DAILY\b/.test(u))p.freq='BID';
-    else if(/\bONCE DAILY\b|\bONCE\b/.test(u))p.freq='OD';
-    else if(/3 TIMES WEEKLY|THREE TIMES WEEKLY/.test(u))p.freq='3 TIMES WEEKLY';
-  }
+  let p=parseRx(txt,drug),u=String(txt||'').toUpperCase().replace(/\s+/g,' ').trim(),m;
+  // Specific schedules must be checked BEFORE generic "once" so "once every month" is never read as OD.
+  if(/ONCE EVERY MONTH|ONCE A MONTH|EVERY MONTH|MONTHLY/.test(u))p.freq='MONTHLY';
+  else if((m=u.match(/(?:ONCE )?EVERY (\d+) MONTHS?/)))p.freq='EVERY '+m[1]+' MONTHS';
+  else if((m=u.match(/(?:ONCE )?EVERY (ONE|TWO|THREE|FOUR|FIVE|SIX) MONTHS?/)))p.freq='EVERY '+({ONE:1,TWO:2,THREE:3,FOUR:4,FIVE:5,SIX:6}[m[1]])+' MONTHS';
+  else if(/3 TIMES WEEKLY|THREE TIMES WEEKLY/.test(u))p.freq='3 TIMES WEEKLY';
+  else if(/ONCE EVERY WEEK|ONCE A WEEK|EVERY WEEK|WEEKLY/.test(u))p.freq='WEEKLY';
+  else if((m=u.match(/(?:ONCE )?EVERY (\d+) WEEKS?/)))p.freq='EVERY '+m[1]+' WEEKS';
+  else if((m=u.match(/(?:ONCE )?EVERY (ONE|TWO|THREE|FOUR|FIVE|SIX|EIGHT|TWELVE) WEEKS?/)))p.freq='EVERY '+({ONE:1,TWO:2,THREE:3,FOUR:4,FIVE:5,SIX:6,EIGHT:8,TWELVE:12}[m[1]])+' WEEKS';
+  else if(/EVERY OTHER DAY/.test(u))p.freq='EVERY OTHER DAY';
+  else if((m=u.match(/EVERY (\d+) DAYS?/)))p.freq='EVERY '+m[1]+' DAYS';
+  else if(/EVERY\s+FOUR\s+HOURS|EVERY\s+4\s+HOURS|\bQ4H\b/.test(u))p.freq='Q4H';
+  else if(/EVERY\s+SIX\s+HOURS|EVERY\s+6\s+HOURS|\bQ6H\b/.test(u))p.freq='Q6H';
+  else if(/EVERY\s+EIGHT\s+HOURS|EVERY\s+8\s+HOURS|\bQ8H\b/.test(u))p.freq='Q8H';
+  else if(/EVERY\s+TWELVE\s+HOURS|EVERY\s+12\s+HOURS|\bQ12H\b/.test(u))p.freq='Q12H';
+  else if(/EVERY\s*DAY\s+AT\s+BED\s*TIME|EVRYDAY\s+AT\s+BED\s*TIME|EVERYDAY\s+AT\s+BED\s*TIME|AT\s+BED\s*TIME|AT BEDTIME|\bQHS\b/.test(u))p.freq='QHS';
+  else if(/THREE TIMES DAILY|\bTID\b/.test(u))p.freq='TID';
+  else if(/TWICE DAILY|\bBID\b/.test(u))p.freq='BID';
+  else if(/ONCE DAILY|EVERYDAY|EVERY DAY|\bOD\b/.test(u))p.freq='OD';
+  else if(/ONLY ONE TIME|\bONCE\b/.test(u))p.freq='ONCE';
   return p;
 }
 function timesPerDay(freq){
@@ -323,6 +350,15 @@ function platformQtyForOrder(o,cloudHist=[]){
   return sum
 }
 function importedQtyForOrder(o){return (o.events||[]).reduce((a,e)=>{let q=parseFloat(e.qty);return a+(Number.isFinite(q)&&q>0?q:0)},0)}
+function lastDispenseForOrder(o,cloudHist=[]){
+  const ds=[];
+  (o.events||[]).forEach(e=>{const d=e.date||e.dispense_date||e.dispensed_at;if(d)ds.push({d,t:e.time||e.dispense_time||''})});
+  (cloudHist||[]).forEach(e=>{if(String(e.medication||'').trim().toUpperCase()===String(o.drug||'').trim().toUpperCase()){const d=e.dispensed_at||e.date;if(d)ds.push({d,t:e.dispense_time||''})}});
+  if(!ds.length)return '—';
+  const norm=x=>{let v=String(x.d||'').trim();let m=v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(m)v=`${m[3]}-${m[2]}-${m[1]}`;return new Date(v+(x.t?' '+x.t:''));};
+  ds.sort((a,b)=>norm(b)-norm(a));
+  const x=ds[0];return [fmtDate(x.d),x.t].filter(Boolean).join(' ');
+}
 function refillStats(o,cloudHist=[]){
   let base=orderBaseQty(o),cycles=plannedCyclesForOrder(o),plannedQty=base*cycles,usedQty=importedQtyForOrder(o)+platformQtyForOrder(o,cloudHist),usedCycles=Math.min(cycles,usedQty/base),remainingQty=Math.max(0,plannedQty-usedQty),remainingCycles=Math.max(0,cycles-usedCycles);
   return{base,cycles,plannedQty,usedQty,usedCycles,remainingQty,remainingCycles}
@@ -337,7 +373,7 @@ function completedQOrderEvents(mrn,cloudHist=[]){
     const key=normDrug(splitIVDrug(o.drug).additive||o.drug);
     for(const x of cloudHist||[]){if(x.is_void||x.pharmacy!==o.pharmacy||normDrug(x.medication)!==key)continue;let d=x.dispensed_local_date||localDateKey(x.dispensed_at);if(d)dates.push(d)}
     let d=dates.sort().at(-1)||isoFromDMY(o.end_date)||isoFromDMY(o.order_date)||localDateKey(new Date());
-    let pr=parseRxEnhanced(o.rx,o.drug),form=ruleFor(o.drug)?.dosage_form||pr.form||detectForm(o.drug),route=ruleFor(o.drug)?.route||defaultRouteForDrug(o.drug,form),freq=ruleFor(o.drug)?.frequency||pr.freq||'';
+    let pr=parseRxEnhanced(o.rx,o.drug),form=ruleFor(o.drug)?.dosage_form||pr.form||detectForm(o.drug),route=ruleFor(o.drug)?.route||defaultRouteForDrug(o.drug,form),freq=pr.freq||ruleFor(o.drug)?.frequency||'';
     out.push({date:d,pharmacy:o.pharmacy,medication:o.drug,source:'Order Status',department:qPatient(mrn)?.location||'',dose:pr.dose,frequency:freq,route,quantity:'',unit:o.unit,prescriber:o.prescriber,ordered_by:o.ordered_by,order_date:o.order_date,order_time:o.order_time,order_status:'Stopped',end_date:o.end_date,prescription:o.rx,event_kind:'completed',completion_reason:'All scheduled fills completed',planned_cycles:st.cycles});
   }
   return out
@@ -345,12 +381,12 @@ function completedQOrderEvents(mrn,cloudHist=[]){
 function supplyDaysForQty(o,qty){let base=orderBaseQty(o),q=parseFloat(qty);if(!Number.isFinite(q)||q<=0)return 30;return Math.max(1,Math.round(30*q/base))}
 function supplyDaysForOrder(o){return supplyDaysForQty(o,o.qty)}
 function qOrderCard(o,idx,cloudHist=[]){
-  let p=parseRxEnhanced(o.rx,o.drug),rule=ruleFor(o.drug),form=rule?.dosage_form||p.form||detectForm(o.drug),route=rule?.route||defaultRouteForDrug(o.drug,form),freq=rule?.frequency||p.freq||'',stats=refillStats(o,cloudHist),qty=Math.min(stats.base,stats.remainingQty||stats.base),days=supplyDaysForQty(o,qty),orderdt=[o.order_date,o.order_time].filter(Boolean).join(' ');
-  let remainingTxt=stats.remainingCycles<=0?'Completed':`${niceNum(stats.remainingCycles)} of ${stats.cycles} monthly fill(s) remaining`;
-  return `<div class="med medica-order" data-drug="${esc(o.drug)}" data-order-index="${idx}" data-base-qty="${esc(stats.base)}" data-total-cycles="${esc(stats.cycles)}" data-used-qty="${esc(stats.usedQty)}" data-planned-qty="${esc(stats.plannedQty)}">
-    <div><input class="pick" type="checkbox" checked></div>
-    <div><div class="medname">${esc(o.drug)}</div><div class="sub">${esc(o.speciality||'')}</div><span class="status-pill">ACTIVE</span><div class="sub refill-status" style="margin-top:5px"><b>${esc(remainingTxt)}</b> • Order ${esc(o.duration_days||30)} days • Ends ${esc(o.end_date||'—')}</div></div>
-    <div><b>${esc(p.dose||'—')}</b></div><div><b>${esc(route||'—')}</b></div><div><b>${esc(freqEn(freq)||freq||'—')}</b></div><div class="supply-visible">${esc(days)} day(s)</div><div><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:72px;padding:7px;border:1px solid #cfd6dc;border-radius:8px;font-weight:800"><div class="sub qty-help">Base ${esc(stats.base)} / 30d</div></div><div>${esc(o.unit||'—')}</div><div>${esc(orderdt)}</div><div class="order-doctor">${esc(o.prescriber||o.ordered_by||'—')}</div>
+  let p=parseRxEnhanced(o.rx,o.drug),rule=ruleFor(o.drug),form=rule?.dosage_form||p.form||detectForm(o.drug),route=rule?.route||defaultRouteForDrug(o.drug,form),freq=p.freq||rule?.frequency||'',stats=refillStats(o,cloudHist),qty=Math.min(stats.base,stats.remainingQty||stats.base),days=supplyDaysForQty(o,qty),orderdt=[o.order_date,o.order_time].filter(Boolean).join(' '),isRefill=stats.usedQty>0,lastDisp=lastDispenseForOrder(o,cloudHist);
+  let remainingTxt=stats.remainingCycles<=0?'Completed':`${niceNum(stats.remainingCycles)} of ${stats.cycles} monthly fill(s) remaining before this dispense`;
+  return `<div class="med medica-order ${isRefill?'refill-order':''}" data-drug="${esc(o.drug)}" data-order-index="${idx}" data-base-qty="${esc(stats.base)}" data-total-cycles="${esc(stats.cycles)}" data-used-qty="${esc(stats.usedQty)}" data-planned-qty="${esc(stats.plannedQty)}">
+    <div><input class="pick" type="checkbox"></div>
+    <div><div class="medname">${esc(o.drug)}</div><div class="sub">${esc(o.speciality||'')}</div><span class="status-pill">${isRefill?'REFILL':'ACTIVE'}</span><div class="sub refill-status" style="margin-top:5px"><b>${esc(remainingTxt)}</b> • Order ${esc(o.duration_days||30)} days • Ends ${esc(o.end_date||'—')}</div></div>
+    <div><b>${esc(p.dose||'—')}</b></div><div><b>${esc(route||'—')}</b></div><div><b>${esc(freqEn(freq)||freq||'—')}</b></div><div class="supply-visible">${esc(days)} day(s)</div><div style="display:flex;justify-content:center"><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:64px;padding:7px;text-align:center;border:1px solid #cfd6dc;border-radius:8px;font-weight:800"></div><div>${esc(o.unit||'—')}</div><div>${esc(orderdt)}</div><div class="order-doctor">${esc(o.prescriber||o.ordered_by||'—')}</div><div class="last-dispense">${esc(lastDisp)}</div>
     <div class="hidden-order-inputs"><select class="form"><option selected>${esc(form)}</option></select><input class="dose" value="${esc(p.dose)}"><select class="freq"><option selected>${esc(freq)}</option></select><input class="route" value="${esc(route)}"><input class="qty qty-hidden" value="${esc(qty)}"><input class="days" value="${esc(days)}"><input class="expiry"><input class="refrig" type="checkbox"><input class="alert" type="checkbox"><input class="risk" type="checkbox"><textarea class="free">${esc(o.rx)}</textarea></div>
   </div>`;
 }
@@ -371,16 +407,24 @@ function updatePatientBanner(mrn,profile,orders=[]){
   $('bannerOrderInfo').textContent=latest?`Latest order: ${latest.order_date} ${latest.order_time||''}`:'No current active order';
 }
 function buildPatientList(){
-  let ph=$('pharmacy').value,items=[];
+  let ph=$('pharmacy').value,items=[],seen=new Set();
+  const add=(mrn,name)=>{mrn=String(mrn||'');if(!mrn||seen.has(mrn))return;seen.add(mrn);items.push({mrn,name:name||mrn})};
   if(hospital==='QCH'&&QORD){
     for(const [mrn,raw] of Object.entries(QORD.p||{})){
-      let p=qPatient(mrn),has=(p.orders||[]).map(orderDecoded).some(o=>orderIsCurrent(o)&&o.pharmacy===ph);
-      if(has)items.push({mrn,name:p.name||mrn});
+      let p=qPatient(mrn),has=(p.orders||[]).map(orderDecoded).some(o=>orderIsCurrent(o)&&o.pharmacy===ph&&refillStats(o,[]).remainingQty>0);
+      if(has)add(mrn,p.name||mrn);
+    }
+    // OPD2 is absent from dose2/doses order extracts. Re-use the previously loaded QCH dispensing dataset so OPD2 patients remain visible.
+    if(ph==='OPD2'){
+      let months=(DATA?.months||[]).slice(-3),set=new Set(months);
+      for(const [mrn,p] of Object.entries(DATA?.patients||{})){
+        let ok=(p?.[6]||[]).some(r=>set.has(DATA.months[r[0]])&&r[1]==='OPD2');if(ok)add(mrn,p?.[0]||mrn);
+      }
     }
   } else {
     let months=(DATA?.months||[]).slice(-2),set=new Set(months);
     for(const [mrn,p] of Object.entries(DATA?.patients||{})){
-      let ok=(p?.[6]||[]).some(r=>set.has(DATA.months[r[0]])&&r[1]===ph);if(ok)items.push({mrn,name:p?.[0]||mrn});
+      let ok=(p?.[6]||[]).some(r=>set.has(DATA.months[r[0]])&&r[1]===ph);if(ok)add(mrn,p?.[0]||mrn);
     }
   }
   items.sort((a,b)=>a.name.localeCompare(b.name));patientListCache=items;renderPatientList();
@@ -394,7 +438,7 @@ function renderPatientList(){
 function qchHistoryForPatient(mrn){
   let p=qPatient(mrn),out=[];if(!p)return out;
   for(const o of qOrdersFor(mrn)){
-    let pr=parseRxEnhanced(o.rx,o.drug),form=ruleFor(o.drug)?.dosage_form||pr.form||detectForm(o.drug),route=ruleFor(o.drug)?.route||defaultRouteForDrug(o.drug,form),freq=ruleFor(o.drug)?.frequency||pr.freq||'',days=supplyDaysForOrder(o);
+    let pr=parseRxEnhanced(o.rx,o.drug),form=ruleFor(o.drug)?.dosage_form||pr.form||detectForm(o.drug),route=ruleFor(o.drug)?.route||defaultRouteForDrug(o.drug,form),freq=pr.freq||ruleFor(o.drug)?.frequency||'',days=supplyDaysForOrder(o);
     if(o.events.length){
       for(const e of o.events)out.push({date:e.date,pharmacy:e.pharmacy,medication:o.drug,department:p.location,source:'Medica Order',dose:pr.dose,frequency:freq,route,quantity:e.qty||o.qty,order_qty:o.qty,unit:o.unit,prescriber:o.prescriber,ordered_by:o.ordered_by,order_date:o.order_date,order_time:o.order_time,order_status:o.status,end_date:o.end_date,prescription:o.rx,dispensed_by:e.by,dispense_time:e.time,prescription_no:e.prescription_no,directions_en:smartDirections({drug:o.drug,form,dose:pr.dose,freq,route,days}).en,directions_ar:smartDirections({drug:o.drug,form,dose:pr.dose,freq,route,days}).ar});
     } else if(o.status==='Stopped'){
@@ -430,19 +474,21 @@ try{setPatientListCollapsed(localStorage.getItem('pharmacyCloudPatientListCollap
 $('loadMrn').onclick=()=>searchPatient(($('mrn').value||'').trim());$('mrn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchPatient(($('mrn').value||'').trim())}};
 
 function normID(v){return String(v||'').replace(/[\s-]/g,'').trim()}
+async function focusLoadedPatient(mrn){
+  await loadPatient(String(mrn));
+  setTimeout(()=>{let el=$('patientBanner')||$('medicaWork');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},40);
+}
 async function searchPatient(value){
   value=String(value||'').trim();if(!value)return;
   // MRN remains the fastest path.
-  if(hospital==='QCH'&&QORD?.p?.[value])return loadPatient(value);
-  if(DATA?.patients?.[value])return loadPatient(value);
+  if(hospital==='QCH'&&QORD?.p?.[value])return focusLoadedPatient(value);
+  if(DATA?.patients?.[value])return focusLoadedPatient(value);
   let key=normID(value),matches=[];
   for(const [mrn,p] of Object.entries(DATA?.patients||{})){if(normID(p?.[1])===key)matches.push(mrn)}
-  if(matches.length===1)return loadPatient(matches[0]);
-  if(matches.length>1){let pick=prompt('More than one patient matched this National ID. Enter MRN:\n'+matches.join('\n'),matches[0]);if(pick&&matches.includes(pick.trim()))return loadPatient(pick.trim());return}
-  // Also search patient profiles added later to Supabase.
-  try{let cp=await rpc('medica_find_profile_by_identifier',{p_token:pharmacist.token,p_hospital:hospital,p_identifier:value});if(cp?.mrn)return loadPatient(String(cp.mrn))}catch(e){}
-  // Last attempt treats the entered value as an MRN so the existing Add Patient workflow still works.
-  return loadPatient(value);
+  if(matches.length===1)return focusLoadedPatient(matches[0]);
+  if(matches.length>1){let pick=prompt('More than one patient matched this National ID. Enter MRN:\n'+matches.join('\n'),matches[0]);if(pick&&matches.includes(pick.trim()))return focusLoadedPatient(pick.trim());return}
+  try{let cp=await rpc('medica_find_profile_by_identifier',{p_token:pharmacist.token,p_hospital:hospital,p_identifier:value});if(cp?.mrn)return focusLoadedPatient(String(cp.mrn))}catch(e){}
+  return focusLoadedPatient(value);
 }
 
 function staticProfile(mrn){return DATA?.patients?.[mrn]||null}
@@ -459,7 +505,7 @@ async function loadPatient(mrn){
   $('pname').value=name;$('nid').value=nid;$('par').value=ar;$('age').value=age;$('weight').value=weight;$('dob').value=dob;$('dept').value=dept;
   let cloudHist=[];try{cloudHist=await rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})||[]}catch{}
   let today=localDateKey(new Date()),ph=$('pharmacy').value;
-  if(hospital==='QCH'&&qprof){
+  if(hospital==='QCH'&&qprof&&ph!=='OPD2'){
     let orders=qOrdersFor(selectedMRN),active=orders.filter(o=>orderIsCurrent(o)&&o.pharmacy===ph&&refillStats(o,cloudHist).remainingQty>0);
     active=active.filter(o=>{
       let key=normDrug(splitIVDrug(o.drug).additive||o.drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);
@@ -471,16 +517,16 @@ async function loadPatient(mrn){
   }else{
     let medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:ph});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
     medNames=medNames.filter(drug=>{let key=normDrug(splitIVDrug(drug).additive||drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp});
-    renderMeds(medNames,sp);$('activeOrderCount').textContent=String(medNames.length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
+    renderMeds(medNames,sp);$('activeOrderCount').textContent=String(medNames.length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`:`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
   }
   renderPatientList();
 }
 function detectForm(drug){
-  let d=String(drug||'').toUpperCase();if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';if(/SACHET/.test(d))return'SACHET';if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';if(/EYE DROP|OPHTHALMIC|DROPS?/.test(d))return'DROPS';if(/INHALER|PUFF/.test(d))return'INHALER';if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';if(/CREAM|OINTMENT|GEL/.test(d))return'TOPICAL';if(/VIAL|AMPOULE|AMP\b|INJECTION|PENFILL|FLEXPEN|PEN\b|INSULIN/.test(d))return'INJECTION';return'OTHER'
+  let d=String(drug||'').toUpperCase();if(/TABLET| TAB\b|F\.?C/.test(d))return'TABLET';if(/CAPSULE| CAP\b/.test(d))return'CAPSULE';if(/SACHET/.test(d))return'SACHET';if(/SYRUP|ORAL SOLUTION|SUSPENSION|ELIXIR/.test(d))return'LIQUID';if(/EYE DROP|OPHTHALMIC|DROPS?/.test(d))return'DROPS';if(/INHALER|PUFF/.test(d))return'INHALER';if(/NASAL.*SPRAY|\bSPRAY\b/.test(d))return'SPRAY';if(/\bSTRIP(S)?\b/.test(d))return'STRIP';if(/SUPPOSITORY/.test(d))return'SUPPOSITORY';if(/CREAM|OINTMENT|GEL/.test(d))return'TOPICAL';if(/VIAL|AMPOULE|AMP\b|INJECTION|PENFILL|FLEXPEN|PEN\b|INSULIN/.test(d))return'INJECTION';return'OTHER'
 }
 function parseRx(txt,drug){
   txt=String(txt||'');let u=txt.toUpperCase(),form=detectForm(drug),dose='';
-  let m=u.match(/(\d+(?:\.\d+)?)\s*(ML|MG|MCG|IU|UNITS?|UNIT|GRAMS?|GRAM|G|TABLETS?|TAB|CAPSULES?|CAP|SACHETS?|SACHET|PUFFS?|PUFF|DROPS?|DROP)/);if(m){let un=m[2].replace(/^IU$/,'UNIT').replace(/^UNITS$/,'UNIT').replace(/^TABLETS?$/,'TABLET').replace(/^CAPSULES?$/,'CAPSULE').replace(/^SACHETS?$/,'SACHET').replace(/^PUFFS?$/,'PUFF').replace(/^DROPS?$/,'DROP');dose=m[1]+' '+un}
+  let m=u.match(/(\d+(?:\.\d+)?)\s*(ML|MG|MCG|IU|UNITS?|UNIT|GRAMS?|GRAM|G|TABLETS?|TAB|CAPSULES?|CAP|SACHETS?|SACHET|PUFFS?|PUFF|DROPS?|DROP|NASAL\s+SPRAYS?|SPRAYS?|SPRAY|APPLY|APPLICATIONS?|STRIPS?|PIECES?)/);if(m){let un=m[2].replace(/^IU$/,'UNIT').replace(/^UNITS$/,'UNIT').replace(/^TABLETS?$/,'TABLET').replace(/^CAPSULES?$/,'CAPSULE').replace(/^SACHETS?$/,'SACHET').replace(/^PUFFS?$/,'PUFF').replace(/^DROPS?$/,'DROP').replace(/^NASAL\s+SPRAYS?$/,'SPRAY').replace(/^SPRAYS?$/,'SPRAY').replace(/^APPLICATIONS?$/,'APPLY').replace(/^STRIPS?$/,'STRIP').replace(/^PIECES?$/,'PIECE');dose=m[1]+' '+un}
   let freq='';if(/EVERY\s*DAY\s+AT\s+BED\s*TIME|EVRYDAY\s+AT\s+BED\s*TIME|EVERYDAY\s+AT\s+BED\s*TIME|AT\s+BED\s*TIME|AT BEDTIME|QHS/.test(u))freq='QHS';else if(/ONCE DAILY|EVERYDAY|EVERY DAY|\bOD\b/.test(u))freq='OD';else if(/TWICE DAILY|\bBID\b/.test(u))freq='BID';else if(/THREE TIMES DAILY|\bTID\b/.test(u))freq='TID';else if(/FOUR TIMES DAILY|\bQID\b/.test(u))freq='QID';else if(/EVERY 4 HOUR|Q4H/.test(u))freq='Q4H';else if(/EVERY 6 HOUR|Q6H/.test(u))freq='Q6H';else if(/EVERY 8 HOUR|Q8H/.test(u))freq='Q8H';else if(/EVERY 12 HOUR|Q12H/.test(u))freq='Q12H';else if(/AS NEEDED|PRN/.test(u))freq='PRN';else if(/ONCE WEEKLY|WEEKLY/.test(u))freq='WEEKLY';
   return{dose,freq,form}
 }
@@ -528,31 +574,40 @@ function ivSolutionOptions(selected){
 function medCard(drug,i,sp){
   let rawDrug=drug,split=splitIVDrug(rawDrug),displayDrug=split.additive||rawDrug,opts=rxOptions(sp,rawDrug),p=parseRx(opts[0]||'',displayDrug),rule=ruleFor(displayDrug),days=defaultDays(),iv=$('pharmacy').value==='IV',now=new Date(),tom=new Date(now.getTime()+24*3600e3);if(rule){p.form=rule.dosage_form||p.form;p.freq=rule.frequency||p.freq}
   let dl=x=>{let z=new Date(x),off=z.getTimezoneOffset()*60000;return new Date(z-off).toISOString().slice(0,16)};
-  if(iv)return `<div class="med ivmed" data-drug="${esc(displayDrug)}" data-raw-drug="${esc(rawDrug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(displayDrug)}</div><span class="badge">IV Label</span></div><div class="ivgrid">
+  if(iv)return `<div class="med ivmed" data-drug="${esc(displayDrug)}" data-raw-drug="${esc(rawDrug)}"><div class="medhead"><input class="pick" type="checkbox"><div class="medname">${esc(displayDrug)}</div><span class="badge">IV Label</span></div><div class="ivgrid">
   <div><div class="fieldcap">Solution / المحلول</div><select class="ivsolution">${ivSolutionOptions(split.solution)}</select></div><div><div class="fieldcap">Additive Dose / جرعة المضاف</div><input class="dose" value="${esc(p.dose)}" placeholder="Dose"></div><div><div class="fieldcap">IV Access</div><select class="ivaccess"><option>Peripheral</option><option>Central</option></select></div>
   <div><div class="fieldcap">Rate mL/hour</div><input class="ivrate"></div><div><div class="fieldcap">Volume mL</div><input class="ivvolume"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div>
   <div><div class="fieldcap">Duration days</div><input class="days" type="number" min="1" value="1"></div><div><div class="fieldcap">Infuse over minutes</div><input class="ivinfusion" placeholder="60"></div><div><div class="fieldcap">Ordered By</div><input class="orderedby"></div>
   <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${dl(now)}"></div><div><div class="fieldcap">Expiry Date/Time — editable</div><input class="ivexpiry" type="datetime-local" value="${dl(tom)}"></div><div><div class="fieldcap">Route</div><input class="route" value="IV Infusion"></div>
   </div>${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Instructions">${esc(opts[0]||'')}</textarea></div>`;
-  return `<div class="med" data-drug="${esc(drug)}"><div class="medhead"><input class="pick" type="checkbox" checked><div class="medname">${esc(drug)}</div><span class="badge">${esc(p.form)}</span></div><div class="medgrid">
+  return `<div class="med" data-drug="${esc(drug)}"><div class="medhead"><input class="pick" type="checkbox"><div class="medname">${esc(drug)}</div><span class="badge">${esc(p.form)}</span></div><div class="medgrid">
   <div><div class="fieldcap">Dosage Form</div><select class="form">${formOptions(p.form)}</select></div><div><div class="fieldcap">Dose</div><input class="dose" value="${esc(p.dose)}"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div><div><div class="fieldcap">Qty</div><input class="qty" type="number" min="0"></div><div><div class="fieldcap">Days</div><input class="days" type="number" min="1" value="${days}"></div>
   </div><div class="grid" style="margin-top:9px"><div><div class="fieldcap">Route</div><input class="route" list="routeList" value="${esc(rule?.route||defaultRouteForDrug(drug,p.form))}"></div><div><div class="fieldcap">Expiry Date (optional)</div><input class="expiry" type="date"></div><div style="display:flex;gap:12px;align-items:center;padding-top:20px"><label><input class="refrig" type="checkbox" style="width:auto"> Refrigerated</label><label><input class="alert" type="checkbox" style="width:auto"> High Alert</label><label><input class="risk" type="checkbox" style="width:auto"> High Risk</label></div></div>
   ${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Directions / طريقة الاستعمال">${esc(opts[0]||'')}</textarea></div>`
 }
-function formOptions(sel){return['TABLET','CAPSULE','LIQUID','DROPS','INHALER','SACHET','SUPPOSITORY','TOPICAL','INJECTION','OTHER'].map(x=>`<option ${x===sel?'selected':''}>${x}</option>`).join('')}
-function freqOptions(sel){let base=['','OD','BID','TID','QID','Q4H','Q6H','Q8H','Q12H','QHS','PRN','WEEKLY','3 TIMES WEEKLY'],extra=frequencyLibrary.map(x=>x.code).filter(Boolean),all=[...new Set([...base,...extra])];if(sel&&!all.includes(sel))all.push(sel);return all.map(x=>`<option ${x===sel?'selected':''}>${x||'—'}</option>`).join('')}
-function freqEn(f){let x=frequencyLibrary.find(v=>v.code===f);return x?.label_en||({OD:'once daily',BID:'twice daily',TID:'three times daily',QID:'four times daily',Q4H:'every 4 hours',Q6H:'every 6 hours',Q8H:'every 8 hours',Q12H:'every 12 hours',QHS:'at bedtime',PRN:'as needed',WEEKLY:'once weekly','3 TIMES WEEKLY':'three times weekly'})[f]||f||''}
-function freqAr(f){let x=frequencyLibrary.find(v=>v.code===f);return x?.label_ar||({OD:'مرة يوميًا',BID:'مرتين يوميًا',TID:'ثلاث مرات يوميًا',QID:'أربع مرات يوميًا',Q4H:'كل 4 ساعات',Q6H:'كل 6 ساعات',Q8H:'كل 8 ساعات',Q12H:'كل 12 ساعة',QHS:'عند النوم',PRN:'عند الحاجة',WEEKLY:'مرة أسبوعيًا','3 TIMES WEEKLY':'ثلاث مرات أسبوعيًا'})[f]||f||''}
+function formOptions(sel){return['TABLET','CAPSULE','LIQUID','DROPS','INHALER','SPRAY','STRIP','SACHET','SUPPOSITORY','TOPICAL','INJECTION','OTHER'].map(x=>`<option ${x===sel?'selected':''}>${x}</option>`).join('')}
+function freqOptions(sel){let base=['','OD','BID','TID','QID','Q4H','Q6H','Q8H','Q12H','QHS','PRN','ONCE','WEEKLY','MONTHLY','3 TIMES WEEKLY'],extra=frequencyLibrary.map(x=>x.code).filter(Boolean),all=[...new Set([...base,...extra])];if(sel&&!all.includes(sel))all.push(sel);return all.map(x=>`<option ${x===sel?'selected':''}>${x||'—'}</option>`).join('')}
+function freqEn(f){
+  let code=String(f||'').trim().toUpperCase(),x=frequencyLibrary.find(v=>String(v.code||'').toUpperCase()===code);if(x?.label_en)return x.label_en;
+  let m;if((m=code.match(/^EVERY (\d+) WEEKS?$/)))return'every '+m[1]+' weeks';if((m=code.match(/^EVERY (\d+) MONTHS?$/)))return'every '+m[1]+' months';if((m=code.match(/^EVERY (\d+) DAYS?$/)))return'every '+m[1]+' days';
+  return({OD:'once daily',BID:'twice daily',TID:'three times daily',QID:'four times daily',Q4H:'every 4 hours',Q6H:'every 6 hours',Q8H:'every 8 hours',Q12H:'every 12 hours',QHS:'at bedtime',PRN:'as needed',ONCE:'once',WEEKLY:'once weekly',MONTHLY:'once monthly','EVERY OTHER DAY':'every other day','3 TIMES WEEKLY':'three times weekly'})[code]||f||''
+}
+function freqAr(f){
+  let code=String(f||'').trim().toUpperCase(),x=frequencyLibrary.find(v=>String(v.code||'').toUpperCase()===code);if(x?.label_ar)return x.label_ar;
+  let m;if((m=code.match(/^EVERY (\d+) WEEKS?$/)))return'كل '+arabicNumber(+m[1])+' أسابيع';if((m=code.match(/^EVERY (\d+) MONTHS?$/)))return'كل '+arabicNumber(+m[1])+' أشهر';if((m=code.match(/^EVERY (\d+) DAYS?$/)))return'كل '+arabicNumber(+m[1])+' أيام';
+  return({OD:'مرة يوميًا',BID:'مرتين يوميًا',TID:'ثلاث مرات يوميًا',QID:'أربع مرات يوميًا',Q4H:'كل أربع ساعات',Q6H:'كل ست ساعات',Q8H:'كل ثماني ساعات',Q12H:'كل اثنتي عشرة ساعة',QHS:'قبل النوم',PRN:'عند الحاجة',ONCE:'مرة واحدة',WEEKLY:'مرة أسبوعيًا',MONTHLY:'مرة شهريًا','EVERY OTHER DAY':'يومًا بعد يوم','3 TIMES WEEKLY':'ثلاث مرات أسبوعيًا'})[code]||f||''
+}
 function defaultRouteForForm(f){return({SUPPOSITORY:'RECTAL',TOPICAL:'TOPICAL',DROPS:'',INHALER:'INHALATION',TABLET:'PO',CAPSULE:'PO',LIQUID:'PO',SACHET:'PO',INJECTION:''})[String(f||'').toUpperCase()]||''}
 function defaultRouteForDrug(drug,form){
   let d=String(drug||'').toUpperCase(),f=String(form||detectForm(drug)).toUpperCase();
   if(/SUPPOSITORY|RECTAL/.test(d)||f==='SUPPOSITORY')return'RECTAL';
   if(/EYE|OPHTHALMIC/.test(d))return'OPHTHALMIC';
   if(/EAR|OTIC/.test(d))return'OTIC';
-  if(/NASAL|NOSE/.test(d))return'NASAL';
+  if(/NASAL|NOSE/.test(d)||f==='SPRAY')return'NASAL';
   if(/CREAM|OINTMENT|GEL|LOTION|TOPICAL/.test(d)||f==='TOPICAL')return'TOPICAL';
   if(/INHALER|INHALATION|NEBUL|PUFF/.test(d)||f==='INHALER')return'INHALATION';
   if(/SUBCUT|SUBCUTANEOUS|\bSC\b|INSULIN|FLEXPEN|PENFILL/.test(d))return'SC';
+  if(/SECUKINUMAB|COSENTYX/.test(d)&&/SYRING|PEN|INJECTION/.test(d))return'SC';
   if(/INTRAMUSCULAR|\bIM\b/.test(d))return'IM';
   if(/INTRAVENOUS|\bIV\b/.test(d))return'IV';
   if(['TABLET','CAPSULE','LIQUID','SACHET'].includes(f))return'PO';
@@ -577,11 +632,19 @@ function niceNum(n){
   if(!Number.isFinite(n))return'';
   let v=Math.round(n*100)/100;return Number.isInteger(v)?String(v):String(v).replace(/0+$/,'').replace(/\.$/,'');
 }
+function arabicFeminineNumber(n){
+  n=Math.round(+n||0);const a={1:'واحدة',2:'اثنتان',3:'ثلاث',4:'أربع',5:'خمس',6:'ست',7:'سبع',8:'ثماني',9:'تسع',10:'عشر',11:'إحدى عشرة',12:'اثنتا عشرة',13:'ثلاث عشرة',14:'أربع عشرة',15:'خمس عشرة',16:'ست عشرة',17:'سبع عشرة',18:'ثماني عشرة',19:'تسع عشرة',20:'عشرون'};return a[n]||arabicNumber(n)
+}
 function arTablet(n){
-  if(Math.abs(n-0.5)<0.001)return'نصف حبة';if(Math.abs(n-1)<0.001)return'حبة واحدة';if(Math.abs(n-1.5)<0.001)return'حبة ونصف';if(Math.abs(n-2)<0.001)return'حبتين';return niceNum(n)+' حبات';
+  if(Math.abs(n-0.5)<0.001)return'نصف حبة';if(Math.abs(n-1)<0.001)return'حبة واحدة';if(Math.abs(n-1.5)<0.001)return'حبة ونصف';if(Math.abs(n-2)<0.001)return'حبتين';if(Number.isInteger(n)&&n>=3&&n<=10)return arabicFeminineNumber(n)+' حبات';return niceNum(n)+' حبات';
 }
 function arCapsule(n){
-  if(Math.abs(n-1)<0.001)return'كبسولة واحدة';if(Math.abs(n-2)<0.001)return'كبسولتين';return niceNum(n)+' كبسولات';
+  if(Math.abs(n-1)<0.001)return'كبسولة واحدة';if(Math.abs(n-2)<0.001)return'كبسولتين';if(Number.isInteger(n)&&n>=3&&n<=10)return arabicFeminineNumber(n)+' كبسولات';return niceNum(n)+' كبسولات';
+}
+function arUnits(n){
+  if(!Number.isInteger(n))return niceNum(n)+' وحدة';
+  if(n===1)return'وحدة واحدة';if(n===2)return'وحدتين';if(n>=3&&n<=10)return arabicFeminineNumber(n)+' وحدات';if(n>=11&&n<=19)return arabicFeminineNumber(n)+' وحدة';if(n===20)return'عشرين وحدة';
+  return arabicNumber(n)+' وحدة';
 }
 function administrationFromStrength(item){
   let doseRaw=String(item.dose||'').trim(),drug=String(item.drug||item.medication||'').toUpperCase(),form=String(item.form||'').toUpperCase();
@@ -594,7 +657,7 @@ function administrationFromStrength(item){
     while((m=re.exec(drug))!==null){let b=doseToBase(m[1],m[2]);if(b&&b[1]===db[1])arr.push(b[0]);}
     // Prefer the last matching strength before the dosage-form wording; avoids many product-name numbers.
     let strength=arr.length?arr[arr.length-1]:null;
-    if(strength&&strength>0){let n=db[0]/strength;if(n>0&&n<=20){let en,ar;if(form==='TABLET'){en=niceNum(n)+' tablet'+(Math.abs(n-1)<0.001?'':'s');ar=arTablet(n)}else if(form==='CAPSULE'){en=niceNum(n)+' capsule'+(Math.abs(n-1)<0.001?'':'s');ar=arCapsule(n)}else{let unit=/AMPOULE|\bAMP\b/.test(drug)?'ampoule':/VIAL/.test(drug)?'vial':'dose';en=niceNum(n)+' '+unit+(Math.abs(n-1)<0.001?'':'s');ar=niceNum(n)+' '+(unit==='ampoule'?'أمبول':unit==='vial'?'فيال':'جرعة')}return[en,ar];}}
+    if(strength&&strength>0){let n=db[0]/strength;if(n>0&&n<=20){let en,ar;if(form==='TABLET'){en=niceNum(n)+' tablet'+(Math.abs(n-1)<0.001?'':'s');ar=arTablet(n)}else if(form==='CAPSULE'){en=niceNum(n)+' capsule'+(Math.abs(n-1)<0.001?'':'s');ar=arCapsule(n)}else{let unit=/AMPOULE|\bAMP\b/.test(drug)?'ampoule':/VIAL/.test(drug)?'vial':'dose';en=niceNum(n)+' '+unit+(Math.abs(n-1)<0.001?'':'s');ar=unit==='dose'?(Math.abs(n-1)<0.001?'جرعة واحدة':Math.abs(n-2)<0.001?'جرعتين':niceNum(n)+' جرعات'):niceNum(n)+' '+(unit==='ampoule'?'أمبول':'فيال')}return[en,ar];}}
   }
   // Liquids: concentration such as 125 MG/5 ML -> convert the prescribed dose to mL.
   if(form==='LIQUID'){
@@ -605,19 +668,26 @@ function administrationFromStrength(item){
 }
 function unitDose(item){
   let raw=(item.dose||'').toUpperCase(),m,form=item.form,drug=String(item.drug||item.medication||'').toUpperCase();
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(IU|UNITS?|UNIT)\b/))&&(/INSULIN|FLEXPEN|PENFILL/.test(drug))){let n=+m[1];return[niceNum(n)+' unit'+(Math.abs(n-1)<0.001?'':'s'),niceNum(n)+' وحدة'];}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(IU|UNITS?|UNIT)\b/))&&(/INSULIN|FLEXPEN|PENFILL/.test(drug))){let n=+m[1];return[niceNum(n)+' unit'+(Math.abs(n-1)<0.001?'':'s'),arUnits(n)];}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':niceNum(n)+' tablets',arTablet(n)]}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':niceNum(n)+' capsules',arCapsule(n)]}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*ML/)))return[niceNum(+m[1])+' mL',niceNum(+m[1])+' مل'];
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(PUFF)/)))return[niceNum(+m[1])+' puff'+(+m[1]===1?'':'s'),niceNum(+m[1])+' بخة'];
-  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(DROP)/)))return[niceNum(+m[1])+' drop'+(+m[1]===1?'':'s'),niceNum(+m[1])+' قطرة'];
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(DROP)/))){let n=+m[1];return[niceNum(n)+' drop'+(n===1?'':'s'),n===1?'قطرة واحدة':n===2?'قطرتين':niceNum(n)+' قطرات'];}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(SPRAY)/))){let n=+m[1];return[niceNum(n)+' spray'+(n===1?'':'s'),n===1?'بخة واحدة':n===2?'بختين':niceNum(n)+' بخات'];}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(STRIP)/))){let n=+m[1];return[niceNum(n)+' strip'+(n===1?'':'s'),n===1?'شريط واحد':n===2?'شريطين':niceNum(n)+' شرائط'];}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(APPLY)/))){let n=+m[1];return[niceNum(n)+' application'+(n===1?'':'s'),n===1?'تطبيق واحد':n===2?'تطبيقين':niceNum(n)+' تطبيقات'];}
+  if((m=raw.match(/(\d+(?:\.\d+)?)\s*(PIECE)/))){let n=+m[1];return[niceNum(n)+' piece'+(n===1?'':'s'),n===1?'قطعة واحدة':n===2?'قطعتين':niceNum(n)+' قطع'];}
   let calc=administrationFromStrength(item);if(calc)return calc;
   if(form==='TABLET')return['1 tablet','حبة واحدة'];if(form==='CAPSULE')return['1 capsule','كبسولة واحدة'];if(form==='SACHET')return['1 sachet','كيس واحد'];if(form==='INHALER')return['1 puff','بخة واحدة'];if(form==='DROPS')return['1 drop','قطرة واحدة'];
   return[item.dose||'',item.dose||'']
 }
+function routeEnDirection(r){let k=String(r||'').toUpperCase();return({PO:'by mouth',RECTAL:'rectally',OPHTHALMIC:'into the eye',OTIC:'into the ear',NASAL:'nasally',IV:'intravenously','IV INFUSION':'by intravenous infusion',IM:'intramuscularly',SC:'subcutaneously',TOPICAL:'topically',INHALATION:'by inhalation'})[k]||r||''}
+function routeArDirection(r){let k=String(r||'').toUpperCase();return({PO:'بالفم',RECTAL:'عن طريق المستقيم',OPHTHALMIC:'في العين',OTIC:'في الأذن',NASAL:'عن طريق الأنف',IV:'وريديًا','IV INFUSION':'بالتسريب الوريدي',IM:'عضليًا',SC:'تحت الجلد',TOPICAL:'موضعيًا',INHALATION:'بالاستنشاق'})[k]||routeAr(r)||''}
 function smartDirections(i){
-  let rule=ruleFor(i.drug),[de,da]=unitDose(i),form=String(i.form||detectForm(i.drug)).toUpperCase(),verbEn=form==='INJECTION'?'Inject':form==='SUPPOSITORY'?'Insert':form==='TOPICAL'?'Apply':form==='DROPS'?'Instill':form==='INHALER'?'Inhale':'Take',verbAr=form==='INJECTION'?'احقن':form==='SUPPOSITORY'?'استخدم':form==='TOPICAL'?'ضع':form==='DROPS'?'استخدم':form==='INHALER'?'استنشق':'خذ',en=[de?verbEn+' '+de:'',freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):'',i.route?'('+i.route+')':''].filter(Boolean).join(' ');
-  let ar=[da?verbAr+' '+da:'',freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):'',i.route?'('+routeAr(i.route)+')':''].filter(Boolean).join(' ');
+  let rule=ruleFor(i.drug),[de,da]=unitDose(i),form=String(i.form||detectForm(i.drug)).toUpperCase(),verbEn=form==='INJECTION'?'Inject':form==='SUPPOSITORY'?'Insert':form==='TOPICAL'?'Apply':form==='DROPS'?'Instill':form==='INHALER'?'Inhale':form==='SPRAY'?'Spray':form==='STRIP'?'Use':'Take',verbAr=form==='INJECTION'?'احقن':form==='SUPPOSITORY'?'استخدم':form==='TOPICAL'?'ضع':form==='DROPS'?'استخدم':form==='INHALER'?'استنشق':form==='SPRAY'?'استخدم':form==='STRIP'?'استخدم':'خذ';
+  let en=[de?verbEn+' '+de:'',routeEnDirection(i.route),freqEn(i.freq),i.days?'for '+i.days+' day'+(+i.days===1?'':'s'):''].filter(Boolean).join(' ');
+  let ar=[da?verbAr+' '+da:'',routeArDirection(i.route),freqAr(i.freq),i.days?'لمدة '+dayAr(i.days):''].filter(Boolean).join(' ');
   if(rule?.directions_en)en=applyTemplate(rule.directions_en,i,'en');if(rule?.directions_ar)ar=applyTemplate(rule.directions_ar,i,'ar');
   return{en,enRaw:i.free||'',ar}
 }
@@ -719,7 +789,7 @@ function showHistoryDay(date){
    <div class="histtime">${platform?fmtDT(x.dispensed_at):esc((x.dispense_time?fmtDate(x.date)+' '+x.dispense_time:fmtDate(x.date)))} — ${esc(x.medication)} ${stopped?'<span class="stopped-badge">STOPPED — Need to Renew</span>':''}${x.completion_reason?'<div class="sub" style="margin-top:4px">'+esc(x.completion_reason)+'</div>':''}${x.is_void?'<span style="color:#b42318;font-weight:900"> [VOIDED]</span>':''}</div>
    <div class="histmeta">${esc(x.source)} • ${esc(x.pharmacy||'')} • ${esc(x.department||'')}${x.dispensed_by?' • Dispensed by '+esc(x.dispensed_by):''}${x.pharmacist_name?' • '+esc(x.pharmacist_name):''}</div>
    <div class="histmeta" style="margin-top:5px"><b>Order:</b> ${esc([x.order_date,x.order_time].filter(Boolean).join(' ')||'—')} • <b>Doctor:</b> ${esc(x.prescriber||x.ordered_by||'—')}<br><b>Prescription:</b> ${esc(x.prescription||'—')}<br><b>Dose:</b> ${esc(x.dose||'—')} • <b>Frequency:</b> ${esc(x.frequency||'—')} • <b>Route:</b> ${esc(x.route||'—')} • <b>Qty:</b> ${esc(x.quantity||'—')} ${esc(x.unit||'')} ${x.prescription_no?' • <b>Rx No:</b> '+esc(x.prescription_no):''}<br>${x.directions_en?'<b>Label:</b> '+esc(x.directions_en):''}${x.directions_ar?'<br><span dir="rtl">'+esc(x.directions_ar)+'</span>':''}</div>
-   ${platform?`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${!x.is_void?`<button class="btn red voiddisp" data-id="${x.id}" data-date="${date}">↶ Cancel Dispense</button><button class="btn soft showagain" data-id="${x.id}" data-date="${date}">↻ Show Order Again</button>`:''}<button class="btn dark reprintlabel" data-id="${x.id}">▣ Reprint Label</button></div>`:''}</div>`
+   ${platform?`<div style="margin-top:10px;padding-top:9px;border-top:1px solid #eadfe1"><div style="font-size:12px;font-weight:900;margin-bottom:7px;color:#6b2530">Dispense Actions</div><div style="display:flex;gap:8px;flex-wrap:wrap">${!x.is_void?`<button class="btn red voiddisp" data-id="${x.id}" data-date="${date}">↶ Cancel Dispense</button><button class="btn soft showagain" data-id="${x.id}" data-date="${date}">↻ Show Order Again</button>`:''}<button class="btn dark reprintlabel" data-id="${x.id}">▣ Reprint Label</button></div></div>`:''}</div>`
  }).join(''):'<div class="sub">No records.</div>');
  document.querySelectorAll('.voiddisp').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason for cancellation / سبب الإلغاء');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');if(!confirm('Cancel this dispensing record? The order will return to the patient screen and the record will remain as VOIDED.'))return;try{let r=await rpc('medica_void_dispense',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.is_void=true;row.voided_at=r.voided_at;row.voided_by_name=r.voided_by;row.void_reason=reason}showHistoryDay(b.dataset.date);renderLastDispenseSummary(historyFiltered());await loadPatient(selectedMRN);alert('Dispense cancelled. Order returned to the patient screen.')}catch(e){alert('Cancellation failed: '+e.message)}});
  document.querySelectorAll('.showagain').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason to show this order again (example: dose lost in ward) / السبب');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a reason');try{let r=await rpc('medica_show_order_again',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.show_again_at=r.show_again_at;row.show_again_by_name=r.show_again_by;row.show_again_reason=reason}showHistoryDay(b.dataset.date);await loadPatient(selectedMRN);alert('Order is available again on the patient screen. Original dispensing remains in History.')}catch(e){alert('Show Order Again failed: '+e.message)}});
