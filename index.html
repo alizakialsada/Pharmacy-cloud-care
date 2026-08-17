@@ -22,7 +22,7 @@ label{display:block;font-weight:800;font-size:13px;margin-bottom:6px}input,selec
 dialog{border:0;border-radius:20px;padding:0;box-shadow:0 25px 70px rgba(0,0,0,.28);max-width:950px;width:94%}dialog::backdrop{background:rgba(16,24,40,.55)}.modal{padding:20px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.calday,.calhead{padding:9px;text-align:center;border-radius:10px}.calhead{font-weight:900;font-size:12px}.calday{background:#f7f8fa;border:1px solid #edf0f4;min-height:43px}.calday.has{background:#eaf6f1;border-color:#9dcfbc;font-weight:900}.calday.sel{outline:2px solid var(--green)}.calday.empty{visibility:hidden}
 .histitem{padding:10px 0;border-bottom:1px solid var(--line)}.histtime{font-weight:900}.histmeta{color:var(--muted);font-size:12px;margin-top:3px}
-.admin-grid{display:grid;grid-template-columns:360px 1fr;gap:18px}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}.kpi{padding:14px;border-radius:15px;background:#fff;border:1px solid var(--line)}.kpi b{font-size:24px;display:block}
+.admin-grid{display:grid;grid-template-columns:360px 1fr;gap:18px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}.kpi{padding:14px;border-radius:15px;background:#fff;border:1px solid var(--line)}.kpi b{font-size:24px;display:block}
 table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e7ebf0}th{background:#f7f8fa;position:sticky;top:0}.tablebox{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:14px}
 .loginbox{max-width:430px;margin:auto}
 #lockScreen{position:fixed;z-index:9999;inset:0;background:linear-gradient(145deg,#f7f1f2,#f4f3f1);display:flex;align-items:center;justify-content:center}.lockcard{width:min(440px,92vw);background:#fff;border:1px solid #eadadd;border-radius:24px;padding:30px;box-shadow:0 22px 65px rgba(111,34,48,.13)}
@@ -78,12 +78,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .btn.patient-nav{background:#0f5f73;color:#fff;border-color:#0f5f73;box-shadow:0 4px 12px rgba(15,95,115,.16)}
 .btn.med-nav{background:#6f4778;color:#fff;border-color:#6f4778;box-shadow:0 4px 12px rgba(111,71,120,.16)}
 .btn.history-action{background:#86521f;color:#fff;border-color:#86521f}
-.btn.selection-action{background:#eef4f5;color:#24454e;border:1px solid #cbdadd}
+.btn.selection-action{background:#eef4f5;color:#24454e;border:1px solid #cbdadd}.btn.hold-action{background:#fff4cf;color:#6f5200;border:1px solid #e7ca66}.btn.cancel-order-action{background:#fff0f1;color:#9f2437;border:1px solid #efb9c1}
 .role-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
 .role-card{border:1px solid #e2d7d8;border-radius:14px;padding:12px;background:#fff}
 .role-card b{display:block;margin-bottom:4px}.role-card.admin-role{background:#fff5f6;border-color:#efc8cd}.role-card.doctor-role{background:#f5f8ff;border-color:#cbd7f1}.role-card.pharmacist-role{background:#f4fbf9;border-color:#c9e6dc}
 .admin-identity{font-weight:850;color:#7f1d2d;margin-top:4px}
-@media(max-width:800px){.role-strip{grid-template-columns:1fr}}
+@media(max-width:800px){.role-strip{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 
 </style>
 </head>
@@ -147,6 +147,8 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
           <button class="btn history-action" id="historyBtn">◷ Order History</button>
           <button class="btn selection-action" id="selectAll">Select All</button>
           <button class="btn selection-action" id="deselectAll">Deselect All</button>
+          <button class="btn hold-action" id="holdOrderBtn">⏸ Hold / Resume</button>
+          <button class="btn cancel-order-action" id="cancelOrderBtn">✕ Cancel Order</button>
           <button class="btn dark" id="previewBtn">◎ Preview</button>
           <button class="btn primary" id="printBtn">▣ Print Labels</button>
           <button class="btn primary" id="dispenseBtn">✓ Dispense Selected</button>
@@ -183,6 +185,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div>
       <div class="kpis">
         <div class="kpi"><span class="sub">Dispensed rows today</span><b id="kpiToday">0</b></div>
+        <div class="kpi"><span class="sub">Patients dispensed today — LIVE</span><b id="kpiPatientsToday">0</b></div>
         <div class="kpi"><span class="sub">Pharmacists active today</span><b id="kpiStaff">0</b></div>
         <div class="kpi"><span class="sub">Latest activity</span><b id="kpiLatest" style="font-size:15px">—</b></div>
       </div>
@@ -266,7 +269,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <script>
 const $=id=>document.getElementById(id);
 const ACCESS='124620';
-let hospital=null, DATA=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[], patientListCacheByKey={}, directionLibraryLoadedAt=0, adminReturnPage='landing', HISTORY_RENEW_PREFILL=null;
+let hospital=null, DATA=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[], patientListCacheByKey={}, directionLibraryLoadedAt=0, adminReturnPage='landing', HISTORY_RENEW_PREFILL=null, sharedOrderById={};
 
 function configOK(){const c=window.SUPABASE_CONFIG||{};return /^https:\/\/.+\.supabase\.co\/?$/.test(String(c.url||''))&&/^sb_publishable_/.test(String(c.publishableKey||''))}
 async function rpc(name,args={}){
@@ -576,12 +579,12 @@ function removeLocalManualMeds(mrn,ph,drugs){let keys=new Set((drugs||[]).map(no
 function sharedOrderCard(x){
   let drug=x.medication||x.drug||'',kind=String(x.order_kind||'NEW').toUpperCase(),isIV=String(x.label_type||'').toUpperCase()==='IV'||String(x.pharmacy||'').toUpperCase()==='IV'||$('pharmacy').value==='IV',
       rule=ruleFor(drug),form=x.dosage_form||x.form||rule?.dosage_form||detectForm(drug),route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.frequency||x.freq||rule?.frequency||'',days=+x.supply_days||+x.days||30,qty=x.quantity||x.qty||'',unit=x.unit||'',
-      isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'';
+      isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'',status=String(x.order_status||'ACTIVE').toUpperCase(),isHold=status==='HOLD';
   if(isIV){
     let prod=x.iv_production_at||'',exp=x.iv_expiry_at||'',created=x.created_at?fmtDT(x.created_at):localDateKey(new Date()),qty=x.quantity||x.qty||'1';
-    return `<div class="med medica-order ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
+    return `<div class="med medica-order ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" data-order-status="${esc(status)}" style="background:${isHold?'#f0f1f2':(isRenew?'#fff7dc':'#eef8ff')};border-left:5px solid ${isHold?'#7a8288':(isRenew?'#d6a21d':'#2f7a9b')}">
       <div><input class="pick" type="checkbox"></div>
-      <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isRenew?'RENEW — VERIFY':'IV ORDER'}</span><div class="sub" style="margin-top:5px">Solution: ${esc(x.iv_solution||'—')} • ${esc(x.iv_access||'Peripheral')} • ${esc(x.iv_volume||'—')} mL @ ${esc(x.iv_rate||'—')} mL/hr</div></div>
+      <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isHold?'ON HOLD':(isRenew?'RENEW — VERIFY':'IV ORDER')}</span><div class="sub" style="margin-top:5px">Solution: ${esc(x.iv_solution||'—')} • ${esc(x.iv_access||'Peripheral')} • ${esc(x.iv_volume||'—')} mL @ ${esc(x.iv_rate||'—')} mL/hr</div></div>
       <div><b>${esc(x.dose||'—')}</b></div>
       <div><b>${esc(route||'IV Infusion')}</b></div>
       <div><b>${esc(freqEn(freq)||freq||'—')}</b></div>
@@ -597,11 +600,11 @@ function sharedOrderCard(x){
       </div>
     </div>`;
   }
-  return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
+  return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" data-order-status="${esc(status)}" style="background:${isHold?'#f0f1f2':(isRenew?'#fff7dc':'#eef8ff')};border-left:5px solid ${isHold?'#7a8288':(isRenew?'#d6a21d':'#2f7a9b')}">
     <div><input class="pick" type="checkbox"></div>
-    <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isRenew?'RENEW — VERIFY':'NEW ORDER'}</span><div class="sub" style="margin-top:5px">${isRenew?'Renewed from History':'Shared manual order'} • visible to all pharmacy users</div></div>
+    <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isHold?'ON HOLD':(isRenew?'RENEW — VERIFY':'NEW ORDER')}</span><div class="sub" style="margin-top:5px">${isRenew?'Renewed from History':'Shared manual order'} • visible to all pharmacy users</div></div>
     <div><b>${esc(x.dose||'—')}</b></div><div><b>${esc(route||'—')}</b></div><div><b>${esc(freqEn(freq)||freq||'—')}</b></div><div class="supply-visible">${esc(days)} day(s)</div>
-    <div style="text-align:center;font-weight:850">${esc(qty||'—')}</div>
+    <div style="display:flex;justify-content:center"><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:64px;padding:7px;text-align:center;border:1px solid #cfd6dc;border-radius:8px;font-weight:800" title="Quantity only — saved for all users"></div>
     <div>${esc(unit||defaultUnitForForm(form)||'—')}</div><div>${esc(x.created_at?fmtDT(x.created_at):localDateKey(new Date()))}</div><div class="order-doctor">${esc(doctor||'—')}</div><div class="last-dispense">${esc(x.source_date||'—')}</div>
     <div style="grid-column:2/-1;display:flex;gap:16px;align-items:center;padding:7px 10px;border-top:1px solid #dce7eb;background:rgba(255,255,255,.55);font-size:11px">
       <label style="margin:0;display:flex;gap:5px;align-items:center"><input class="refrig" type="checkbox" style="width:auto" ${x.refrigerated?'checked':''}> Refrigerated</label>
@@ -612,10 +615,31 @@ function sharedOrderCard(x){
   </div>`;
 }
 async function getSharedOrders(mrn,ph){
-  try{return await rpc('medica_get_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:String(mrn),p_pharmacy:ph})||[]}catch(e){console.warn('Shared orders',e.message);return[]}
+  try{
+    let rows=await rpc('medica_get_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:String(mrn),p_pharmacy:ph})||[];
+    for(const x of rows){if(x?.id)sharedOrderById[String(x.id)]=x}
+    return rows
+  }catch(e){console.warn('Shared orders',e.message);return[]}
 }
 function bindSharedOrderQty(){
-  document.querySelectorAll('.shared-order').forEach(m=>{let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden');if(!q||!qh)return;q.oninput=()=>{qh.value=q.value}})
+  document.querySelectorAll('.shared-order').forEach(m=>{
+    let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden');if(!q||!qh)return;
+    q.oninput=()=>{qh.value=q.value};
+    q.onchange=async()=>{
+      let id=String(m.dataset.sharedOrderId||''),row=sharedOrderById[id];
+      if(!row)return;
+      let old=String(row.quantity??row.qty??'');
+      row={...row,quantity:q.value};sharedOrderById[id]=row;qh.value=q.value;
+      q.disabled=true;
+      try{
+        await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order:row});
+        q.style.borderColor='#79b79f';q.title='Quantity saved — visible to all users';
+      }catch(e){
+        q.value=old;qh.value=old;sharedOrderById[id]={...row,quantity:old};
+        alert('Unable to save quantity: '+e.message);
+      }finally{q.disabled=false}
+    }
+  })
 }
 async function mergeSharedPatientsIntoSidebar(ph){
   try{
@@ -1009,11 +1033,37 @@ function labelHTML(i){return i.label_type==='IV'?ivLabel(i):regularLabel(i)}
 $('previewBtn').onclick=()=>{let i=selectedItems()[0];if(!i)return alert('Select a medication');$('previewArea').innerHTML=labelHTML(i);$('previewDialog').showModal()};
 $('printBtn').onclick=()=>{let items=selectedItems();if(!items.length)return alert('Select medication(s)');let w=window.open('','_blank','width=650,height=850');if(!w)return alert('Allow pop-ups');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><style>@page{size:9cm 10cm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial}.label-wrap{width:9cm;height:10cm;padding:.22cm;page-break-after:always;overflow:hidden;color:#111}.reg-head{display:grid;grid-template-columns:2.2cm 1fr 2.7cm;gap:5px;align-items:start}.barcode svg{width:2.05cm;height:.72cm}.barcode-num{text-align:center;font-weight:900;font-size:9px}.hosp{text-align:center}.hosp .ar{font-size:12px;font-weight:900}.hosp .en{font-size:8px;font-weight:800}.reg-right{text-align:right;font-size:7.5px;line-height:1.25;font-weight:800}.label-rule{border-top:1px dashed #222;margin:5px 0}.reg-line{display:grid;grid-template-columns:1.25cm 1fr;gap:4px;font-size:9px;line-height:1.25;margin:3px 0}.reg-line .lab{font-weight:900}.reg-name{font-size:13px;font-weight:900}.reg-ar{text-align:right;font-weight:900;font-size:12px}.reg-drug{font-size:11px;font-weight:900}.how-ar{text-align:right;font-size:13px;font-weight:900;line-height:1.5;margin:5px 0}.how-en{font-size:10.5px;font-weight:900;line-height:1.4;margin:5px 0}.expiry{font-size:9px;font-weight:800;margin:5px 0}.flags{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;font-size:8px;margin-top:8px}.boxflag{display:flex;gap:4px;align-items:center}.square{width:13px;height:13px;border:1.5px solid #111;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900}.ivtop{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:5px;font-size:9px}.ivcenter{text-align:center;font-weight:900}.iv-title{text-align:center;font-size:9px;font-weight:900}.iv-patient{display:grid;grid-template-columns:1.2cm 1fr 1.2cm auto;gap:4px;font-size:9px;margin:6px 0}.iv-solution{display:grid;grid-template-columns:1.5cm 1fr;gap:4px;font-size:10px;margin:5px 0}.iv-add{display:grid;grid-template-columns:1fr 1.7cm;gap:8px;font-size:10px}.iv-add .head{font-weight:900;text-align:center}.iv-dose-row{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:12px;font-size:9px}.iv-prod{font-size:8.5px;line-height:1.5;margin-top:18px}.iv-prod>div{display:grid;grid-template-columns:1.6cm 1fr;gap:5px}.print-signoff{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:7px;padding-top:5px;border-top:1px solid #222;font-size:8.5px;font-weight:800}.print-signoff span{font-weight:900}</style></head><body>${items.map(labelHTML).join('')}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);w.document.close()};
 
+function selectedOrderRows(){return [...document.querySelectorAll('#meds .medica-order')].filter(m=>m.querySelector('.pick')?.checked)}
+function selectedSharedOrderRows(){return selectedOrderRows().filter(m=>m.dataset.sharedOrderId)}
+async function setSelectedSharedOrderStatus(status,reason=''){
+  if(!selectedMRN)return alert('Load patient first');
+  let all=selectedOrderRows();if(!all.length)return alert('Select order(s) first');
+  let shared=selectedSharedOrderRows();
+  if(shared.length!==all.length)return alert('Hold/Cancel is available only for orders added or renewed in Pharmacy cloud care. Medica source orders must be changed in Medica.');
+  let ids=shared.map(m=>Number(m.dataset.sharedOrderId)).filter(Number.isFinite);if(!ids.length)return alert('No editable platform order selected');
+  await rpc('medica_set_shared_order_status',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order_ids:ids,p_status:status,p_reason:reason||null});
+  await loadPatient(selectedMRN);
+}
+$('holdOrderBtn').onclick=async()=>{
+  let rows=selectedOrderRows();if(!rows.length)return alert('Select order(s) first');
+  if(rows.some(m=>!m.dataset.sharedOrderId))return alert('Hold/Resume is available only for orders added or renewed in Pharmacy cloud care. Medica source orders must be changed in Medica.');
+  let allHeld=rows.every(m=>String(m.dataset.orderStatus||'ACTIVE').toUpperCase()==='HOLD'),target=allHeld?'ACTIVE':'HOLD';
+  if(target==='HOLD'&&!confirm('Put the selected order(s) on HOLD? They will remain visible but cannot be dispensed until resumed.'))return;
+  try{await setSelectedSharedOrderStatus(target,'');alert(target==='HOLD'?'Selected order(s) placed on HOLD.':'Selected order(s) resumed.')}catch(e){alert('Unable to change order status: '+e.message)}
+};
+$('cancelOrderBtn').onclick=async()=>{
+  let rows=selectedOrderRows();if(!rows.length)return alert('Select order(s) first');
+  if(rows.some(m=>!m.dataset.sharedOrderId))return alert('Cancel Order is available only for orders added or renewed in Pharmacy cloud care. Medica source orders must be cancelled in Medica.');
+  let reason=prompt('Reason for cancelling the order / سبب إلغاء الطلب');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');
+  if(!confirm('Cancel the selected order(s)? They will be removed from Active Medication Orders but kept in the database audit trail.'))return;
+  try{await setSelectedSharedOrderStatus('CANCELLED',reason);alert('Selected order(s) cancelled.')}catch(e){alert('Unable to cancel order: '+e.message)}
+};
+
 function payload(){
  let items=selectedItems();for(const i of items){if(i.label_type==='REGULAR'&&!i.directions_en){let d=smartDirections(i);i.directions_en=d.en;i.directions_ar=d.ar}}
  return{hospital,pharmacy:$('pharmacy').value,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,age:$('age').value,weight:$('weight').value,birth_date:$('dob').value,profile:{hospital,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,age:$('age').value,weight:$('weight').value,birth_date:$('dob').value},items}
 }
-$('dispenseBtn').onclick=async()=>{if(!selectedMRN)return alert('Load patient first');let p=payload();if(!p.items.length)return alert('Select medication(s)');$('dispenseBtn').disabled=true;$('dispenseBtn').textContent='Saving...';try{let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});try{await rpc('medica_close_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_medications:p.items.map(i=>i.medication)})}catch(e){console.warn('Close shared orders',e.message)}removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));removeLocalManualMeds(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));$('patientStatus').className='info';$('patientStatus').textContent=`✓ Saved to Cloud — ${r.saved} medication(s) by ${r.pharmacist}`;alert('✓ Dispense saved successfully to Cloud');await loadPatient(selectedMRN)}catch(e){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');q.push({token:pharmacist.token,payload:p});localStorage.setItem('medica_pending',JSON.stringify(q));$('patientStatus').className='note error';$('patientStatus').textContent='Cloud save failed. Saved to local pending queue: '+e.message;alert('Cloud unavailable. Dispense saved locally as pending sync.')}finally{$('dispenseBtn').disabled=false;$('dispenseBtn').textContent='✓ Dispense Selected'}};
+$('dispenseBtn').onclick=async()=>{if(!selectedMRN)return alert('Load patient first');if(selectedOrderRows().some(m=>String(m.dataset.orderStatus||'').toUpperCase()==='HOLD'))return alert('One or more selected orders are ON HOLD. Resume the order before dispensing.');let p=payload();if(!p.items.length)return alert('Select medication(s)');$('dispenseBtn').disabled=true;$('dispenseBtn').textContent='Saving...';try{let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});try{await rpc('medica_close_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_medications:p.items.map(i=>i.medication)})}catch(e){console.warn('Close shared orders',e.message)}removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));removeLocalManualMeds(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));$('patientStatus').className='info';$('patientStatus').textContent=`✓ Saved to Cloud — ${r.saved} medication(s) by ${r.pharmacist}`;alert('✓ Dispense saved successfully to Cloud');await loadPatient(selectedMRN)}catch(e){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');q.push({token:pharmacist.token,payload:p});localStorage.setItem('medica_pending',JSON.stringify(q));$('patientStatus').className='note error';$('patientStatus').textContent='Cloud save failed. Saved to local pending queue: '+e.message;alert('Cloud unavailable. Dispense saved locally as pending sync.')}finally{$('dispenseBtn').disabled=false;$('dispenseBtn').textContent='✓ Dispense Selected'}};
 async function syncPending(){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');if(!q.length||!pharmacist)return;let left=[];for(const x of q){try{await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:x.payload})}catch{left.push(x)}}localStorage.setItem('medica_pending',JSON.stringify(left))}
 setInterval(syncPending,60000);
 
@@ -1176,7 +1226,7 @@ $('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account'
 async function refreshAdmin(){if(!adminToken)return;try{adminLogs=await rpc('medica_admin_logs',{p_admin_token:adminToken,p_from:$('adminFrom').value,p_to:$('adminTo').value,p_hospital:$('adminHospital').value,p_pharmacy:$('adminPharmacy').value,p_pharmacist_id:$('adminPharmacist').value})||[];renderAdmin()}catch(e){$('adminLive').textContent='● '+e.message}}
 function renderAdmin(){
  $('adminRows').innerHTML=adminLogs.map(x=>`<tr style="${x.is_void?'opacity:.65;text-decoration:line-through':''}"><td>${esc(fmtDT(x.dispensed_at))}${x.is_void?'<br><b style="color:#b42318;text-decoration:none;display:inline-block">VOIDED</b>':''}</td><td>${esc(x.pharmacist_name)}</td><td>${esc(x.hospital)}</td><td>${esc(x.pharmacy)}</td><td>${esc(x.mrn)}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication)}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td></tr>`).join('');
- let today=new Date().toISOString().slice(0,10),tod=adminLogs.filter(x=>String(x.dispensed_at).slice(0,10)===today&&!x.is_void);$('kpiToday').textContent=tod.length;$('kpiStaff').textContent=new Set(tod.map(x=>x.pharmacist_id)).size;let latest=adminLogs.find(x=>!x.is_void);$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
+ let today=new Date().toISOString().slice(0,10),tod=adminLogs.filter(x=>String(x.dispensed_at).slice(0,10)===today&&!x.is_void);$('kpiToday').textContent=tod.length;$('kpiPatientsToday').textContent=new Set(tod.map(x=>String(x.hospital||'')+'|'+String(x.mrn||'')).filter(Boolean)).size;$('kpiStaff').textContent=new Set(tod.map(x=>x.pharmacist_id)).size;let latest=adminLogs.find(x=>!x.is_void);$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
 }
 $('adminRefresh').onclick=refreshAdmin;$('adminAll').onclick=()=>{$('adminFrom').value=$('adminTo').value='';refreshAdmin()};
 ['adminFrom','adminTo','adminHospital','adminPharmacy','adminPharmacist'].forEach(x=>$(x).onchange=refreshAdmin);
