@@ -295,7 +295,14 @@ async function chooseHospital(code){pendingHospital=code;if(!pharmacist){$('logi
 $('loginGo').onclick=async()=>{try{let x=await rpc('medica_pharmacist_login_hospital',{p_username:$('loginUser').value,p_password:$('loginPass').value,p_hospital:pendingHospital});pharmacist=x;sessionStorage.setItem('medica_pharmacist',JSON.stringify(x));$('loginDialog').close();await enterHospital(pendingHospital)}catch(e){$('loginError').textContent=e.message}};
 $('requestAccountOpen').onclick=()=>{$('requestHospital').textContent=pendingHospital==='QCH'?'Qatif Central Hospital (QCH)':'Prince Mohammed Bin Fahd Hospital (PMFH)';$('requestFullName').value='';$('requestUser').value='';$('requestPass').value='';$('requestPass2').value='';$('requestError').textContent='';$('loginDialog').close();$('requestAccountDialog').showModal()};
 $('requestAccountGo').onclick=async()=>{let p1=$('requestPass').value,p2=$('requestPass2').value;if(p1!==p2){$('requestError').textContent='Passwords do not match';return}try{$('requestAccountGo').disabled=true;await rpc('medica_request_account',{p_hospital:pendingHospital,p_username:$('requestUser').value,p_full_name:$('requestFullName').value,p_password:p1});$('requestAccountDialog').close();alert('Account request submitted successfully. Please wait for Admin approval.');$('loginHospital').textContent=pendingHospital==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginDialog').showModal()}catch(e){$('requestError').textContent=e.message}finally{$('requestAccountGo').disabled=false}};
-try{let p=JSON.parse(sessionStorage.getItem('medica_pharmacist')||'null');if(p?.token)pharmacist=p}catch{}
+try{
+  let p=JSON.parse(sessionStorage.getItem('medica_pharmacist')||'null');
+  if(p?.token){
+    let exp=p.expires_at?new Date(p.expires_at).getTime():0;
+    if(exp && exp<=Date.now()){sessionStorage.removeItem('medica_pharmacist');pharmacist=null}
+    else pharmacist=p;
+  }
+}catch{}
 
 
 function qarr(arr,i){return (i==null||i<0)?'':(arr?.[i]||'')}
@@ -409,7 +416,7 @@ function qOrderCard(o,idx,cloudHist=[]){
   </div>`;
 }
 function bindQOrderQty(){
- document.querySelectorAll('.medica-order').forEach(m=>{let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden'),days=m.querySelector('.days'),sv=m.querySelector('.supply-visible'),rs=m.querySelector('.refill-status');if(!q)return;
+ document.querySelectorAll('.medica-order[data-order-index]').forEach(m=>{let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden'),days=m.querySelector('.days'),sv=m.querySelector('.supply-visible'),rs=m.querySelector('.refill-status');if(!q)return;
    const update=()=>{let base=parseFloat(m.dataset.baseQty)||1,total=+m.dataset.totalCycles||1,used=parseFloat(m.dataset.usedQty)||0,planned=parseFloat(m.dataset.plannedQty)||base*total,v=Math.max(0,parseFloat(q.value)||0),supply=Math.max(1,Math.round(30*v/base)),after=Math.max(0,planned-used-v),rem=after/base;qh.value=String(v);days.value=String(supply);sv.textContent=supply+' day(s)';rs.innerHTML='<b>'+niceNum(rem)+' of '+total+' monthly fill(s) remaining after this dispense</b>';
    };q.addEventListener('input',update);update();
  })
@@ -546,6 +553,23 @@ function saveLocalManualMeds(mrn,ph,arr){try{localStorage.setItem(localManualKey
 function addLocalManualOrder(mrn,ph,item){let a=localManualMedsFor(mrn,ph),key=normDrug(item.drug),i=a.findIndex(x=>normDrug(x.drug)===key);if(i>=0)a[i]={...a[i],...item};else a.push(item);saveLocalManualMeds(mrn,ph,a)}
 function addLocalManualMed(mrn,ph,med){addLocalManualOrder(mrn,ph,{drug:med,days:defaultDays()})}
 function removeLocalManualMeds(mrn,ph,drugs){let keys=new Set((drugs||[]).map(normDrug));saveLocalManualMeds(mrn,ph,localManualMedsFor(mrn,ph).filter(x=>!keys.has(normDrug(x.drug))))}
+
+function sharedOrderCard(x){
+  let drug=x.medication||x.drug||'',kind=String(x.order_kind||'NEW').toUpperCase(),rule=ruleFor(drug),form=x.dosage_form||x.form||rule?.dosage_form||detectForm(drug),
+      route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.frequency||x.freq||rule?.frequency||'',days=+x.supply_days||+x.days||30,qty=x.quantity||x.qty||'',unit=x.unit||'',
+      isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'';
+  return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
+    <div><input class="pick" type="checkbox"></div>
+    <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isRenew?'RENEW — VERIFY':'NEW ORDER'}</span><div class="sub" style="margin-top:5px">${isRenew?'Renewed from History':'Shared manual order'} • visible to all pharmacy users</div></div>
+    <div><b>${esc(x.dose||'—')}</b></div><div><b>${esc(route||'—')}</b></div><div><b>${esc(freqEn(freq)||freq||'—')}</b></div><div class="supply-visible">${esc(days)} day(s)</div>
+    <div style="display:flex;justify-content:center"><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:64px;padding:7px;text-align:center;border:1px solid #cfd6dc;border-radius:8px;font-weight:800"></div>
+    <div>${esc(unit||defaultUnitForForm(form)||'—')}</div><div>${esc(x.created_at?fmtDT(x.created_at):localDateKey(new Date()))}</div><div class="order-doctor">${esc(doctor||'—')}</div><div class="last-dispense">${esc(x.source_date||'—')}</div>
+    <div class="hidden-order-inputs"><select class="form"><option selected>${esc(form)}</option></select><input class="dose" value="${esc(x.dose||'')}"><select class="freq"><option selected>${esc(freq)}</option></select><input class="route" value="${esc(route)}"><input class="qty qty-hidden" value="${esc(qty)}"><input class="days" value="${esc(days)}"><input class="expiry"><input class="refrig" type="checkbox"><input class="alert" type="checkbox"><input class="risk" type="checkbox"><textarea class="free">${esc(x.notes||'')}</textarea></div>
+  </div>`;
+}
+async function getSharedOrders(mrn,ph){
+  try{return await rpc('medica_get_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:String(mrn),p_pharmacy:ph})||[]}catch(e){console.warn('Shared orders',e.message);return[]}
+}
 function manualOrderCard(x){
   let drug=x.drug||'',rule=ruleFor(drug),form=x.form||rule?.dosage_form||detectForm(drug),route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.freq||rule?.frequency||'',days=+x.days||defaultDays(),qty=x.qty||'',unit=x.unit||'';
   return `<div class="med medica-order manual-order" data-drug="${esc(drug)}" data-manual-order="1" style="background:#eef8ff;border-left:5px solid #2f7a9b">
@@ -577,22 +601,26 @@ async function loadPatient(mrn){
   if(!sp&&!cloud&&!qprof&&!oldprof){$('patientStatus').className='note error';$('patientStatus').textContent='MRN not found. Use Add Patient.';$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');return}
   let rec=recordMeds(sp),name=cloud?.patient_name||qprof?.name||sp?.[0]||oldprof?.name||'',nid=cloud?.national_id||sp?.[1]||oldprof?.national_id||'',ar=cloud?.patient_name_ar||sp?.[2]||oldprof?.name_ar||'',age=cloud?.age||qprof?.age||sp?.[3]||oldprof?.age||'',weight=cloud?.weight||String(qprof?.weight||'').replace(/\s*KG\s*/i,'')||sp?.[4]||oldprof?.weight||'',dob=cloud?.birth_date||qprof?.birth||sp?.[5]||oldprof?.birth||'',dept=cloud?.department||qprof?.location||rec.dept||'';
   $('pname').value=name;$('nid').value=nid;$('par').value=ar;$('age').value=age;$('weight').value=weight;$('dob').value=dob;$('dept').value=dept;
-  let cloudHist=[];try{cloudHist=await rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})||[]}catch{}
-  let today=localDateKey(new Date()),ph=$('pharmacy').value;
+  let ph=$('pharmacy').value,[cloudHist,sharedOrders]=await Promise.all([
+    rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN}).catch(()=>[]),
+    getSharedOrders(selectedMRN,ph)
+  ]);cloudHist=cloudHist||[];sharedOrders=sharedOrders||[];
+  let today=localDateKey(new Date());
   if(hospital==='QCH'&&(qprof||verifiedCurrentOrdersFor(selectedMRN).length)&&ph!=='OPD2'){
     let orders=qOrdersFor(selectedMRN),active=orders.filter(o=>orderIsCurrent(o)&&o.pharmacy===ph&&refillStats(o,cloudHist).remainingQty>0);
     active=active.filter(o=>{
       let key=normDrug(splitIVDrug(o.drug).additive||o.drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);
       if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp;
     });
-    let renewQueue=renewQueueForPatient(selectedMRN,ph),localManual=localManualMedsFor(selectedMRN,ph),activeHtml=active.map((o,i)=>qOrderCard(o,i,cloudHist)).join(''),renewHtml=renewQueue.map(historyRenewCard).join(''),manualHtml=localManual.map(manualOrderCard).join('');
-    $('meds').innerHTML=(activeHtml||renewHtml||manualHtml)?activeHtml+renewHtml+manualHtml:'<div class="card sub">No current Active Orders for this pharmacy. Check History for stopped/previous orders.</div>';
-    $('activeOrderCount').textContent=String(active.length+renewQueue.length+localManual.length);let bannerProfile=qprof?{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept}:{name,weight,birth:dob,gender:'',age,nationality:'',location:dept};updatePatientBanner(selectedMRN,bannerProfile,orders);bindIVRate();bindQOrderQty();
-    $('patientStatus').className='info';let verifiedCount=active.filter(o=>o.verified_source).length;$('patientStatus').textContent=`${active.length} Active Order(s)${renewQueue.length?' • '+renewQueue.length+' Renewed from History — VERIFY':''} • ${phMeta()[2]}${verifiedCount?' • '+verifiedCount+' verified from Medica screenshot':''}${cloudHist.length?' • Orders dispensed today are hidden':''}`;
+    let sharedKeys=new Set(sharedOrders.map(x=>normDrug(x.medication))),renewQueue=renewQueueForPatient(selectedMRN,ph).filter(x=>!sharedKeys.has(normDrug(x.drug))),localManual=localManualMedsFor(selectedMRN,ph).filter(x=>!sharedKeys.has(normDrug(x.drug))),
+        activeHtml=active.map((o,i)=>qOrderCard(o,i,cloudHist)).join(''),sharedHtml=sharedOrders.map(sharedOrderCard).join(''),renewHtml=renewQueue.map(historyRenewCard).join(''),manualHtml=localManual.map(manualOrderCard).join('');
+    $('meds').innerHTML=(activeHtml||sharedHtml||renewHtml||manualHtml)?activeHtml+sharedHtml+renewHtml+manualHtml:'<div class="card sub">No current Active Orders for this pharmacy. Check History for stopped/previous orders.</div>';
+    $('activeOrderCount').textContent=String(active.length+sharedOrders.length+renewQueue.length+localManual.length);let bannerProfile=qprof?{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept}:{name,weight,birth:dob,gender:'',age,nationality:'',location:dept};updatePatientBanner(selectedMRN,bannerProfile,orders);bindIVRate();bindQOrderQty();
+    $('patientStatus').className='info';let verifiedCount=active.filter(o=>o.verified_source).length;$('patientStatus').textContent=`${active.length} Active Order(s)${sharedOrders.length?' • '+sharedOrders.length+' Shared order(s)':''}${renewQueue.length?' • '+renewQueue.length+' local Renew — VERIFY':''} • ${phMeta()[2]}${verifiedCount?' • '+verifiedCount+' verified from Medica screenshot':''}${cloudHist.length?' • Orders dispensed today are hidden':''}`;
   }else{
     let localManual=localManualMedsFor(selectedMRN,ph),medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:ph});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
     medNames=medNames.filter(drug=>{let key=normDrug(splitIVDrug(drug).additive||drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp});
-    renderMeds(medNames,sp);if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+localManual.length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
+    renderMeds(medNames,sp);if(sharedOrders.length){$('meds').insertAdjacentHTML('beforeend',sharedOrders.map(sharedOrderCard).join(''))}if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+sharedOrders.length+localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
   }
   renderPatientList();
 }
@@ -835,22 +863,52 @@ function selectedItems(){
 $('selectAll').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x.checked=true);$('deselectAll').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x.checked=false);
 
 $('addPatient').onclick=()=>{$('newMrn').value=$('mrn').value;$('newPname').value=$('pname').value;$('newPar').value=$('par').value;$('newNid').value=$('nid').value;$('newDept').value=$('dept').value;$('newAge').value=$('age').value;$('newWeight').value=$('weight').value;$('newDob').value=$('dob').value;$('patientDialog').showModal()};
-$('savePatient').onclick=async()=>{try{let p={hospital,mrn:$('newMrn').value.trim(),patient_name:$('newPname').value.trim(),patient_name_ar:$('newPar').value.trim(),national_id:$('newNid').value.trim(),department:$('newDept').value.trim(),age:$('newAge').value.trim(),weight:$('newWeight').value.trim(),birth_date:$('newDob').value.trim()};await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});$('patientDialog').close();$('mrn').value=p.mrn;await loadPatient(p.mrn)}catch(e){alert(e.message)}}
+$('savePatient').onclick=async()=>{try{let p={hospital,mrn:$('newMrn').value.trim(),patient_name:$('newPname').value.trim(),patient_name_ar:$('newPar').value.trim(),national_id:$('newNid').value.trim(),department:$('newDept').value.trim(),age:$('newAge').value.trim(),weight:$('newWeight').value.trim(),birth_date:$('newDob').value.trim()};if(!p.mrn)return alert('MRN is required');await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});$('patientDialog').close();$('mrn').value=p.mrn;patientListCacheByKey={};await loadPatient(p.mrn)}catch(e){if(/Invalid or expired pharmacist session/i.test(e.message)){sessionStorage.removeItem('medica_pharmacist');alert('Your pharmacist session expired. Please sign in again once, then save the patient. The entered patient data is still on this form.');}else alert(e.message)}}
+let ORDER_DIALOG_MODE='NEW',ORDER_DIALOG_SOURCE=null;
+function setOrderDialogTitle(){
+  const h=$('medDialog').querySelector('h2'),b=$('saveMed');
+  if(ORDER_DIALOG_MODE==='RENEW'){h.textContent='Renew Order';b.textContent='Add Renew Order'}
+  else{h.textContent='Add Order';b.textContent='Add Order'}
+}
 function prepareAddOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
-  $('newMed').value='';$('newMedDose').value='';$('newMedQty').value='';$('newMedUnit').value='';$('newMedDays').value=String(defaultDays()===1?1:30);
+  ORDER_DIALOG_MODE='NEW';ORDER_DIALOG_SOURCE=null;setOrderDialogTitle();
+  $('newMed').disabled=false;$('newMed').value='';$('newMedDose').value='';$('newMedQty').value='';$('newMedUnit').value='';$('newMedDays').value=String(defaultDays()===1?1:30);
   $('newMedForm').value='TABLET';$('newMedRoute').value='PO';$('newMedFreq').innerHTML=freqOptions('OD');
   $('medDialog').showModal();
 }
+function prepareRenewOrderDialog(x){
+  if(!x||!x.medication)return;
+  ORDER_DIALOG_MODE='RENEW';ORDER_DIALOG_SOURCE=x;setOrderDialogTitle();
+  let med=x.medication,rule=ruleFor(med),form=rule?.dosage_form||detectForm(med),route=x.route||rule?.route||defaultRouteForDrug(med,form),freq=x.frequency||rule?.frequency||'OD';
+  $('newMed').disabled=true;$('newMed').value=med;
+  if([...$('newMedForm').options].some(o=>o.value===form))$('newMedForm').value=form;else $('newMedForm').value='OTHER';
+  $('newMedDose').value=x.dose||'';$('newMedRoute').value=route||'';$('newMedFreq').innerHTML=freqOptions(freq);$('newMedDays').value='30';
+  $('newMedQty').value=x.quantity||'';$('newMedUnit').value=x.unit||rule?.unit||defaultUnitForForm(form)||'';
+  $('historyDialog')?.close();$('medDialog').showModal();
+}
 function prefillAddOrderFromMedication(){
+  if(ORDER_DIALOG_MODE==='RENEW')return;
   let med=$('newMed').value.trim();if(!med)return;let rule=ruleFor(med),form=rule?.dosage_form||detectForm(med),route=rule?.route||defaultRouteForDrug(med,form),freq=rule?.frequency||'OD';
-  if([...$('newMedForm').options].some(o=>o.value===form))$('newMedForm').value=form;$('newMedRoute').value=route;$('newMedFreq').innerHTML=freqOptions(freq);$('newMedUnit').value=rule?.unit||'';
+  if([...$('newMedForm').options].some(o=>o.value===form))$('newMedForm').value=form;$('newMedRoute').value=route;$('newMedFreq').innerHTML=freqOptions(freq);$('newMedUnit').value=rule?.unit||defaultUnitForForm(form)||'';
 }
 $('addMedication').onclick=prepareAddOrderDialog;
 $('newMed').addEventListener('change',prefillAddOrderFromMedication);
 $('newMed').addEventListener('blur',prefillAddOrderFromMedication);
-$('newMedForm').addEventListener('change',()=>{let med=$('newMed').value.trim();if(!$('newMedRoute').value||['PO','SC','IV',''].includes($('newMedRoute').value))$('newMedRoute').value=defaultRouteForDrug(med,$('newMedForm').value)});
-$('saveMed').onclick=async()=>{let med=$('newMed').value.trim(),days=+$('newMedDays').value||30;if(!med)return alert('Choose a medication');let item={drug:med,form:$('newMedForm').value,dose:$('newMedDose').value.trim(),route:$('newMedRoute').value.trim(),freq:$('newMedFreq').value,days,qty:$('newMedQty').value.trim(),unit:$('newMedUnit').value.trim(),order_date:localDateKey(new Date()),doctor:pharmacist?.full_name||'',free:''};addLocalManualOrder(selectedMRN,$('pharmacy').value,item);$('medDialog').close();await loadPatient(selectedMRN)}
+$('newMedForm').addEventListener('change',()=>{let med=$('newMed').value.trim();if(!$('newMedRoute').value||['PO','SC','IV',''].includes($('newMedRoute').value))$('newMedRoute').value=defaultRouteForDrug(med,$('newMedForm').value);if(!$('newMedUnit').value)$('newMedUnit').value=defaultUnitForForm($('newMedForm').value)||''});
+$('saveMed').onclick=async()=>{
+  let med=$('newMed').value.trim(),days=+$('newMedDays').value||30;if(!med)return alert('Choose a medication');
+  let item={medication:med,dosage_form:$('newMedForm').value,dose:$('newMedDose').value.trim(),route:$('newMedRoute').value.trim(),frequency:$('newMedFreq').value,supply_days:days,quantity:$('newMedQty').value.trim(),unit:$('newMedUnit').value.trim(),order_kind:ORDER_DIALOG_MODE,source_date:ORDER_DIALOG_SOURCE?.date||ORDER_DIALOG_SOURCE?.last_dispense||'',source_doctor:ORDER_DIALOG_SOURCE?.prescriber||ORDER_DIALOG_SOURCE?.ordered_by||'',notes:ORDER_DIALOG_SOURCE?.prescription||''};
+  try{
+    $('saveMed').disabled=true;$('saveMed').textContent='Saving...';
+    await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order:item});
+    removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,[med]);removeLocalManualMeds(selectedMRN,$('pharmacy').value,[med]);
+    $('medDialog').close();$('newMed').disabled=false;await loadPatient(selectedMRN);
+  }catch(e){
+    if(/Invalid or expired pharmacist session/i.test(e.message)){sessionStorage.removeItem('medica_pharmacist');alert('Your pharmacist session expired. Sign in again, then add the order. The order was NOT saved so other users will not see an unsynchronized order.');}
+    else alert('Unable to save order: '+e.message);
+  }finally{$('saveMed').disabled=false;setOrderDialogTitle()}
+}
 
 function code39SVG(text){
  const pat={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw','5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn','*':'nwnnwnwnn'};let s='*'+String(text).replace(/\D/g,'')+'*',x=2,parts=[];
@@ -881,7 +939,7 @@ function payload(){
  let items=selectedItems();for(const i of items){if(i.label_type==='REGULAR'&&!i.directions_en){let d=smartDirections(i);i.directions_en=d.en;i.directions_ar=d.ar}}
  return{hospital,pharmacy:$('pharmacy').value,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,age:$('age').value,weight:$('weight').value,birth_date:$('dob').value,profile:{hospital,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,age:$('age').value,weight:$('weight').value,birth_date:$('dob').value},items}
 }
-$('dispenseBtn').onclick=async()=>{if(!selectedMRN)return alert('Load patient first');let p=payload();if(!p.items.length)return alert('Select medication(s)');$('dispenseBtn').disabled=true;$('dispenseBtn').textContent='Saving...';try{let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));removeLocalManualMeds(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));$('patientStatus').className='info';$('patientStatus').textContent=`✓ Saved to Cloud — ${r.saved} medication(s) by ${r.pharmacist}`;alert('✓ Dispense saved successfully to Cloud');await loadPatient(selectedMRN)}catch(e){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');q.push({token:pharmacist.token,payload:p});localStorage.setItem('medica_pending',JSON.stringify(q));$('patientStatus').className='note error';$('patientStatus').textContent='Cloud save failed. Saved to local pending queue: '+e.message;alert('Cloud unavailable. Dispense saved locally as pending sync.')}finally{$('dispenseBtn').disabled=false;$('dispenseBtn').textContent='✓ Dispense Selected'}};
+$('dispenseBtn').onclick=async()=>{if(!selectedMRN)return alert('Load patient first');let p=payload();if(!p.items.length)return alert('Select medication(s)');$('dispenseBtn').disabled=true;$('dispenseBtn').textContent='Saving...';try{let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});try{await rpc('medica_close_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_medications:p.items.map(i=>i.medication)})}catch(e){console.warn('Close shared orders',e.message)}removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));removeLocalManualMeds(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));$('patientStatus').className='info';$('patientStatus').textContent=`✓ Saved to Cloud — ${r.saved} medication(s) by ${r.pharmacist}`;alert('✓ Dispense saved successfully to Cloud');await loadPatient(selectedMRN)}catch(e){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');q.push({token:pharmacist.token,payload:p});localStorage.setItem('medica_pending',JSON.stringify(q));$('patientStatus').className='note error';$('patientStatus').textContent='Cloud save failed. Saved to local pending queue: '+e.message;alert('Cloud unavailable. Dispense saved locally as pending sync.')}finally{$('dispenseBtn').disabled=false;$('dispenseBtn').textContent='✓ Dispense Selected'}};
 async function syncPending(){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');if(!q.length||!pharmacist)return;let left=[];for(const x of q){try{await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:x.payload})}catch{left.push(x)}}localStorage.setItem('medica_pending',JSON.stringify(left))}
 setInterval(syncPending,60000);
 
@@ -960,17 +1018,22 @@ async function renewSelectedHistory(){
  let idx=[...new Set([...document.querySelectorAll('.renewpick:checked')].map(x=>Number(x.dataset.hidx)).filter(Number.isFinite))],rows=idx.map(i=>currentHistory[i]).filter(historyRowCanRenew);
  if(!rows.length)return alert('Select medication(s) to renew.');
  const ans=prompt(`Renew ${rows.length} selected medication(s) for how many days? / مدة التجديد كم يوم؟`,'30');if(ans===null)return;const renewDays=Math.max(1,parseInt(ans,10)||30);
+ if(!confirm(`Add ${rows.length} renewal order(s) for ${renewDays} day(s)? You can review quantity and directions on the patient screen before dispensing.`))return;
  try{
    for(const x of rows){
-     const days=+(x.duration_days||x.supply_days||30)||30;
-     const item={mrn:selectedMRN,hospital,pharmacy:$('pharmacy').value,drug:x.medication,dose:x.dose||'',route:x.route||'',freq:x.frequency||'',qty:x.quantity||'',unit:x.unit||'',days,doctor:x.prescriber||x.ordered_by||'',order_date:x.order_date||'',order_time:x.order_time||'',last_dispense:x.date||'',free:x.prescription||[x.medication,x.dose,x.route,x.prescriber?'Doctor: '+x.prescriber:''].filter(Boolean).join(' • ')};
-     upsertHistoryRenewQueue(item);
+     let med=x.medication,rule=ruleFor(med),form=rule?.dosage_form||detectForm(med),route=x.route||rule?.route||defaultRouteForDrug(med,form),freq=x.frequency||rule?.frequency||'';
+     let order={medication:med,dosage_form:form,dose:x.dose||'',route,frequency:freq,supply_days:renewDays,quantity:x.quantity||'',unit:x.unit||rule?.unit||defaultUnitForForm(form)||'',order_kind:'RENEW',source_date:x.date||'',source_doctor:x.prescriber||x.ordered_by||'',notes:x.prescription||''};
+     await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order:order});
+     removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,[med]);removeLocalManualMeds(selectedMRN,$('pharmacy').value,[med]);
    }
-   $('historyDialog')?.close();
-   ensureRenewQueueVisibleOnPatient();
-   if($('patientStatus')){$('patientStatus').className='note';$('patientStatus').textContent=`↻ ${rows.length} medication(s) renewed from History and added as RENEW — VERIFY. Review all fields. Cloud session is checked only when dispensing.`;}
- }catch(e){alert('Unable to renew selected medications: '+e.message)}
+   $('historyDialog')?.close();await loadPatient(selectedMRN);
+   $('patientStatus').className='note';$('patientStatus').textContent=`↻ ${rows.length} medication(s) renewed for ${renewDays} day(s). Review dose, route, frequency and quantity before dispensing.`;
+ }catch(e){
+   if(/Invalid or expired pharmacist session/i.test(e.message)){sessionStorage.removeItem('medica_pharmacist');alert('Your pharmacist session expired. Sign in again before renewing. No unsynchronized local renewal was created.');}
+   else alert('Unable to renew selected medications: '+e.message)
+ }
 }
+
 function renderAllHistoryRecords(rows){
  let vals=[...(rows||[])].sort((a,b)=>historyRowDateValue(b)-historyRowDateValue(a));
  $('allHistoryRecords').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><b>All medication history — selected date range</b><div class="sub">Every dispensing/order-history record in the selected range. Select multiple historical medications and renew them together.</div></div><div style="display:flex;gap:8px;align-items:center"><span class="badge">'+vals.length+' record(s)</span><button class="btn primary renewSelectedBtn" disabled>↻ Renew Selected (<span class="renewSelectedCount">0</span>)</button></div></div>'+ 
@@ -1013,18 +1076,9 @@ function showHistoryDay(date){
 
 async function renewHistoricalMedication(x){
  if(!x||!x.medication)return;
- const ans=prompt('Renew for how many days? / مدة التجديد كم يوم؟','30');if(ans===null)return;const days=Math.max(1,parseInt(ans,10)||30);
- try{
-   HISTORY_RENEW_PREFILL={mrn:selectedMRN,hospital,pharmacy:$('pharmacy').value,drug:x.medication,dose:x.dose||'',route:x.route||'',freq:x.frequency||'',qty:x.quantity||'',unit:x.unit||'',days,doctor:x.prescriber||x.ordered_by||'',order_date:x.order_date||'',order_time:x.order_time||'',last_dispense:x.date||'',free:x.prescription||[x.medication,x.dose,x.route,x.prescriber?'Doctor: '+x.prescriber:''].filter(Boolean).join(' • ')};
-   sessionStorage.setItem('medica_history_renew_prefill',JSON.stringify(HISTORY_RENEW_PREFILL));
-   upsertHistoryRenewQueue(HISTORY_RENEW_PREFILL);
-   $('historyDialog')?.close();
-   ensureRenewQueueVisibleOnPatient();
-   const card=[...document.querySelectorAll('#meds .med')].find(m=>m.dataset.renewHistory==='1'&&normDrug(m.dataset.drug)===normDrug(x.medication))||[...document.querySelectorAll('#meds .med')].find(m=>normDrug(m.dataset.drug)===normDrug(x.medication));
-   if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.style.outline='3px solid #d6a21d';card.style.outlineOffset='2px'}
-   if($('patientStatus')){$('patientStatus').className='note';$('patientStatus').textContent='↻ Medication renewed from History and added as RENEW — VERIFY. Review all fields. Cloud session is checked only when dispensing.';}
- }catch(e){alert('Unable to renew historical medication: '+e.message)}
+ prepareRenewOrderDialog(x);
 }
+
 $('calPrev').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};$('calNext').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};
 
 function openAdmin(from){adminReturnPage=from||'landing';$('adminPass').value='';$('adminLoginError').textContent='';$('adminLoginDialog').showModal()}
