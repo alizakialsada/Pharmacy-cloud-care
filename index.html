@@ -241,6 +241,25 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN</label><input id="newMrn"></div><div><label>Patient Name</label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"></div><div><label>National ID</label><input id="newNid"></div><div><label>Department</label><input id="newDept"></div><div><label>Age</label><input id="newAge"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="medDialog"><div class="modal"><h2>Add Order</h2><div class="sub" style="margin-bottom:12px">Enter the order details before adding it to the patient screen.</div><div class="grid2"><div><label>Medication</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist></div><div><label>Dosage Form</label><select id="newMedForm"><option>TABLET</option><option>CAPSULE</option><option>LIQUID</option><option>DROPS</option><option>INHALER</option><option>SPRAY</option><option>STRIP</option><option>SACHET</option><option>SUPPOSITORY</option><option>TOPICAL</option><option>INJECTION</option><option>SYRINGE</option><option>PEN</option><option>OTHER</option></select></div><div><label>Dose</label><input id="newMedDose" placeholder="Example: 10 MG"></div><div><label>Route</label><input id="newMedRoute" list="routeList" placeholder="PO / SC / IV ..."></div><div><label>Frequency</label><select id="newMedFreq"></select></div><div><label>Renew / Order Duration</label><select id="newMedDays"><option value="1">1 day</option><option value="7">7 days</option><option value="14">14 days</option><option value="30" selected>30 days</option><option value="60">60 days</option><option value="90">90 days</option><option value="180">180 days</option></select></div><div><label>Qty</label><input id="newMedQty" type="number" min="0" step="1" placeholder="Dispensing quantity"></div><div><label>Unit</label><input id="newMedUnit" placeholder="TAB / CAP / PEN / mL ..."></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="saveMed">Add Order</button><button class="btn soft" onclick="medDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="ivOrderDialog"><div class="modal"><h2>Add IV Order</h2><div class="sub" style="margin-bottom:12px">IV Drug Pharmacy — medication/additive and solution are entered separately.</div>
+<div class="grid2">
+<div><label>Medication / Additive</label><input id="ivNewMed" list="drugList" placeholder="Example: Ceftriaxone 1 g vial"></div>
+<div><label>Solution / Diluent</label><select id="ivNewSolution"></select></div>
+<div><label>Additive Dose</label><input id="ivNewDose" placeholder="Example: 1 G"></div>
+<div><label>IV Access</label><select id="ivNewAccess"><option>Peripheral</option><option>Central</option></select></div>
+<div><label>Volume (mL)</label><input id="ivNewVolume" type="number" min="0" step="0.1" placeholder="Example: 100"></div>
+<div><label>Infusion Time (minutes)</label><input id="ivNewInfusion" type="number" min="1" step="1" placeholder="Example: 30"></div>
+<div><label>Rate (mL/hour)</label><input id="ivNewRate" type="number" min="0" step="0.1" placeholder="Calculated automatically"></div>
+<div><label>Frequency</label><select id="ivNewFreq"></select></div>
+<div><label>Duration</label><select id="ivNewDays"><option value="1" selected>1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="5">5 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div>
+<div><label>Route</label><input id="ivNewRoute" value="IV Infusion"></div>
+<div><label>Production Date/Time</label><input id="ivNewProd" type="datetime-local"></div>
+<div><label>Expiry Date/Time</label><input id="ivNewExpiry" type="datetime-local"></div>
+<div><label>Ordered By</label><input id="ivNewOrderedBy" placeholder="Ordering physician"></div>
+<div><label>Qty / Number of preparations</label><input id="ivNewQty" type="number" min="1" step="1" value="1"></div>
+</div>
+<div class="note" style="margin-top:12px">Rate = Volume ÷ infusion time. You can override the calculated rate if clinically required.</div>
+<div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="saveIVOrder">Add IV Order</button><button class="btn soft" onclick="ivOrderDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="previewDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><h2>Label Preview</h2><button class="btn soft" onclick="previewDialog.close()">✕</button></div><div id="previewArea"></div></div></dialog>
 <dialog id="historyDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><div><h2 style="margin:0">Patient History</h2><div class="sub" id="historyPatient"></div><div class="sub" id="historyPharmacy"></div></div><button class="btn soft" onclick="historyDialog.close()">✕</button></div><div id="historyQuick" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px"><button class="btn soft historyQuickBtn" data-range="all">All History</button><button class="btn soft historyQuickBtn" data-range="today">Today</button><button class="btn soft historyQuickBtn" data-range="yesterday">Yesterday</button><button class="btn soft historyQuickBtn" data-range="30">30 Days</button><button class="btn soft historyQuickBtn" data-range="60">60 Days</button><button class="btn soft historyQuickBtn" data-range="90">90 Days</button><button class="btn soft historyQuickBtn" data-range="custom">Custom</button></div><div class="grid" style="margin-top:12px"><div><label>From Date</label><input type="date" id="historyFrom"></div><div><label>To Date</label><input type="date" id="historyTo"></div><div style="display:flex;align-items:end"><button class="btn dark" id="historyApply">Apply Date Range</button></div></div><div id="lastDispenseSummary" class="card" style="margin-top:12px"></div><div id="allHistoryRecords" class="card" style="margin-top:12px"></div><div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0"><button class="btn soft" id="calPrev">←</button><b id="calTitle"></b><button class="btn soft" id="calNext">→</button></div><div class="calendar" id="calendar"></div><div id="dayHistory" style="margin-top:16px"></div></div></dialog>
 
@@ -555,9 +574,30 @@ function addLocalManualMed(mrn,ph,med){addLocalManualOrder(mrn,ph,{drug:med,days
 function removeLocalManualMeds(mrn,ph,drugs){let keys=new Set((drugs||[]).map(normDrug));saveLocalManualMeds(mrn,ph,localManualMedsFor(mrn,ph).filter(x=>!keys.has(normDrug(x.drug))))}
 
 function sharedOrderCard(x){
-  let drug=x.medication||x.drug||'',kind=String(x.order_kind||'NEW').toUpperCase(),rule=ruleFor(drug),form=x.dosage_form||x.form||rule?.dosage_form||detectForm(drug),
-      route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.frequency||x.freq||rule?.frequency||'',days=+x.supply_days||+x.days||30,qty=x.quantity||x.qty||'',unit=x.unit||'',
+  let drug=x.medication||x.drug||'',kind=String(x.order_kind||'NEW').toUpperCase(),isIV=String(x.label_type||'').toUpperCase()==='IV'||String(x.pharmacy||'').toUpperCase()==='IV'||$('pharmacy').value==='IV',
+      rule=ruleFor(drug),form=x.dosage_form||x.form||rule?.dosage_form||detectForm(drug),route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.frequency||x.freq||rule?.frequency||'',days=+x.supply_days||+x.days||30,qty=x.quantity||x.qty||'',unit=x.unit||'',
       isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'';
+  if(isIV){
+    let now=new Date(),tom=new Date(now.getTime()+24*3600e3),prod=x.iv_production_at||'',exp=x.iv_expiry_at||'';
+    return `<div class="med ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
+      <div class="medhead"><input class="pick" type="checkbox"><div><div class="medname">${esc(drug)}</div><span class="status-pill">${isRenew?'RENEW — VERIFY':'IV ORDER'}</span><div class="sub">Shared IV order • visible to all pharmacy users</div></div><span class="badge">IV Label</span></div>
+      <div class="ivgrid">
+        <div><div class="fieldcap">Solution / المحلول</div><select class="ivsolution">${ivSolutionOptions(x.iv_solution||'')}</select></div>
+        <div><div class="fieldcap">Additive Dose / جرعة المضاف</div><input class="dose" value="${esc(x.dose||'')}"></div>
+        <div><div class="fieldcap">IV Access</div><select class="ivaccess"><option ${x.iv_access==='Peripheral'?'selected':''}>Peripheral</option><option ${x.iv_access==='Central'?'selected':''}>Central</option></select></div>
+        <div><div class="fieldcap">Volume (mL)</div><input class="ivvolume" type="number" step="0.1" value="${esc(x.iv_volume||'')}"></div>
+        <div><div class="fieldcap">Infusion Time (min)</div><input class="ivinfusion" type="number" step="1" value="${esc(x.iv_infusion_time||'')}"></div>
+        <div><div class="fieldcap">Rate (mL/hr)</div><input class="ivrate" type="number" step="0.1" value="${esc(x.iv_rate||'')}"></div>
+        <div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(freq||'OD')}</select></div>
+        <div><div class="fieldcap">Duration (days)</div><input class="days" type="number" min="1" value="${esc(days||1)}"></div>
+        <div><div class="fieldcap">Route</div><input class="route" value="${esc(route||'IV Infusion')}"></div>
+        <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${esc(prod)}"></div>
+        <div><div class="fieldcap">Expiry Date/Time</div><input class="ivexpiry" type="datetime-local" value="${esc(exp)}"></div>
+        <div><div class="fieldcap">Ordered By</div><input class="orderedby" value="${esc(x.iv_ordered_by||doctor||'')}"></div>
+      </div>
+      <textarea class="free hidden">${esc(x.notes||'')}</textarea>
+    </div>`;
+  }
   return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
     <div><input class="pick" type="checkbox"></div>
     <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isRenew?'RENEW — VERIFY':'NEW ORDER'}</span><div class="sub" style="margin-top:5px">${isRenew?'Renewed from History':'Shared manual order'} • visible to all pharmacy users</div></div>
@@ -897,7 +937,27 @@ function prefillAddOrderFromMedication(){
   let med=$('newMed').value.trim();if(!med)return;let rule=ruleFor(med),form=rule?.dosage_form||detectForm(med),route=rule?.route||defaultRouteForDrug(med,form),freq=rule?.frequency||'OD';
   if([...$('newMedForm').options].some(o=>o.value===form))$('newMedForm').value=form;$('newMedRoute').value=route;$('newMedFreq').innerHTML=freqOptions(freq);$('newMedUnit').value=rule?.unit||defaultUnitForForm(form)||'';
 }
-$('addMedication').onclick=prepareAddOrderDialog;
+function ivDialogDateValue(d){let x=d instanceof Date?d:new Date(d||Date.now());let pad=n=>String(n).padStart(2,'0');return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}T${pad(x.getHours())}:${pad(x.getMinutes())}`}
+function populateIVSolutionSelect(selected=''){
+  let vals=[],seen=new Set();const add=v=>{v=String(v||'').trim();if(!v||seen.has(v.toUpperCase()))return;seen.add(v.toUpperCase());vals.push(v)};
+  add(selected);['SODIUM CHLORIDE 0.9%','DEXTROSE 5%','DEXTROSE 10%','RINGER LACTATE','STERILE WATER FOR INJECTION'].forEach(add);
+  try{(DATA?.drugs||[]).forEach(x=>{let q=splitIVDrug(x);if(q.solution)add(q.solution);else if(looksLikeIVSolution(x))add(x)})}catch{}
+  $('ivNewSolution').innerHTML='<option value="">— Select solution —</option>'+vals.map(v=>`<option ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
+}
+function recalcIVDialogRate(){let v=parseFloat($('ivNewVolume').value),m=parseFloat($('ivNewInfusion').value);if(Number.isFinite(v)&&v>=0&&Number.isFinite(m)&&m>0)$('ivNewRate').value=(v/(m/60)).toFixed(1).replace(/\.0$/,'')}
+function prepareIVOrderDialog(){
+  if(!selectedMRN)return alert('Load or add a patient first');
+  $('ivNewMed').value='';$('ivNewDose').value='';populateIVSolutionSelect('');$('ivNewAccess').value='Peripheral';$('ivNewVolume').value='';$('ivNewInfusion').value='';$('ivNewRate').value='';$('ivNewFreq').innerHTML=freqOptions('OD');$('ivNewDays').value='1';$('ivNewRoute').value='IV Infusion';$('ivNewOrderedBy').value='';$('ivNewQty').value='1';
+  let now=new Date(),tom=new Date(now.getTime()+24*3600e3);$('ivNewProd').value=ivDialogDateValue(now);$('ivNewExpiry').value=ivDialogDateValue(tom);$('ivOrderDialog').showModal();
+}
+$('ivNewVolume').addEventListener('input',recalcIVDialogRate);$('ivNewInfusion').addEventListener('input',recalcIVDialogRate);
+$('saveIVOrder').onclick=async()=>{
+  let med=$('ivNewMed').value.trim();if(!med)return alert('Choose the IV medication / additive');
+  let item={medication:med,dosage_form:'INJECTION',dose:$('ivNewDose').value.trim(),route:$('ivNewRoute').value.trim()||'IV Infusion',frequency:$('ivNewFreq').value,supply_days:+$('ivNewDays').value||1,quantity:$('ivNewQty').value.trim()||'1',unit:'dose',order_kind:'NEW',source_date:'',source_doctor:$('ivNewOrderedBy').value.trim(),notes:'',label_type:'IV',iv_solution:$('ivNewSolution').value,iv_access:$('ivNewAccess').value,iv_volume:$('ivNewVolume').value.trim(),iv_infusion_time:$('ivNewInfusion').value.trim(),iv_rate:$('ivNewRate').value.trim(),iv_production_at:$('ivNewProd').value,iv_expiry_at:$('ivNewExpiry').value,iv_ordered_by:$('ivNewOrderedBy').value.trim()};
+  try{$('saveIVOrder').disabled=true;$('saveIVOrder').textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});$('ivOrderDialog').close();await loadPatient(selectedMRN)}catch(e){alert('Unable to save IV order: '+e.message)}finally{$('saveIVOrder').disabled=false;$('saveIVOrder').textContent='Add IV Order'}
+};
+function openAddOrderForCurrentPharmacy(){if($('pharmacy').value==='IV')prepareIVOrderDialog();else prepareAddOrderDialog()}
+$('addMedication').onclick=openAddOrderForCurrentPharmacy;
 $('newMed').addEventListener('change',prefillAddOrderFromMedication);
 $('newMed').addEventListener('blur',prefillAddOrderFromMedication);
 $('newMedForm').addEventListener('change',()=>{let med=$('newMed').value.trim();if(!$('newMedRoute').value||['PO','SC','IV',''].includes($('newMedRoute').value))$('newMedRoute').value=defaultRouteForDrug(med,$('newMedForm').value);if(!$('newMedUnit').value)$('newMedUnit').value=defaultUnitForForm($('newMedForm').value)||''});
