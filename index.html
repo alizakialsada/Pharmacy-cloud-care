@@ -247,7 +247,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <script>
 const $=id=>document.getElementById(id);
 const ACCESS='124620';
-let hospital=null, DATA=null, QORD=null, QOLD=null, QOLD_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[];
+let hospital=null, DATA=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[];
 
 function configOK(){const c=window.SUPABASE_CONFIG||{};return /^https:\/\/.+\.supabase\.co\/?$/.test(String(c.url||''))&&/^sb_publishable_/.test(String(c.publishableKey||''))}
 async function rpc(name,args={}){
@@ -304,9 +304,10 @@ async function ensureQCHOrders(){
   await loadScript('qch-orders-data.js');
   return window.QCH_ORDERS||null;
 }
-async function ensureQCHOldShard(mrn){let p=String(mrn||'').charAt(0);if(!/\d/.test(p))p='0';if(QOLD_PREFIX===p&&QOLD)return QOLD;window.QCH_OLD_ROWS=[];let oldTag=document.querySelector('script[data-old-history]');if(oldTag)oldTag.remove();try{await new Promise((res,rej)=>{let s=document.createElement('script');s.src='qch-old-history-'+p+'.js?v=20260817';s.dataset.oldHistory='1';s.onload=res;s.onerror=()=>rej(new Error('Historical QCH shard unavailable'));document.head.appendChild(s)});QOLD=window.QCH_OLD_ROWS||[];QOLD_PREFIX=p;return QOLD}catch(e){console.warn(e.message);QOLD=[];QOLD_PREFIX=p;return QOLD}}
+async function ensureQCHOldProfileShard(mrn){let p=String(mrn||'').charAt(0);if(!/\d/.test(p))p='0';if(QOLD_PATIENT_PREFIX===p&&QOLD_PATIENTS)return QOLD_PATIENTS;window.QCH_OLD_PATIENTS={};let oldTag=document.querySelector('script[data-old-patients]');if(oldTag)oldTag.remove();try{await new Promise((res,rej)=>{let s=document.createElement('script');s.src='qch-old-patients-'+p+'.js?v=20260817b';s.dataset.oldPatients='1';s.onload=res;s.onerror=()=>rej(new Error('Historical QCH patient profile shard unavailable'));document.head.appendChild(s)});QOLD_PATIENTS=window.QCH_OLD_PATIENTS||{};QOLD_PATIENT_PREFIX=p;return QOLD_PATIENTS}catch(e){console.warn(e.message);QOLD_PATIENTS={};QOLD_PATIENT_PREFIX=p;return QOLD_PATIENTS}}
+async function ensureQCHOldHistoryShard(mrn){let p=String(mrn||'').charAt(0);if(!/\d/.test(p))p='0';if(QOLD_PREFIX===p&&QOLD)return QOLD;window.QCH_OLD_ROWS=[];let oldTag=document.querySelector('script[data-old-history]');if(oldTag)oldTag.remove();try{await new Promise((res,rej)=>{let s=document.createElement('script');s.src='qch-old-history-'+p+'.js?v=20260817b';s.dataset.oldHistory='1';s.onload=res;s.onerror=()=>rej(new Error('Historical QCH shard unavailable'));document.head.appendChild(s)});QOLD=window.QCH_OLD_ROWS||[];QOLD_PREFIX=p;return QOLD}catch(e){console.warn(e.message);QOLD=[];QOLD_PREFIX=p;return QOLD}}
 function oldQchRowsFor(m){m=String(m||'');return(QOLD||[]).filter(r=>r[0]===m)}
-function oldQchPatient(m){let r=oldQchRowsFor(m)[0];return r?{name:r[1]||'',name_ar:r[2]||'',national_id:r[3]||'',age:r[4]||'',mobile:r[5]||'',birth:r[6]||'',weight:r[7]||'',height:r[8]||'',nationality:r[9]||''}:null}
+function oldQchPatient(m){m=String(m||'');let r=QOLD_PATIENTS?.[m]||oldQchRowsFor(m)[0];return r?{name:r[1]||'',name_ar:r[2]||'',national_id:r[3]||'',age:r[4]||'',mobile:r[5]||'',birth:r[6]||'',weight:r[7]||'',height:r[8]||'',nationality:r[9]||''}:null}
 function oldStore(s){s=String(s||'');if(/O\.P\.D\.2/i.test(s))return'OPD2';if(/O\.P\.D/i.test(s))return'OPD';if(/INPATIENT/i.test(s))return'INPATIENT';if(/E\.R|ER PHARMACY/i.test(s))return'ER';if(/IV DRUG/i.test(s))return'IV';if(/NARCOTIC|CONTROLLED/i.test(s))return'NARCOTICS';if(/DISCHARGE/i.test(s))return'DISCHARGE';return s}
 function oldQchHistoryForPatient(m){return oldQchRowsFor(m).map(r=>({date:String(r[10]||'').slice(0,10),dispense_time:String(r[10]||'').slice(11,19),pharmacy:oldStore(r[19]),medication:r[11],department:r[21],source:'Historical Drug Record',dose:r[12]??'',unit:r[13]||'',route:r[14]||'',prescriber:r[15]||'',speciality:r[16]||'',quantity:r[17]??'',dispensed_by:r[18]||'',order_date:String(r[20]||'').slice(0,10),order_time:String(r[20]||'').slice(11,19),order_status:'Historical / status unknown',historical_only:true}))}
 function qPatient(mrn){
@@ -441,9 +442,15 @@ function buildPatientList(){
   items.sort((a,b)=>a.name.localeCompare(b.name));patientListCache=items;renderPatientList();
 }
 function renderPatientList(){
-  let q=String($('patientListSearch')?.value||'').trim().toUpperCase(),rows=patientListCache.filter(x=>!q||x.name.toUpperCase().includes(q)||x.mrn.includes(q)).slice(0,350);
+  let q=String($('patientListSearch')?.value||'').trim().toUpperCase();
+  let rows=patientListCache.filter(x=>!q||x.name.toUpperCase().includes(q)||x.mrn.includes(q)).slice(0,350);
+  // Historical-only QCH patients are not loaded into the full sidebar list for performance.
+  // When an exact MRN is typed, show that patient safely from the matching historical profile shard.
+  if(hospital==='QCH'&&/^\d+$/.test(q)&&QOLD_PATIENTS?.[q]&&!rows.some(x=>x.mrn===q)){
+    let op=oldQchPatient(q);rows.unshift({mrn:q,name:op?.name||q});
+  }
   $('patientListCount').textContent=`${patientListCache.length}`;
-  $('patientList').innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name)}<div class="mrn-small">${esc(x.mrn)}</div></button>`).join(''):'<div class="sub" style="padding:12px">No patients found.</div>';
+  $('patientList').innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name||x.mrn)}${x.name&&x.name!==x.mrn?`<div class="mrn-small">${esc(x.mrn)}</div>`:''}</button>`).join(''):'<div class="sub" style="padding:12px">No patients found.</div>';
   $('patientList').querySelectorAll('button[data-mrn]').forEach(b=>b.onclick=()=>loadPatient(b.dataset.mrn));
 }
 function qchHistoryForPatient(mrn){
@@ -474,7 +481,8 @@ function buildMonths(){selectedMonths=new Set((DATA?.months||[]).slice(-2))}
 function buildMonthsFromSelection(){}
 function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');renderPatientList()}
 $('pharmacy').onchange=()=>{buildPatientList();if(selectedMRN)loadPatient(selectedMRN)};
-$('patientListSearch').oninput=renderPatientList;
+$('patientListSearch').oninput=async()=>{let q=String($('patientListSearch').value||'').trim();if(hospital==='QCH'&&/^\d+$/.test(q)&&q.length>=3)await ensureQCHOldProfileShard(q);renderPatientList()};
+$('patientListSearch').onkeydown=async e=>{if(e.key==='Enter'){e.preventDefault();let q=String($('patientListSearch').value||'').trim();if(!q)return;if(hospital==='QCH'&&/^\d+$/.test(q))await ensureQCHOldProfileShard(q);let exists=patientListCache.some(x=>x.mrn===q)||(hospital==='QCH'&&!!oldQchPatient(q));if(exists)await focusLoadedPatient(q)}};
 function setPatientListCollapsed(v){
   const w=$('medicaWork');if(!w)return;w.classList.toggle('patient-list-collapsed',!!v);
   try{localStorage.setItem('pharmacyCloudPatientListCollapsed',v?'1':'0')}catch(e){}
@@ -490,7 +498,7 @@ async function focusLoadedPatient(mrn){
   setTimeout(()=>{let el=$('patientBanner')||$('medicaWork');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},40);
 }
 async function searchPatient(value){
-  value=String(value||'').trim();if(!value)return;if(hospital==='QCH')await ensureQCHOldShard(value);
+  value=String(value||'').trim();if(!value)return;if(hospital==='QCH')await ensureQCHOldProfileShard(value);
   // MRN remains the fastest path.
   if(hospital==='QCH'&&(QORD?.p?.[value]||oldQchPatient(value)))return focusLoadedPatient(value);
   if(DATA?.patients?.[value])return focusLoadedPatient(value);
@@ -509,7 +517,7 @@ function recordMeds(profile){
   return{dept,ids}
 }
 async function loadPatient(mrn){
-  if(!mrn)return;if(hospital==='QCH')await ensureQCHOldShard(mrn);
+  if(!mrn)return;if(hospital==='QCH')await ensureQCHOldProfileShard(mrn);
   // Always refresh Directions Library before rendering patient orders so Admin edits apply immediately.
   try{await loadDirectionLibrary()}catch(e){console.warn('Directions refresh before patient render',e)}
   selectedMRN=String(mrn);$('mrn').value=selectedMRN;let sp=staticProfile(selectedMRN),cloud=null,qprof=(hospital==='QCH'?qPatient(selectedMRN):null),oldprof=(hospital==='QCH'?oldQchPatient(selectedMRN):null);
@@ -531,7 +539,7 @@ async function loadPatient(mrn){
   }else{
     let medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:ph});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
     medNames=medNames.filter(drug=>{let key=normDrug(splitIVDrug(drug).additive||drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp});
-    renderMeds(medNames,sp);$('activeOrderCount').textContent=String(medNames.length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`:`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
+    renderMeds(medNames,sp);$('activeOrderCount').textContent=String(medNames.length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
   }
   renderPatientList();
 }
@@ -816,7 +824,7 @@ $('historyBtn').onclick=async()=>{
   if(!selectedMRN)return alert('Load patient first');
   $('historyPatient').textContent=($('pname').value||'Patient')+' • MRN '+selectedMRN;$('historyPharmacy').textContent='Pharmacy: '+historyPharmacyLabel($('pharmacy').value);setHistoryQuickRange('30',false);$('dayHistory').innerHTML='Loading...';$('historyDialog').showModal();
   let src=[];
-  if(hospital==='QCH'&&QORD)src=[...qchHistoryForPatient(selectedMRN),...oldQchHistoryForPatient(selectedMRN)];
+  if(hospital==='QCH'&&QORD){await ensureQCHOldHistoryShard(selectedMRN);src=[...qchHistoryForPatient(selectedMRN),...oldQchHistoryForPatient(selectedMRN)];}
   else {let hist=await ensureHistory();src=(hist?.[selectedMRN]||[]).map(x=>({date:x[0],pharmacy:x[1],medication:DATA.drugs[x[2]]||'',department:DATA.depts[x[3]]||'',source:'Medica'}))}
   let cloud=[];try{cloud=await rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})||[]}catch{}
   currentHistory=[...src,...cloud.map(x=>({...x,date:x.dispensed_local_date||localDateKey(x.dispensed_at),source:'Platform'}))];
