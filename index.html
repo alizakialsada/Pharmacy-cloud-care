@@ -78,7 +78,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .btn.patient-nav{background:#0f5f73;color:#fff;border-color:#0f5f73;box-shadow:0 4px 12px rgba(15,95,115,.16)}
 .btn.med-nav{background:#6f4778;color:#fff;border-color:#6f4778;box-shadow:0 4px 12px rgba(111,71,120,.16)}
 .btn.history-action{background:#86521f;color:#fff;border-color:#86521f}
-.btn.selection-action{background:#eef4f5;color:#24454e;border:1px solid #cbdadd}.btn.hold-action{background:#fff4cf;color:#6f5200;border:1px solid #e7ca66}.btn.cancel-order-action{background:#fff0f1;color:#9f2437;border:1px solid #efb9c1}
+.btn.selection-action{background:#eef4f5;color:#24454e;border:1px solid #cbdadd}.btn.hold-action{background:#b42318;color:#fff;border:1px solid #9f1f17}.btn.hold-action:hover{background:#9f1f17}.btn.cancel-order-action{background:#fff0f1;color:#9f2437;border:1px solid #efb9c1}
 .role-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
 .role-card{border:1px solid #e2d7d8;border-radius:14px;padding:12px;background:#fff}
 .role-card b{display:block;margin-bottom:4px}.role-card.admin-role{background:#fff5f6;border-color:#efc8cd}.role-card.doctor-role{background:#f5f8ff;border-color:#cbd7f1}.role-card.pharmacist-role{background:#f4fbf9;border-color:#c9e6dc}
@@ -147,7 +147,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
           <button class="btn history-action" id="historyBtn">◷ Order History</button>
           <button class="btn selection-action" id="selectAll">Select All</button>
           <button class="btn selection-action" id="deselectAll">Deselect All</button>
-          <button class="btn hold-action" id="holdOrderBtn">⏸ Hold / Resume</button>
+          <button class="btn hold-action" id="holdOrderBtn">⏸ Hold Order</button>
           <button class="btn cancel-order-action" id="cancelOrderBtn">✕ Cancel Order</button>
           <button class="btn dark" id="previewBtn">◎ Preview</button>
           <button class="btn primary" id="printBtn">▣ Print Labels</button>
@@ -184,9 +184,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     </div>
     <div>
       <div class="kpis">
-        <div class="kpi"><span class="sub">Dispensed rows today</span><b id="kpiToday">0</b></div>
-        <div class="kpi"><span class="sub">Patients dispensed today — LIVE</span><b id="kpiPatientsToday">0</b></div>
-        <div class="kpi"><span class="sub">Pharmacists active today</span><b id="kpiStaff">0</b></div>
+        <div class="kpi"><span class="sub">Dispensed rows — selected range</span><b id="kpiToday">0</b></div>
+        <div class="kpi"><span class="sub">Patients dispensed — selected range</span><b id="kpiPatientsToday">0</b></div>
+        <div class="kpi"><span class="sub">Pharmacists active — selected range</span><b id="kpiStaff">0</b></div>
         <div class="kpi"><span class="sub">Latest activity</span><b id="kpiLatest" style="font-size:15px">—</b></div>
       </div>
       <div class="card">
@@ -579,12 +579,12 @@ function removeLocalManualMeds(mrn,ph,drugs){let keys=new Set((drugs||[]).map(no
 function sharedOrderCard(x){
   let drug=x.medication||x.drug||'',kind=String(x.order_kind||'NEW').toUpperCase(),isIV=String(x.label_type||'').toUpperCase()==='IV'||String(x.pharmacy||'').toUpperCase()==='IV'||$('pharmacy').value==='IV',
       rule=ruleFor(drug),form=x.dosage_form||x.form||rule?.dosage_form||detectForm(drug),route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.frequency||x.freq||rule?.frequency||'',days=+x.supply_days||+x.days||30,qty=x.quantity||x.qty||'',unit=x.unit||'',
-      isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'',status=String(x.order_status||'ACTIVE').toUpperCase(),isHold=status==='HOLD';
+      isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'',status=String(x.order_status||'ACTIVE').toUpperCase(),isHold=status==='HOLD',holdReason=x.hold_reason||'';
   if(isIV){
     let prod=x.iv_production_at||'',exp=x.iv_expiry_at||'',created=x.created_at?fmtDT(x.created_at):localDateKey(new Date()),qty=x.quantity||x.qty||'1';
-    return `<div class="med medica-order ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" data-order-status="${esc(status)}" style="background:${isHold?'#f0f1f2':(isRenew?'#fff7dc':'#eef8ff')};border-left:5px solid ${isHold?'#7a8288':(isRenew?'#d6a21d':'#2f7a9b')}">
+    return `<div class="med medica-order ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" data-order-status="${esc(status)}" style="background:${isHold?'#fff0f0':(isRenew?'#fff7dc':'#eef8ff')};border-left:5px solid ${isHold?'#b42318':(isRenew?'#d6a21d':'#2f7a9b')}">
       <div><input class="pick" type="checkbox"></div>
-      <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isHold?'ON HOLD':(isRenew?'RENEW — VERIFY':'IV ORDER')}</span><div class="sub" style="margin-top:5px">Solution: ${esc(x.iv_solution||'—')} • ${esc(x.iv_access||'Peripheral')} • ${esc(x.iv_volume||'—')} mL @ ${esc(x.iv_rate||'—')} mL/hr</div></div>
+      <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isHold?'#b42318':(isRenew?'#f4d35e':'#dceffd')};color:${isHold?'#fff':(isRenew?'#654d00':'#15516d')}">${isHold?'ON HOLD':(isRenew?'RENEW — VERIFY':'IV ORDER')}</span>${isHold?`<div style="margin-top:6px;color:#9f1f2f;font-size:11px;font-weight:900">Hold reason: ${esc(holdReason||'Not specified')}</div>`:''}<div class="sub" style="margin-top:5px">Solution: ${esc(x.iv_solution||'—')} • ${esc(x.iv_access||'Peripheral')} • ${esc(x.iv_volume||'—')} mL @ ${esc(x.iv_rate||'—')} mL/hr</div></div>
       <div><b>${esc(x.dose||'—')}</b></div>
       <div><b>${esc(route||'IV Infusion')}</b></div>
       <div><b>${esc(freqEn(freq)||freq||'—')}</b></div>
@@ -600,9 +600,9 @@ function sharedOrderCard(x){
       </div>
     </div>`;
   }
-  return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" data-order-status="${esc(status)}" style="background:${isHold?'#f0f1f2':(isRenew?'#fff7dc':'#eef8ff')};border-left:5px solid ${isHold?'#7a8288':(isRenew?'#d6a21d':'#2f7a9b')}">
+  return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" data-order-status="${esc(status)}" style="background:${isHold?'#fff0f0':(isRenew?'#fff7dc':'#eef8ff')};border-left:5px solid ${isHold?'#b42318':(isRenew?'#d6a21d':'#2f7a9b')}">
     <div><input class="pick" type="checkbox"></div>
-    <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isHold?'ON HOLD':(isRenew?'RENEW — VERIFY':'NEW ORDER')}</span><div class="sub" style="margin-top:5px">${isRenew?'Renewed from History':'Shared manual order'} • visible to all pharmacy users</div></div>
+    <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isHold?'#b42318':(isRenew?'#f4d35e':'#dceffd')};color:${isHold?'#fff':(isRenew?'#654d00':'#15516d')}">${isHold?'ON HOLD':(isRenew?'RENEW — VERIFY':'NEW ORDER')}</span>${isHold?`<div style="margin-top:6px;color:#9f1f2f;font-size:11px;font-weight:900">Hold reason: ${esc(holdReason||'Not specified')}</div>`:''}<div class="sub" style="margin-top:5px">${isRenew?'Renewed from History':'Shared manual order'} • visible to all pharmacy users</div></div>
     <div><b>${esc(x.dose||'—')}</b></div><div><b>${esc(route||'—')}</b></div><div><b>${esc(freqEn(freq)||freq||'—')}</b></div><div class="supply-visible">${esc(days)} day(s)</div>
     <div style="display:flex;justify-content:center"><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:64px;padding:7px;text-align:center;border:1px solid #cfd6dc;border-radius:8px;font-weight:800" title="Quantity only — saved for all users"></div>
     <div>${esc(unit||defaultUnitForForm(form)||'—')}</div><div>${esc(x.created_at?fmtDT(x.created_at):localDateKey(new Date()))}</div><div class="order-doctor">${esc(doctor||'—')}</div><div class="last-dispense">${esc(x.source_date||'—')}</div>
@@ -1046,10 +1046,11 @@ async function setSelectedSharedOrderStatus(status,reason=''){
 }
 $('holdOrderBtn').onclick=async()=>{
   let rows=selectedOrderRows();if(!rows.length)return alert('Select order(s) first');
-  if(rows.some(m=>!m.dataset.sharedOrderId))return alert('Hold/Resume is available only for orders added or renewed in Pharmacy cloud care. Medica source orders must be changed in Medica.');
-  let allHeld=rows.every(m=>String(m.dataset.orderStatus||'ACTIVE').toUpperCase()==='HOLD'),target=allHeld?'ACTIVE':'HOLD';
-  if(target==='HOLD'&&!confirm('Put the selected order(s) on HOLD? They will remain visible but cannot be dispensed until resumed.'))return;
-  try{await setSelectedSharedOrderStatus(target,'');alert(target==='HOLD'?'Selected order(s) placed on HOLD.':'Selected order(s) resumed.')}catch(e){alert('Unable to change order status: '+e.message)}
+  if(rows.some(m=>!m.dataset.sharedOrderId))return alert('Hold is available only for orders added or renewed in Pharmacy cloud care. Medica source orders must be changed in Medica.');
+  if(rows.some(m=>String(m.dataset.orderStatus||'ACTIVE').toUpperCase()==='HOLD'))return alert('One or more selected orders are already ON HOLD. Held orders cannot be resumed.');
+  let reason=prompt('Reason for HOLD / سبب الهولد');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter the hold reason');
+  if(!confirm('Put the selected order(s) on HOLD permanently? They cannot be resumed after this action.'))return;
+  try{await setSelectedSharedOrderStatus('HOLD',reason);alert('Selected order(s) placed ON HOLD. This action cannot be resumed.')}catch(e){alert('Unable to hold order: '+e.message)}
 };
 $('cancelOrderBtn').onclick=async()=>{
   let rows=selectedOrderRows();if(!rows.length)return alert('Select order(s) first');
@@ -1226,7 +1227,7 @@ $('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account'
 async function refreshAdmin(){if(!adminToken)return;try{adminLogs=await rpc('medica_admin_logs',{p_admin_token:adminToken,p_from:$('adminFrom').value,p_to:$('adminTo').value,p_hospital:$('adminHospital').value,p_pharmacy:$('adminPharmacy').value,p_pharmacist_id:$('adminPharmacist').value})||[];renderAdmin()}catch(e){$('adminLive').textContent='● '+e.message}}
 function renderAdmin(){
  $('adminRows').innerHTML=adminLogs.map(x=>`<tr style="${x.is_void?'opacity:.65;text-decoration:line-through':''}"><td>${esc(fmtDT(x.dispensed_at))}${x.is_void?'<br><b style="color:#b42318;text-decoration:none;display:inline-block">VOIDED</b>':''}</td><td>${esc(x.pharmacist_name)}</td><td>${esc(x.hospital)}</td><td>${esc(x.pharmacy)}</td><td>${esc(x.mrn)}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication)}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td></tr>`).join('');
- let today=new Date().toISOString().slice(0,10),tod=adminLogs.filter(x=>String(x.dispensed_at).slice(0,10)===today&&!x.is_void);$('kpiToday').textContent=tod.length;$('kpiPatientsToday').textContent=new Set(tod.map(x=>String(x.hospital||'')+'|'+String(x.mrn||'')).filter(Boolean)).size;$('kpiStaff').textContent=new Set(tod.map(x=>x.pharmacist_id)).size;let latest=adminLogs.find(x=>!x.is_void);$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
+ let rangeRows=adminLogs.filter(x=>!x.is_void);$('kpiToday').textContent=rangeRows.length;$('kpiPatientsToday').textContent=new Set(rangeRows.map(x=>String(x.hospital||'')+'|'+String(x.mrn||'')).filter(x=>x&&!x.endsWith('|'))).size;$('kpiStaff').textContent=new Set(rangeRows.map(x=>x.pharmacist_id).filter(Boolean)).size;let latest=rangeRows[0]||null;$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
 }
 $('adminRefresh').onclick=refreshAdmin;$('adminAll').onclick=()=>{$('adminFrom').value=$('adminTo').value='';refreshAdmin()};
 ['adminFrom','adminTo','adminHospital','adminPharmacy','adminPharmacist'].forEach(x=>$(x).onchange=refreshAdmin);
