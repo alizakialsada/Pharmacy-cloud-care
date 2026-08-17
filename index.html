@@ -510,14 +510,14 @@ async function enterHospital(code){
   $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(x[2])} / ${esc(x[1])}</option>`).join('');
   $('drugList').innerHTML=DATA.drugs.map(x=>`<option value="${esc(x)}">`).join('');
   selectedMonths=new Set((DATA.months||[]).slice(-2));clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Search MRN to load current Active Orders. Stopped orders remain in History.':'Search MRN. PMFH current medications use the latest available dispensing data.';
-  await loadDirectionLibrary();buildPatientList();
+  await loadDirectionLibrary();buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);
 }
 $('backHome').onclick=()=>{$('dispensePage').classList.add('hidden');$('landing').classList.remove('hidden')};
 
 function buildMonths(){selectedMonths=new Set((DATA?.months||[]).slice(-2))}
 function buildMonthsFromSelection(){}
 function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');renderPatientList()}
-$('pharmacy').onchange=()=>{buildPatientList();if(selectedMRN)loadPatient(selectedMRN)};
+$('pharmacy').onchange=()=>{buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);if(selectedMRN)loadPatient(selectedMRN)};
 $('patientListSearch').oninput=async()=>{let q=String($('patientListSearch').value||'').trim();if(hospital==='QCH'&&/^\d+$/.test(q)&&q.length>=3)await ensureQCHOldProfileShard(q);renderPatientList()};
 $('patientListSearch').onkeydown=async e=>{if(e.key==='Enter'){e.preventDefault();let q=String($('patientListSearch').value||'').trim();if(!q)return;if(hospital==='QCH'&&/^\d+$/.test(q))await ensureQCHOldProfileShard(q);let exists=patientListCache.some(x=>x.mrn===q)||(hospital==='QCH'&&!!oldQchPatient(q));if(exists)await focusLoadedPatient(q)}};
 function setPatientListCollapsed(v){
@@ -578,24 +578,23 @@ function sharedOrderCard(x){
       rule=ruleFor(drug),form=x.dosage_form||x.form||rule?.dosage_form||detectForm(drug),route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.frequency||x.freq||rule?.frequency||'',days=+x.supply_days||+x.days||30,qty=x.quantity||x.qty||'',unit=x.unit||'',
       isRenew=kind==='RENEW',doctor=x.source_doctor||x.doctor||x.created_by_name||'';
   if(isIV){
-    let now=new Date(),tom=new Date(now.getTime()+24*3600e3),prod=x.iv_production_at||'',exp=x.iv_expiry_at||'';
-    return `<div class="med ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
-      <div class="medhead"><input class="pick" type="checkbox"><div><div class="medname">${esc(drug)}</div><span class="status-pill">${isRenew?'RENEW — VERIFY':'IV ORDER'}</span><div class="sub">Shared IV order • visible to all pharmacy users</div></div><span class="badge">IV Label</span></div>
-      <div class="ivgrid">
-        <div><div class="fieldcap">Solution / المحلول</div><select class="ivsolution">${ivSolutionOptions(x.iv_solution||'')}</select></div>
-        <div><div class="fieldcap">Additive Dose / جرعة المضاف</div><input class="dose" value="${esc(x.dose||'')}"></div>
-        <div><div class="fieldcap">IV Access</div><select class="ivaccess"><option ${x.iv_access==='Peripheral'?'selected':''}>Peripheral</option><option ${x.iv_access==='Central'?'selected':''}>Central</option></select></div>
-        <div><div class="fieldcap">Volume (mL)</div><input class="ivvolume" type="number" step="0.1" value="${esc(x.iv_volume||'')}"></div>
-        <div><div class="fieldcap">Infusion Time (min)</div><input class="ivinfusion" type="number" step="1" value="${esc(x.iv_infusion_time||'')}"></div>
-        <div><div class="fieldcap">Rate (mL/hr)</div><input class="ivrate" type="number" step="0.1" value="${esc(x.iv_rate||'')}"></div>
-        <div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(freq||'OD')}</select></div>
-        <div><div class="fieldcap">Duration (days)</div><input class="days" type="number" min="1" value="${esc(days||1)}"></div>
-        <div><div class="fieldcap">Route</div><input class="route" value="${esc(route||'IV Infusion')}"></div>
-        <div><div class="fieldcap">Production Date/Time</div><input class="ivprod" type="datetime-local" value="${esc(prod)}"></div>
-        <div><div class="fieldcap">Expiry Date/Time</div><input class="ivexpiry" type="datetime-local" value="${esc(exp)}"></div>
-        <div><div class="fieldcap">Ordered By</div><input class="orderedby" value="${esc(x.iv_ordered_by||doctor||'')}"></div>
+    let prod=x.iv_production_at||'',exp=x.iv_expiry_at||'',created=x.created_at?fmtDT(x.created_at):localDateKey(new Date()),qty=x.quantity||x.qty||'1';
+    return `<div class="med medica-order ivmed shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
+      <div><input class="pick" type="checkbox"></div>
+      <div><div class="medname">${esc(drug)}</div><span class="status-pill" style="background:${isRenew?'#f4d35e':'#dceffd'};color:${isRenew?'#654d00':'#15516d'}">${isRenew?'RENEW — VERIFY':'IV ORDER'}</span><div class="sub" style="margin-top:5px">Solution: ${esc(x.iv_solution||'—')} • ${esc(x.iv_access||'Peripheral')} • ${esc(x.iv_volume||'—')} mL @ ${esc(x.iv_rate||'—')} mL/hr</div></div>
+      <div><b>${esc(x.dose||'—')}</b></div>
+      <div><b>${esc(route||'IV Infusion')}</b></div>
+      <div><b>${esc(freqEn(freq)||freq||'—')}</b></div>
+      <div class="supply-visible">${esc(days||1)} day(s)</div>
+      <div style="display:flex;justify-content:center"><input class="qty qty-visible" type="number" min="0" step="1" value="${esc(qty)}" style="width:64px;padding:7px;text-align:center;border:1px solid #cfd6dc;border-radius:8px;font-weight:800"></div>
+      <div>${esc(unit||'dose')}</div>
+      <div>${esc(created)}</div>
+      <div class="order-doctor">${esc(x.iv_ordered_by||doctor||'—')}</div>
+      <div class="last-dispense">${esc(x.source_date||'—')}</div>
+      <div class="hidden-order-inputs">
+        <select class="form"><option selected>INJECTION</option></select><input class="dose" value="${esc(x.dose||'')}"><select class="freq"><option selected>${esc(freq||'OD')}</option></select><input class="route" value="${esc(route||'IV Infusion')}"><input class="qty qty-hidden" value="${esc(qty)}"><input class="days" value="${esc(days||1)}">
+        <select class="ivsolution"><option selected>${esc(x.iv_solution||'')}</option></select><input class="ivaccess" value="${esc(x.iv_access||'Peripheral')}"><input class="ivvolume" value="${esc(x.iv_volume||'')}"><input class="ivinfusion" value="${esc(x.iv_infusion_time||'')}"><input class="ivrate" value="${esc(x.iv_rate||'')}"><input class="ivprod" value="${esc(prod)}"><input class="ivexpiry" value="${esc(exp)}"><input class="orderedby" value="${esc(x.iv_ordered_by||doctor||'')}"><textarea class="free">${esc(x.notes||'')}</textarea>
       </div>
-      <textarea class="free hidden">${esc(x.notes||'')}</textarea>
     </div>`;
   }
   return `<div class="med medica-order shared-order ${isRenew?'renew-history-order':'manual-order'}" data-drug="${esc(drug)}" data-shared-order-id="${esc(x.id||'')}" style="background:${isRenew?'#fff7dc':'#eef8ff'};border-left:5px solid ${isRenew?'#d6a21d':'#2f7a9b'}">
@@ -614,6 +613,16 @@ function sharedOrderCard(x){
 }
 async function getSharedOrders(mrn,ph){
   try{return await rpc('medica_get_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:String(mrn),p_pharmacy:ph})||[]}catch(e){console.warn('Shared orders',e.message);return[]}
+}
+function bindSharedOrderQty(){
+  document.querySelectorAll('.shared-order').forEach(m=>{let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden');if(!q||!qh)return;q.oninput=()=>{qh.value=q.value}})
+}
+async function mergeSharedPatientsIntoSidebar(ph){
+  try{
+    let rows=await rpc('medica_get_shared_order_patients',{p_token:pharmacist.token,p_hospital:hospital,p_pharmacy:ph})||[],seen=new Set(patientListCache.map(x=>String(x.mrn)));
+    for(const r of rows){let mrn=String(r.mrn||'');if(!mrn||seen.has(mrn))continue;seen.add(mrn);patientListCache.push({mrn,name:r.patient_name||mrn})}
+    patientListCache.sort((a,b)=>String(a.name||a.mrn).localeCompare(String(b.name||b.mrn)));patientListCacheByKey[(hospital||'')+'|'+ph]=patientListCache;renderPatientList();
+  }catch(e){console.warn('Shared patient list',e.message)}
 }
 function manualOrderCard(x){
   let drug=x.drug||'',rule=ruleFor(drug),form=x.form||rule?.dosage_form||detectForm(drug),route=x.route||rule?.route||defaultRouteForDrug(drug,form),freq=x.freq||rule?.frequency||'',days=+x.days||defaultDays(),qty=x.qty||'',unit=x.unit||'';
@@ -660,12 +669,12 @@ async function loadPatient(mrn){
     let sharedKeys=new Set(sharedOrders.map(x=>normDrug(x.medication)));active=active.filter(o=>!sharedKeys.has(normDrug(splitIVDrug(o.drug).additive||o.drug)));let renewQueue=renewQueueForPatient(selectedMRN,ph).filter(x=>!sharedKeys.has(normDrug(x.drug))),localManual=localManualMedsFor(selectedMRN,ph).filter(x=>!sharedKeys.has(normDrug(x.drug))),
         activeHtml=active.map((o,i)=>qOrderCard(o,i,cloudHist)).join(''),sharedHtml=sharedOrders.map(sharedOrderCard).join(''),renewHtml=renewQueue.map(historyRenewCard).join(''),manualHtml=localManual.map(manualOrderCard).join('');
     $('meds').innerHTML=(activeHtml||sharedHtml||renewHtml||manualHtml)?activeHtml+sharedHtml+renewHtml+manualHtml:'<div class="card sub">No current Active Orders for this pharmacy. Check History for stopped/previous orders.</div>';
-    $('activeOrderCount').textContent=String(active.length+sharedOrders.length+renewQueue.length+localManual.length);let bannerProfile=qprof?{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept}:{name,weight,birth:dob,gender:'',age,nationality:'',location:dept};updatePatientBanner(selectedMRN,bannerProfile,orders);bindIVRate();bindQOrderQty();
+    $('activeOrderCount').textContent=String(active.length+sharedOrders.length+renewQueue.length+localManual.length);let bannerProfile=qprof?{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept}:{name,weight,birth:dob,gender:'',age,nationality:'',location:dept};updatePatientBanner(selectedMRN,bannerProfile,orders);bindIVRate();bindQOrderQty();bindSharedOrderQty();
     $('patientStatus').className='info';let verifiedCount=active.filter(o=>o.verified_source).length;$('patientStatus').textContent=`${active.length} Active Order(s)${sharedOrders.length?' • '+sharedOrders.length+' Shared order(s)':''}${renewQueue.length?' • '+renewQueue.length+' local Renew — VERIFY':''} • ${phMeta()[2]}${verifiedCount?' • '+verifiedCount+' verified from Medica screenshot':''}${cloudHist.length?' • Orders dispensed today are hidden':''}`;
   }else{
     let localManual=localManualMedsFor(selectedMRN,ph),medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:ph});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
     medNames=medNames.filter(drug=>{let key=normDrug(splitIVDrug(drug).additive||drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp});let sharedKeys=new Set(sharedOrders.map(x=>normDrug(x.medication)));medNames=medNames.filter(drug=>!sharedKeys.has(normDrug(splitIVDrug(drug).additive||drug)));
-    renderMeds(medNames,sp);if(sharedOrders.length){$('meds').insertAdjacentHTML('beforeend',sharedOrders.map(sharedOrderCard).join(''))}if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+sharedOrders.length+localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
+    renderMeds(medNames,sp);if(sharedOrders.length){$('meds').insertAdjacentHTML('beforeend',sharedOrders.map(sharedOrderCard).join(''))}if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+sharedOrders.length+localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);bindSharedOrderQty();$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
   }
   renderPatientList();
 }
@@ -900,7 +909,7 @@ function routeAr(r){let k=String(r||'').toUpperCase(),x=routeLibrary.find(v=>Str
 function selectedItems(){
   return[...document.querySelectorAll('.med')].filter(m=>m.querySelector('.pick').checked).map(m=>{
     let iv=m.classList.contains('ivmed'),drug=m.dataset.drug,dose=m.querySelector('.dose')?.value||'',freq=m.querySelector('.freq')?.value||'',route=m.querySelector('.route')?.value||'',days=m.querySelector('.days')?.value||'';
-    if(iv)return{medication:drug,drug,form:'INJECTION',dosage_form:'INJECTION',dose,frequency:freq,freq,route,quantity:'',days,supply_days:days,free:m.querySelector('.free')?.value||'',label_type:'IV',iv_solution:m.querySelector('.ivsolution')?.value||'',iv_rate:m.querySelector('.ivrate')?.value||'',iv_volume:m.querySelector('.ivvolume')?.value||'',iv_infusion_time:m.querySelector('.ivinfusion')?.value||'',iv_access:m.querySelector('.ivaccess')?.value||'',iv_production_at:m.querySelector('.ivprod')?.value||'',iv_expiry_at:m.querySelector('.ivexpiry')?.value||'',ordered_by:m.querySelector('.orderedby')?.value||''};
+    if(iv){let qty=m.querySelector('.qty-visible')?.value||m.querySelector('.qty-hidden')?.value||m.querySelector('.qty')?.value||'';return{medication:drug,drug,form:'INJECTION',dosage_form:'INJECTION',dose,frequency:freq,freq,route,quantity:qty,days,supply_days:days,free:m.querySelector('.free')?.value||'',label_type:'IV',iv_solution:m.querySelector('.ivsolution')?.value||'',iv_rate:m.querySelector('.ivrate')?.value||'',iv_volume:m.querySelector('.ivvolume')?.value||'',iv_infusion_time:m.querySelector('.ivinfusion')?.value||'',iv_access:m.querySelector('.ivaccess')?.value||'',iv_production_at:m.querySelector('.ivprod')?.value||'',iv_expiry_at:m.querySelector('.ivexpiry')?.value||'',ordered_by:m.querySelector('.orderedby')?.value||''}};
     let form=m.querySelector('.form')?.value||detectForm(drug),qty=m.querySelector('.qty-visible')?.value||m.querySelector('.qty')?.value||'',dir=smartDirections({drug,form,dose,freq,route,days});
     return{medication:drug,drug,form,dosage_form:form,dose,frequency:freq,freq,route,quantity:qty,days,supply_days:days,free:m.querySelector('.free')?.value||'',directions_en:dir.en,directions_ar:dir.ar,expiry_date:m.querySelector('.expiry')?.value||'',refrigerated:m.querySelector('.refrig')?.checked||false,high_alert:m.querySelector('.alert')?.checked||false,high_risk:m.querySelector('.risk')?.checked||false,label_type:'REGULAR'}
   })
@@ -954,7 +963,7 @@ $('ivNewVolume').addEventListener('input',recalcIVDialogRate);$('ivNewInfusion')
 $('saveIVOrder').onclick=async()=>{
   let med=$('ivNewMed').value.trim();if(!med)return alert('Choose the IV medication / additive');
   let item={medication:med,dosage_form:'INJECTION',dose:$('ivNewDose').value.trim(),route:$('ivNewRoute').value.trim()||'IV Infusion',frequency:$('ivNewFreq').value,supply_days:+$('ivNewDays').value||1,quantity:$('ivNewQty').value.trim()||'1',unit:'dose',order_kind:'NEW',source_date:'',source_doctor:$('ivNewOrderedBy').value.trim(),notes:'',label_type:'IV',iv_solution:$('ivNewSolution').value,iv_access:$('ivNewAccess').value,iv_volume:$('ivNewVolume').value.trim(),iv_infusion_time:$('ivNewInfusion').value.trim(),iv_rate:$('ivNewRate').value.trim(),iv_production_at:$('ivNewProd').value,iv_expiry_at:$('ivNewExpiry').value,iv_ordered_by:$('ivNewOrderedBy').value.trim()};
-  try{$('saveIVOrder').disabled=true;$('saveIVOrder').textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});$('ivOrderDialog').close();await loadPatient(selectedMRN)}catch(e){alert('Unable to save IV order: '+e.message)}finally{$('saveIVOrder').disabled=false;$('saveIVOrder').textContent='Add IV Order'}
+  try{$('saveIVOrder').disabled=true;$('saveIVOrder').textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});$('ivOrderDialog').close();patientListCacheByKey[(hospital||'')+'|IV']=null;buildPatientList();await mergeSharedPatientsIntoSidebar('IV');await loadPatient(selectedMRN)}catch(e){alert('Unable to save IV order: '+e.message)}finally{$('saveIVOrder').disabled=false;$('saveIVOrder').textContent='Add IV Order'}
 };
 function openAddOrderForCurrentPharmacy(){if($('pharmacy').value==='IV')prepareIVOrderDialog();else prepareAddOrderDialog()}
 $('addMedication').onclick=openAddOrderForCurrentPharmacy;
