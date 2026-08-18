@@ -55,6 +55,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .patient-list button{width:100%;border:0;border-bottom:1px solid #e4ebee;background:transparent;padding:10px 12px;text-align:left;font-weight:750;color:#263e47}
 .patient-list button:hover,.patient-list button.active{background:#dfeef2;color:#17384a}
 .patient-list .mrn-small{font-size:10px;color:#70828a;font-weight:600;margin-top:2px}
+.patient-list .ar-small{font-size:11px;color:#5b6c73;font-weight:750;margin-top:2px;direction:rtl;text-align:left}.search-results{display:grid;gap:10px;margin-top:12px;max-height:62vh;overflow:auto}.search-result{border:1px solid #d9e3e7;border-radius:14px;padding:13px;background:#fff;cursor:pointer;text-align:left;width:100%}.search-result:hover{background:#f2f8fa;border-color:#9bbbc7}.search-result .sr-name{font-weight:900;color:#17384a;font-size:15px}.search-result .sr-ar{font-weight:850;font-size:14px;direction:rtl;text-align:left;margin-top:3px}.search-result .sr-meta{font-size:11px;color:#526872;line-height:1.55;margin-top:7px}.search-result .sr-meds{font-size:11px;color:#6d4d1f;margin-top:6px}.auto-ar-tag{font-size:9px;color:#8a6a20;font-weight:800;margin-left:5px}
 .medica-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 11px;border-bottom:1px solid #e1e7ea;margin-bottom:8px}
 .medica-actions .btn{padding:9px 12px;border-radius:9px}
 .orders-titlebar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 10px;background:#edf3f5;border:1px solid #d4e0e4;border-radius:10px 10px 0 0;font-weight:900;color:#25424c}
@@ -118,13 +119,13 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   <div class="medica-shell">
     <div class="medica-toolbar">
       <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select></div>
-      <div><label>Patient Search / بحث المريض</label><div style="display:flex;gap:7px"><input id="mrn" placeholder="MRN or National ID / رقم الملف أو الهوية"><button class="btn dark" id="loadMrn">Search</button></div></div>
+      <div><label>Patient Search / بحث المريض</label><div style="display:flex;gap:7px"><input id="mrn" placeholder="MRN, National ID, English or Arabic name / رقم الملف، الهوية، الاسم العربي أو الإنجليزي"><button class="btn dark" id="loadMrn">Search</button></div></div>
       <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn patient-nav" id="addPatient">👤 Patient</button><button class="btn med-nav" id="addMedication">＋ Add Medication</button></div>
     </div>
 
     <div id="patientBanner" class="patient-banner hidden">
       <div class="patient-avatar">👤</div>
-      <div class="patient-main"><div class="patient-name" id="bannerName">—</div><div class="patient-mrn">MRN <span id="bannerMrn">—</span> <span id="bannerNid"></span></div><div class="sub" id="bannerSpecialty"></div></div>
+      <div class="patient-main"><div class="patient-name" id="bannerName">—</div><div id="bannerNameAr" style="font-size:15px;font-weight:850;direction:rtl;text-align:left;color:#445b64;margin-top:2px"></div><div class="patient-mrn">MRN <span id="bannerMrn">—</span> <span id="bannerNid"></span></div><div class="sub" id="bannerSpecialty"></div></div>
       <div class="patient-facts" id="bannerFacts">—</div>
       <div class="patient-doctor"><b>Ordering / Prescribing Doctor</b><div id="bannerDoctor" style="margin-top:4px">—</div><div class="sub" id="bannerOrderInfo"></div></div>
     </div>
@@ -138,7 +139,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="medica-work" id="medicaWork">
       <aside class="patient-side" id="patientSide">
         <div class="patient-side-head"><span>Patients / المرضى <span id="patientListCount" class="sub"></span></span><button class="btn soft patient-toggle" id="hidePatients" type="button">◀ Hide</button></div>
-        <div class="patient-side-search"><input id="patientListSearch" placeholder="Filter names / MRN"></div>
+        <div class="patient-side-search"><input id="patientListSearch" placeholder="Name عربي/English, MRN or National ID"></div>
         <div id="patientList" class="patient-list"><div class="sub" style="padding:12px">Loading patient list…</div></div>
       </aside>
       <main class="orders-pane">
@@ -153,7 +154,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
           <button class="btn primary" id="printBtn">▣ Print Labels</button>
           <button class="btn primary" id="dispenseBtn">✓ Dispense Selected</button>
         </div>
-        <div id="patientStatus" class="note">Choose a pharmacy and search the patient MRN.</div>
+        <div id="patientStatus" class="note">Choose a pharmacy and search by MRN, National ID, English name or Arabic name.</div>
         <div class="orders-scroll" style="margin-top:10px">
           <div class="orders-titlebar"><span>Active Medication Orders</span><span id="activeOrderCount" class="badge">0</span></div>
           <div class="order-head"><div></div><div>Drug Name</div><div>Dose</div><div>Route</div><div>Frequency</div><div>For</div><div>Qty.</div><div>Unit</div><div>Order Date/Time</div><div>Order By</div><div>Last Dispense</div></div>
@@ -242,7 +243,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <dialog id="loginDialog"><div class="modal loginbox"><h2>Pharmacist Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser"><label style="margin-top:9px">Password</label><input id="loginPass" type="password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" id="requestAccountOpen">Request Account</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div><div class="sub" style="margin-top:10px">New accounts require Admin approval before first login.</div></div></dialog>
 <dialog id="requestAccountDialog"><div class="modal loginbox"><h2>Request Pharmacist Account</h2><p class="sub" id="requestHospital"></p><label>Full Name</label><input id="requestFullName"><label style="margin-top:9px">Username</label><input id="requestUser"><label style="margin-top:9px">Password</label><input id="requestPass" type="password"><label style="margin-top:9px">Confirm Password</label><input id="requestPass2" type="password"><div id="requestError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="requestAccountGo">Submit Request</button><button class="btn soft" onclick="requestAccountDialog.close()">Cancel</button></div><div class="note" style="margin-top:12px">The account will remain Pending until approved by Admin.</div></div></dialog>
 <dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
-<dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN</label><input id="newMrn"></div><div><label>Patient Name</label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"></div><div><label>National ID</label><input id="newNid"></div><div><label>Department</label><input id="newDept"></div><div><label>Age</label><input id="newAge"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN</label><input id="newMrn"></div><div><label>Patient Name</label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"><div class="sub" style="margin-top:4px">Automatically filled when missing. Edit here if the Arabic spelling is incorrect.</div></div><div><label>National ID</label><input id="newNid"></div><div><label>Department</label><input id="newDept"></div><div><label>Age</label><input id="newAge"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="medDialog"><div class="modal"><h2>Add Order</h2><div class="sub" style="margin-bottom:12px">All fields are required. Order quantity is calculated when the dose/frequency can be interpreted.</div><div class="grid2">
 <div><label>Medication *</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist></div>
 <div><label>Dosage Form *</label><select id="newMedForm"><option>TABLET</option><option>CAPSULE</option><option>LIQUID</option><option>DROPS</option><option>INHALER</option><option>SPRAY</option><option>STRIP</option><option>SACHET</option><option>SUPPOSITORY</option><option>TOPICAL</option><option>INJECTION</option><option>SYRINGE</option><option>PEN</option><option>OTHER</option></select></div>
@@ -273,12 +274,13 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 </div><div class="note" style="margin-top:12px">Rate = Volume ÷ infusion time. Quantity is calculated from frequency × duration when possible.</div>
 <div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="saveIVOrder">Add IV Order</button><button class="btn soft" onclick="ivOrderDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="previewDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><h2>Label Preview</h2><button class="btn soft" onclick="previewDialog.close()">✕</button></div><div id="previewArea"></div></div></dialog>
+<dialog id="patientSearchDialog"><div class="modal"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin:0">Patient Search Results</h2><div class="sub" id="patientSearchSummary"></div></div><button class="btn soft" onclick="patientSearchDialog.close()">✕</button></div><div id="patientSearchResults" class="search-results"></div></div></dialog>
 <dialog id="historyDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><div><h2 style="margin:0">Patient History</h2><div class="sub" id="historyPatient"></div><div class="sub" id="historyPharmacy"></div></div><button class="btn soft" onclick="historyDialog.close()">✕</button></div><div id="historyQuick" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px"><button class="btn soft historyQuickBtn" data-range="all">All History</button><button class="btn soft historyQuickBtn" data-range="today">Today</button><button class="btn soft historyQuickBtn" data-range="yesterday">Yesterday</button><button class="btn soft historyQuickBtn" data-range="30">30 Days</button><button class="btn soft historyQuickBtn" data-range="60">60 Days</button><button class="btn soft historyQuickBtn" data-range="90">90 Days</button><button class="btn soft historyQuickBtn" data-range="custom">Custom</button></div><div class="grid" style="margin-top:12px"><div><label>From Date</label><input type="date" id="historyFrom"></div><div><label>To Date</label><input type="date" id="historyTo"></div><div style="display:flex;align-items:end"><button class="btn dark" id="historyApply">Apply Date Range</button></div></div><div id="lastDispenseSummary" class="card" style="margin-top:12px"></div><div id="allHistoryRecords" class="card" style="margin-top:12px"></div><div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0"><button class="btn soft" id="calPrev">←</button><b id="calTitle"></b><button class="btn soft" id="calNext">→</button></div><div class="calendar" id="calendar"></div><div id="dayHistory" style="margin-top:16px"></div></div></dialog>
 
 <script>
 const $=id=>document.getElementById(id);
 const ACCESS='124620';
-let hospital=null, DATA=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[], patientListCacheByKey={}, directionLibraryLoadedAt=0, adminReturnPage='landing', HISTORY_RENEW_PREFILL=null, sharedOrderById={};
+let hospital=null, DATA=null, PATIENT_MASTER=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[], patientListCacheByKey={}, directionLibraryLoadedAt=0, adminReturnPage='landing', HISTORY_RENEW_PREFILL=null, sharedOrderById={};
 
 function configOK(){const c=window.SUPABASE_CONFIG||{};return /^https:\/\/.+\.supabase\.co\/?$/.test(String(c.url||''))&&/^sb_publishable_/.test(String(c.publishableKey||''))}
 async function rpc(name,args={}){
@@ -313,6 +315,15 @@ async function ensureHospitalData(code){
   let varname=code+'_DATA';if(window[varname])return window[varname];
   await loadScript(code.toLowerCase()+'-data.js');return window[varname];
 }
+async function ensurePatientSearchData(code){
+  let varname=code+'_PATIENT_SEARCH';if(window[varname])return window[varname];
+  await loadScript(code.toLowerCase()+'-patient-search.js');return window[varname]||{};
+}
+function masterPatient(mrn){let r=PATIENT_MASTER?.[String(mrn||'')];return r?{name:r[0]||'',name_ar:r[1]||'',national_id:r[2]||'',mobile:r[3]||'',birth:r[4]||'',age:r[5]||'',weight:r[6]||'',height:r[7]||'',nationality:r[8]||'',auto_ar:!!r[9]}:null}
+function normSearch(v){return String(v||'').trim().toUpperCase().normalize('NFKD').replace(/[\u064B-\u065F\u0670]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^A-Z0-9\u0600-\u06FF]+/g,' ').replace(/\s+/g,' ').trim()}
+function patientRecentMeds(mrn){let out=[];if(hospital==='QCH'&&QORD?.p?.[mrn])out=qOrdersFor(mrn).slice().sort((a,b)=>isoFromDMY(b.order_date).localeCompare(isoFromDMY(a.order_date))).map(x=>x.drug);if(!out.length){let p=DATA?.patients?.[mrn];if(p){let rows=(p[6]||[]).slice().sort((a,b)=>b[0]-a[0]);for(const r of rows)for(const di of r[3]||[])if(DATA.drugs?.[di])out.push(DATA.drugs[di])}}return [...new Set(out.map(x=>String(x||'').trim()).filter(Boolean))].slice(0,3)}
+function masterMatches(value,limit=80){let q=normSearch(value);if(!q)return[];let toks=q.split(' ').filter(Boolean),out=[];for(const [mrn,r] of Object.entries(PATIENT_MASTER||{})){let en=normSearch(r[0]),ar=normSearch(r[1]),nid=normID(r[2]),blob=en+' '+ar;if(mrn===value||normID(mrn)===normID(value)||nid===normID(value)||(toks.length&&toks.every(t=>blob.includes(t))))out.push(mrn);if(out.length>=limit)break}return out}
+function openPatientSearchResults(mrns,query){let rows=mrns.map(mrn=>{let p=masterPatient(mrn)||{},meds=patientRecentMeds(mrn);return `<button class="search-result" data-mrn="${esc(mrn)}"><div class="sr-name">${esc(p.name||mrn)}</div><div class="sr-ar">${esc(p.name_ar||'')}${p.auto_ar?'<span class="auto-ar-tag">Auto Arabic</span>':''}</div><div class="sr-meta"><b>MRN:</b> ${esc(mrn)}${p.national_id?' &nbsp; <b>ID:</b> '+esc(p.national_id):''}${p.age?' &nbsp; <b>Age:</b> '+esc(p.age):''}${p.birth?' &nbsp; <b>DOB:</b> '+esc(String(p.birth).slice(0,10)):''}${p.weight?' &nbsp; <b>WT:</b> '+esc(p.weight):''}${p.height?' &nbsp; <b>HT:</b> '+esc(p.height):''}${p.nationality?' &nbsp; <b>Nationality:</b> '+esc(p.nationality):''}${p.mobile?'<br><b>Mobile:</b> '+esc(p.mobile):''}</div>${meds.length?`<div class="sr-meds"><b>Available medication clues:</b> ${meds.map(esc).join(' • ')}</div>`:''}</button>`}).join('');$('patientSearchSummary').textContent=`${mrns.length} match(es) for “${query}”`;$('patientSearchResults').innerHTML=rows;$('patientSearchResults').querySelectorAll('[data-mrn]').forEach(b=>b.onclick=async()=>{$('patientSearchDialog').close();await focusLoadedPatient(b.dataset.mrn)});$('patientSearchDialog').showModal()}
 async function ensureAdminDrugList(){
   try{
     let q=await ensureHospitalData('QCH'),p=await ensureHospitalData('PMFH');
@@ -482,9 +493,9 @@ function bindQOrderQty(){
 }
 function updatePatientBanner(mrn,profile,orders=[]){
   if(!profile){$('patientBanner').classList.add('hidden');return}
-  $('patientBanner').classList.remove('hidden');$('bannerName').textContent=profile.name||$('pname').value||'Patient';$('bannerMrn').textContent=mrn;
+  $('patientBanner').classList.remove('hidden');$('bannerName').textContent=profile.name||$('pname').value||'Patient';$('bannerNameAr').textContent=profile.name_ar||$('par').value||'';$('bannerMrn').textContent=mrn;
   $('bannerNid').textContent=$('nid').value?' • ID '+$('nid').value:'';
-  $('bannerFacts').innerHTML=`<b>${esc(profile.gender||'—')}</b> • ${esc(profile.age||'—')} • ${esc(profile.nationality||'—')}<br><b>DOB:</b> ${esc(profile.birth||$('dob').value||'—')} &nbsp; <b>WT:</b> ${esc(profile.weight||$('weight').value||'—')}<br><b>Location:</b> ${esc(profile.location||$('dept').value||'—')}`;
+  $('bannerFacts').innerHTML=`<b>${esc(profile.gender||'—')}</b> • ${esc(profile.age||'—')} • ${esc(profile.nationality||'—')}<br><b>DOB:</b> ${esc(String(profile.birth||$('dob').value||'—').slice(0,10))} &nbsp; <b>WT:</b> ${esc(profile.weight||$('weight').value||'—')}${profile.height?' &nbsp; <b>HT:</b> '+esc(profile.height):''}<br>${profile.mobile?'<b>Mobile:</b> '+esc(profile.mobile)+'<br>':''}<b>Location:</b> ${esc(profile.location||$('dept').value||'—')}`;
   let docs=[...new Set(orders.filter(orderIsCurrent).map(x=>x.prescriber).filter(Boolean))];$('bannerDoctor').textContent=docs.length===1?docs[0]:docs.length?docs.slice(0,2).join(' / ')+(docs.length>2?' +'+(docs.length-2):''):'—';
   let specs=[...new Set(orders.filter(orderIsCurrent).map(x=>x.speciality).filter(Boolean))];$('bannerSpecialty').textContent=specs.join(' • ');
   let latest=orders.filter(orderIsCurrent).sort((a,b)=>isoFromDMY(b.order_date).localeCompare(isoFromDMY(a.order_date)))[0];
@@ -492,7 +503,7 @@ function updatePatientBanner(mrn,profile,orders=[]){
 }
 function buildPatientList(){
   let ph=$('pharmacy').value,cacheKey=(hospital||'')+'|'+ph;if(patientListCacheByKey[cacheKey]){patientListCache=patientListCacheByKey[cacheKey];renderPatientList();return}let items=[],seen=new Set();
-  const add=(mrn,name)=>{mrn=String(mrn||'');if(!mrn||seen.has(mrn))return;seen.add(mrn);items.push({mrn,name:name||mrn})};
+  const add=(mrn,name)=>{mrn=String(mrn||'');if(!mrn||seen.has(mrn))return;seen.add(mrn);let mp=masterPatient(mrn)||{};items.push({mrn,name:name||mp.name||mrn,name_ar:mp.name_ar||'',nid:mp.national_id||''})};
   if(hospital==='QCH'&&QORD){
     for(const [mrn,raw] of Object.entries(QORD.p||{})){
       let p=qPatient(mrn),has=(p.orders||[]).map(orderDecoded).some(o=>orderIsCurrent(o)&&o.pharmacy===ph&&refillStats(o,[]).remainingQty>0);
@@ -519,15 +530,11 @@ function buildPatientList(){
   items.sort((a,b)=>a.name.localeCompare(b.name));patientListCache=items;patientListCacheByKey[cacheKey]=items;renderPatientList();
 }
 function renderPatientList(){
-  let q=String($('patientListSearch')?.value||'').trim().toUpperCase();
-  let rows=patientListCache.filter(x=>!q||x.name.toUpperCase().includes(q)||x.mrn.includes(q)).slice(0,350);
-  // Historical-only QCH patients are not loaded into the full sidebar list for performance.
-  // When an exact MRN is typed, show that patient safely from the matching historical profile shard.
-  if(hospital==='QCH'&&/^\d+$/.test(q)&&QOLD_PATIENTS?.[q]&&!rows.some(x=>x.mrn===q)){
-    let op=oldQchPatient(q);rows.unshift({mrn:q,name:op?.name||q});
-  }
+  let q=normSearch($('patientListSearch')?.value||'');
+  let rows=patientListCache.filter(x=>!q||normSearch(x.name).includes(q)||normSearch(x.name_ar).includes(q)||normSearch(x.mrn).includes(q)||normSearch(x.nid).includes(q)).slice(0,350);
+  if(q&&rows.length<80){for(const mrn of masterMatches(q,80)){if(rows.some(x=>x.mrn===mrn))continue;let mp=masterPatient(mrn);rows.push({mrn,name:mp?.name||mrn,name_ar:mp?.name_ar||'',nid:mp?.national_id||''});if(rows.length>=80)break}}
   $('patientListCount').textContent=`${patientListCache.length}`;
-  $('patientList').innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name||x.mrn)}${x.name&&x.name!==x.mrn?`<div class="mrn-small">${esc(x.mrn)}</div>`:''}</button>`).join(''):'<div class="sub" style="padding:12px">No patients found.</div>';
+  $('patientList').innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name||x.mrn)}${x.name_ar?`<div class="ar-small">${esc(x.name_ar)}</div>`:''}<div class="mrn-small">MRN ${esc(x.mrn)}${x.nid?' • ID '+esc(x.nid):''}</div></button>`).join(''):'<div class="sub" style="padding:12px">No patients found.</div>';
   $('patientList').querySelectorAll('button[data-mrn]').forEach(b=>b.onclick=()=>loadPatient(b.dataset.mrn));
 }
 function qchHistoryForPatient(mrn){
@@ -545,11 +552,11 @@ function qchHistoryForPatient(mrn){
 
 async function enterHospital(code){
   hospital=code;patientListCacheByKey={};$('landing').classList.add('hidden');$('dispensePage').classList.remove('hidden');$('patientStatus').textContent='Loading hospital data...';
-  try{DATA=await ensureHospitalData(code);QORD=code==='QCH'?await ensureQCHOrders():null}catch(e){$('patientStatus').className='note error';$('patientStatus').textContent=e.message;return}
+  try{[DATA,PATIENT_MASTER]=await Promise.all([ensureHospitalData(code),ensurePatientSearchData(code)]);QORD=code==='QCH'?await ensureQCHOrders():null}catch(e){$('patientStatus').className='note error';$('patientStatus').textContent=e.message;return}
   let [en,ar]=hospNames();$('hospitalTitle').textContent=ar+' — '+en;$('pharmacistLine').textContent='Signed in: '+(pharmacist?.full_name||'')+' ('+(pharmacist?.username||'')+')';
   $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(x[2])} / ${esc(x[1])}</option>`).join('');
   $('drugList').innerHTML=DATA.drugs.map(x=>`<option value="${esc(x)}">`).join('');
-  selectedMonths=new Set((DATA.months||[]).slice(-2));clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Search MRN to load current Active Orders. Stopped orders remain in History.':'Search MRN. PMFH current medications use the latest available dispensing data.';
+  selectedMonths=new Set((DATA.months||[]).slice(-2));clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Search by MRN, National ID, English or Arabic name. Stopped orders remain in History.':'Search by MRN, National ID, English or Arabic name. PMFH current medications use the latest available dispensing data.';
   await loadDirectionLibrary();buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);
 }
 $('backHome').onclick=()=>{$('dispensePage').classList.add('hidden');$('landing').classList.remove('hidden')};
@@ -559,7 +566,7 @@ function buildMonthsFromSelection(){}
 function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');renderPatientList()}
 $('pharmacy').onchange=()=>{buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);if(selectedMRN)loadPatient(selectedMRN)};
 $('patientListSearch').oninput=async()=>{let q=String($('patientListSearch').value||'').trim();if(hospital==='QCH'&&/^\d+$/.test(q)&&q.length>=3)await ensureQCHOldProfileShard(q);renderPatientList()};
-$('patientListSearch').onkeydown=async e=>{if(e.key==='Enter'){e.preventDefault();let q=String($('patientListSearch').value||'').trim();if(!q)return;if(hospital==='QCH'&&/^\d+$/.test(q))await ensureQCHOldProfileShard(q);let exists=patientListCache.some(x=>x.mrn===q)||(hospital==='QCH'&&!!oldQchPatient(q));if(exists)await focusLoadedPatient(q)}};
+$('patientListSearch').onkeydown=async e=>{if(e.key==='Enter'){e.preventDefault();let q=String($('patientListSearch').value||'').trim();if(!q)return;await searchPatient(q)}};
 function setPatientListCollapsed(v){
   const w=$('medicaWork');if(!w)return;w.classList.toggle('patient-list-collapsed',!!v);
   try{localStorage.setItem('pharmacyCloudPatientListCollapsed',v?'1':'0')}catch(e){}
@@ -575,16 +582,17 @@ async function focusLoadedPatient(mrn){
   setTimeout(()=>{let el=$('patientBanner')||$('medicaWork');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},40);
 }
 async function searchPatient(value){
-  value=String(value||'').trim();if(!value)return;if(hospital==='QCH')await ensureQCHOldProfileShard(value);
-  // MRN remains the fastest path.
-  if(hospital==='QCH'&&(QORD?.p?.[value]||oldQchPatient(value)))return focusLoadedPatient(value);
+  value=String(value||'').trim();if(!value)return;
+  if(PATIENT_MASTER?.[value])return focusLoadedPatient(value);
+  if(hospital==='QCH'&&/^\d+$/.test(value)){await ensureQCHOldProfileShard(value);if(QORD?.p?.[value]||oldQchPatient(value))return focusLoadedPatient(value)}
   if(DATA?.patients?.[value])return focusLoadedPatient(value);
-  let key=normID(value),matches=[];
-  for(const [mrn,p] of Object.entries(DATA?.patients||{})){if(normID(p?.[1])===key)matches.push(mrn)}
+  let matches=masterMatches(value,80);
   if(matches.length===1)return focusLoadedPatient(matches[0]);
-  if(matches.length>1){let pick=prompt('More than one patient matched this National ID. Enter MRN:\n'+matches.join('\n'),matches[0]);if(pick&&matches.includes(pick.trim()))return focusLoadedPatient(pick.trim());return}
+  if(matches.length>1){openPatientSearchResults(matches,value);return}
+  let key=normID(value),ids=[];for(const [mrn,p] of Object.entries(DATA?.patients||{})){if(normID(p?.[1])===key)ids.push(mrn)}
+  if(ids.length===1)return focusLoadedPatient(ids[0]);if(ids.length>1){openPatientSearchResults(ids,value);return}
   try{let cp=await rpc('medica_find_profile_by_identifier',{p_token:pharmacist.token,p_hospital:hospital,p_identifier:value});if(cp?.mrn)return focusLoadedPatient(String(cp.mrn))}catch(e){}
-  return focusLoadedPatient(value);
+  $('patientStatus').className='note error';$('patientStatus').textContent='No patient matched this MRN, National ID, English name or Arabic name.';
 }
 
 function staticProfile(mrn){return DATA?.patients?.[mrn]||null}
@@ -699,10 +707,10 @@ async function loadPatient(mrn){
   if(!mrn)return;if(hospital==='QCH')await ensureQCHOldProfileShard(mrn);
   // Keep patient loading fast: refresh Directions Library only when cache is stale. Admin saves update the in-memory rule immediately.
   if(!directionLibraryLoadedAt || Date.now()-directionLibraryLoadedAt>30000){try{await loadDirectionLibrary()}catch(e){console.warn('Directions refresh before patient render',e)}}
-  selectedMRN=String(mrn);$('mrn').value=selectedMRN;let sp=staticProfile(selectedMRN),cloud=null,qprof=(hospital==='QCH'?qPatient(selectedMRN):null),oldprof=(hospital==='QCH'?oldQchPatient(selectedMRN):null);
+  selectedMRN=String(mrn);$('mrn').value=selectedMRN;let sp=staticProfile(selectedMRN),mp=masterPatient(selectedMRN),cloud=null,qprof=(hospital==='QCH'?qPatient(selectedMRN):null),oldprof=(hospital==='QCH'?oldQchPatient(selectedMRN):null);
   try{cloud=await rpc('medica_get_profile',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN})}catch{}
-  if(!sp&&!cloud&&!qprof&&!oldprof){$('patientStatus').className='note error';$('patientStatus').textContent='MRN not found. Use Add Patient.';$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');return}
-  let rec=recordMeds(sp),name=cloud?.patient_name||qprof?.name||sp?.[0]||oldprof?.name||'',nid=cloud?.national_id||sp?.[1]||oldprof?.national_id||'',ar=cloud?.patient_name_ar||sp?.[2]||oldprof?.name_ar||'',age=cloud?.age||qprof?.age||sp?.[3]||oldprof?.age||'',weight=cloud?.weight||String(qprof?.weight||'').replace(/\s*KG\s*/i,'')||sp?.[4]||oldprof?.weight||'',dob=cloud?.birth_date||qprof?.birth||sp?.[5]||oldprof?.birth||'',dept=cloud?.department||qprof?.location||rec.dept||'';
+  if(!sp&&!cloud&&!qprof&&!oldprof&&!mp){$('patientStatus').className='note error';$('patientStatus').textContent='MRN not found. Use Add Patient.';$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');return}
+  let rec=recordMeds(sp),name=cloud?.patient_name||mp?.name||qprof?.name||sp?.[0]||oldprof?.name||'',nid=cloud?.national_id||mp?.national_id||sp?.[1]||oldprof?.national_id||'',ar=cloud?.patient_name_ar||mp?.name_ar||sp?.[2]||oldprof?.name_ar||'',age=cloud?.age||mp?.age||qprof?.age||sp?.[3]||oldprof?.age||'',weight=cloud?.weight||mp?.weight||String(qprof?.weight||'').replace(/\s*KG\s*/i,'')||sp?.[4]||oldprof?.weight||'',dob=cloud?.birth_date||mp?.birth||qprof?.birth||sp?.[5]||oldprof?.birth||'',dept=cloud?.department||qprof?.location||rec.dept||'';
   $('pname').value=name;$('nid').value=nid;$('par').value=ar;$('age').value=age;$('weight').value=weight;$('dob').value=dob;$('dept').value=dept;
   let ph=$('pharmacy').value,[cloudHist,sharedOrders]=await Promise.all([
     rpc('medica_patient_history',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN}).catch(()=>[]),
@@ -718,12 +726,12 @@ async function loadPatient(mrn){
     let sharedKeys=new Set(sharedOrders.map(x=>normDrug(x.medication)));active=active.filter(o=>!sharedKeys.has(normDrug(splitIVDrug(o.drug).additive||o.drug)));let renewQueue=renewQueueForPatient(selectedMRN,ph).filter(x=>!sharedKeys.has(normDrug(x.drug))),localManual=localManualMedsFor(selectedMRN,ph).filter(x=>!sharedKeys.has(normDrug(x.drug))),
         activeHtml=active.map((o,i)=>qOrderCard(o,i,cloudHist)).join(''),sharedHtml=sharedOrders.map(sharedOrderCard).join(''),renewHtml=renewQueue.map(historyRenewCard).join(''),manualHtml=localManual.map(manualOrderCard).join('');
     $('meds').innerHTML=(activeHtml||sharedHtml||renewHtml||manualHtml)?activeHtml+sharedHtml+renewHtml+manualHtml:'<div class="card sub">No current Active Orders for this pharmacy. Check History for stopped/previous orders.</div>';
-    $('activeOrderCount').textContent=String(active.length+sharedOrders.length+renewQueue.length+localManual.length);let bannerProfile=qprof?{...qprof,name,weight:(qprof.weight||weight),birth:dob,location:dept}:{name,weight,birth:dob,gender:'',age,nationality:'',location:dept};updatePatientBanner(selectedMRN,bannerProfile,orders);bindIVRate();bindQOrderQty();bindSharedOrderQty();
+    $('activeOrderCount').textContent=String(active.length+sharedOrders.length+renewQueue.length+localManual.length);let bannerProfile=qprof?{...qprof,name,name_ar:ar,weight:(qprof.weight||weight),birth:dob,location:dept,height:mp?.height||'',mobile:mp?.mobile||'',nationality:qprof.nationality||mp?.nationality||''}:{name,name_ar:ar,weight,birth:dob,gender:'',age,nationality:mp?.nationality||'',height:mp?.height||'',mobile:mp?.mobile||'',location:dept};updatePatientBanner(selectedMRN,bannerProfile,orders);bindIVRate();bindQOrderQty();bindSharedOrderQty();
     $('patientStatus').className='info';let verifiedCount=active.filter(o=>o.verified_source).length;$('patientStatus').textContent=`${active.length} Active Order(s)${sharedOrders.length?' • '+sharedOrders.length+' Shared order(s)':''}${renewQueue.length?' • '+renewQueue.length+' local Renew — VERIFY':''} • ${phMeta()[2]}${verifiedCount?' • '+verifiedCount+' verified from Medica screenshot':''}${cloudHist.length?' • Orders dispensed today are hidden':''}`;
   }else{
     let localManual=localManualMedsFor(selectedMRN,ph),medNames=rec.ids.map(i=>DATA.drugs[i]);try{let mm=await rpc('medica_get_manual_meds',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:ph});for(const x of mm||[])if(!medNames.includes(x))medNames.push(x)}catch{}
     medNames=medNames.filter(drug=>{let key=normDrug(splitIVDrug(drug).additive||drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp});let sharedKeys=new Set(sharedOrders.map(x=>normDrug(x.medication)));medNames=medNames.filter(drug=>!sharedKeys.has(normDrug(splitIVDrug(drug).additive||drug)));
-    renderMeds(medNames,sp);if(sharedOrders.length){$('meds').insertAdjacentHTML('beforeend',sharedOrders.map(sharedOrderCard).join(''))}if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+sharedOrders.length+localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).length);updatePatientBanner(selectedMRN,{name,weight,birth:dob,gender:'',age,nationality:'',location:dept},[]);bindSharedOrderQty();$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
+    renderMeds(medNames,sp);if(sharedOrders.length){$('meds').insertAdjacentHTML('beforeend',sharedOrders.map(sharedOrderCard).join(''))}if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+sharedOrders.length+localManual.filter(x=>!sharedOrders.some(s=>normDrug(s.medication)===normDrug(x.drug))).length);updatePatientBanner(selectedMRN,{name,name_ar:ar,weight,birth:dob,gender:'',age,nationality:mp?.nationality||'',height:mp?.height||'',mobile:mp?.mobile||'',location:dept},[]);bindSharedOrderQty();$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
   }
   renderPatientList();
 }
