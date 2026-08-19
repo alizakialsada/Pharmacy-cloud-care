@@ -124,7 +124,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
   <div class="medica-shell">
     <div class="medica-toolbar">
       <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select><div class="dept-filter-wrap pharmacist-only hidden" id="wardFilterWrap"><label style="margin-top:8px">Ward Filter / فلتر الأقسام</label><select id="departmentFilter"><option value="">All Wards / جميع الأقسام</option></select><div id="departmentPatientCount" class="sub" style="margin-top:4px"></div></div></div>
-      <div><label>Patient Search / بحث المريض</label><div style="display:flex;gap:7px"><input id="mrn" placeholder="MRN, National ID, English or Arabic name / رقم الملف، الهوية، الاسم العربي أو الإنجليزي"><button class="btn dark" id="loadMrn">Search</button></div><div class="db-badge" id="patientDbCount"></div></div>
+      <div><label>Patient Search / بحث المريض</label><div style="display:flex;gap:7px"><input id="mrn" placeholder=""><button class="btn dark" id="loadMrn">Search</button></div><div class="db-badge" id="patientDbCount"></div></div>
       <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn patient-nav pharmacist-only" id="addPatient">👤 Patient</button><button class="btn med-nav pharmacist-only" id="addMedication">＋ Add Medication</button></div>
     </div>
 
@@ -144,7 +144,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
     <div class="medica-work" id="medicaWork">
       <aside class="patient-side" id="patientSide">
         <div class="patient-side-head"><span>Patients / المرضى <span id="patientListCount" class="sub"></span></span><button class="btn soft patient-toggle" id="hidePatients" type="button">◀ Hide</button></div>
-        <div class="patient-side-search"><input id="patientListSearch" placeholder="Name عربي/English, MRN or National ID"></div>
+        <div class="patient-side-search"><input id="patientListSearch" placeholder=""></div>
         <div id="patientList" class="patient-list"><div class="sub" style="padding:12px">Loading patient list…</div></div>
       </aside>
       <main class="orders-pane">
@@ -184,6 +184,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <label>Username</label><input id="newUser">
       <label style="margin-top:9px">Full Name</label><input id="newFullName">
       <label style="margin-top:9px">Password</label><input id="newPassword" type="password">
+      <label style="margin-top:9px">Hospital</label><select id="newAccountHospital"><option value="QCH">Qatif Central Hospital (QCH)</option><option value="PMFH">Prince Mohammed Bin Fahd Hospital (PMFH)</option></select>
       <label style="margin-top:9px">Account Role</label><select id="newRole"><option value="pharmacist">Pharmacist</option><option value="doctor">Doctor — Read Only</option></select>
       <button class="btn primary" id="createAccount" style="width:100%;margin-top:10px">Create Account</button>
       <div id="pendingRequests" style="margin-top:15px"></div>
@@ -1330,7 +1331,7 @@ async function refreshAccounts(){
  document.querySelectorAll('.resetpw').forEach(b=>b.onclick=async()=>{let p=prompt('New password (6+ characters)');if(!p)return;await rpc('medica_admin_reset_password',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_new_password:p});alert('Password reset')});
  document.querySelectorAll('.toggleuser').forEach(b=>b.onclick=async()=>{await rpc('medica_admin_set_active',{p_admin_token:adminToken,p_pharmacist_id:b.dataset.id,p_active:b.dataset.active!=='true'});await refreshAccounts()})
 }
-$('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account_v2',{p_admin_token:adminToken,p_username:$('newUser').value,p_full_name:$('newFullName').value,p_password:$('newPassword').value,p_role:$('newRole').value});$('newUser').value=$('newFullName').value=$('newPassword').value='';$('newRole').value='pharmacist';await refreshAccounts()}catch(e){alert(e.message)}};
+$('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account_v2',{p_admin_token:adminToken,p_hospital:$('newAccountHospital').value,p_username:$('newUser').value,p_full_name:$('newFullName').value,p_password:$('newPassword').value,p_role:$('newRole').value});$('newUser').value=$('newFullName').value=$('newPassword').value='';$('newRole').value='pharmacist';await refreshAccounts()}catch(e){alert(e.message)}};
 async function refreshAdmin(){if(!adminToken)return;try{adminLogs=await rpc('medica_admin_logs',{p_admin_token:adminToken,p_from:$('adminFrom').value,p_to:$('adminTo').value,p_hospital:$('adminHospital').value,p_pharmacy:$('adminPharmacy').value,p_pharmacist_id:$('adminPharmacist').value})||[];renderAdmin()}catch(e){$('adminLive').textContent='● '+e.message}}
 function renderAdmin(){
  $('adminRows').innerHTML=adminLogs.map(x=>`<tr style="${x.is_void?'opacity:.65;text-decoration:line-through':''}"><td>${esc(fmtDT(x.dispensed_at))}${x.is_void?'<br><b style="color:#b42318;text-decoration:none;display:inline-block">VOIDED</b>':''}</td><td>${esc(x.pharmacist_name)}</td><td>${esc(x.hospital)}</td><td>${esc(x.pharmacy)}</td><td>${esc(x.mrn)}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication)}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td></tr>`).join('');
