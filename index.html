@@ -118,12 +118,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <div id="dispensePage" class="wrap hidden">
   <div class="top">
     <div><button class="btn soft" id="backHome">← Hospitals</button><div class="brand" id="hospitalTitle" style="margin-top:10px"></div><div class="sub" id="pharmacistLine"></div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="cloudBadge2" class="badge">☁ Cloud</span><button class="btn dark pharmacist-only" id="adminOpenDispense">⚙ Admin Panel</button></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge">V6 FINAL</span><span id="cloudBadge2" class="badge">☁ Cloud</span><button class="btn dark pharmacist-only" id="adminOpenDispense">⚙ Admin Panel</button></div>
   </div>
 
   <div class="medica-shell">
     <div class="medica-toolbar">
-      <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select><div class="dept-filter-wrap pharmacist-only"><label style="margin-top:8px">Department Filter / فلتر القسم</label><select id="departmentFilter"><option value="">All Departments / جميع الأقسام</option></select><div id="departmentPatientCount" class="sub" style="margin-top:4px"></div></div></div>
+      <div><label>Dispensing Pharmacy / الصيدلية</label><select id="pharmacy"></select><div class="dept-filter-wrap pharmacist-only hidden" id="wardFilterWrap"><label style="margin-top:8px">Ward Filter / فلتر الأقسام</label><select id="departmentFilter"><option value="">All Wards / جميع الأقسام</option></select><div id="departmentPatientCount" class="sub" style="margin-top:4px"></div></div></div>
       <div><label>Patient Search / بحث المريض</label><div style="display:flex;gap:7px"><input id="mrn" placeholder="MRN, National ID, English or Arabic name / رقم الملف، الهوية، الاسم العربي أو الإنجليزي"><button class="btn dark" id="loadMrn">Search</button></div><div class="db-badge" id="patientDbCount"></div></div>
       <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn patient-nav pharmacist-only" id="addPatient">👤 Patient</button><button class="btn med-nav pharmacist-only" id="addMedication">＋ Add Medication</button></div>
     </div>
@@ -177,7 +177,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <h3>Accounts & Roles</h3>
       <div class="role-strip">
         <div class="role-card pharmacist-role"><b>💊 Pharmacist</b><span class="sub">Dispense, print labels and patient history.</span></div>
-        <div class="role-card doctor-role"><b>🩺 Doctor</b><span class="sub">Read-only patient search and Doctor View. No dispensing, printing, editing, hold/cancel or medication changes.</span></div>
+        <div class="role-card doctor-role"><b>🩺 Doctor</b><span class="sub">Read-only patient search, Doctor View and Order History. No dispensing, printing, editing, hold/cancel, renew or medication changes.</span></div>
         <div class="role-card admin-role"><b>⚙ Admin</b><span class="sub">Ali Alsada • Aref — accounts, audit, activity and medication directions.</span></div>
       </div>
       <h3 style="margin-top:18px">User Accounts</h3>
@@ -267,9 +267,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <div><label>Solution / Diluent *</label><select id="ivNewSolution"></select></div>
 <div><label>Additive Dose *</label><input id="ivNewDose"></div>
 <div><label>IV Access *</label><select id="ivNewAccess"><option>Peripheral</option><option>Central</option></select></div>
-<div><label>Volume (mL) *</label><input id="ivNewVolume" type="number" min="0.1" step="0.1"></div>
-<div><label>Infusion Time (minutes) *</label><input id="ivNewInfusion" type="number" min="1" step="1"></div>
-<div><label>Rate (mL/hour) *</label><input id="ivNewRate" type="number" min="0.1" step="0.1"></div>
+<div><label>Volume (mL) — optional</label><input id="ivNewVolume" type="number" min="0.1" step="0.1" placeholder="May be left blank"></div>
+<div><label>Infusion Time (minutes) — optional</label><input id="ivNewInfusion" type="number" min="1" step="1" placeholder="May be left blank"></div>
+<div><label>Rate (mL/hour) — optional</label><input id="ivNewRate" type="number" min="0.1" step="0.1" placeholder="Auto-calculated when possible"></div>
 <div><label>Frequency *</label><select id="ivNewFreq"></select></div>
 <div><label>Duration (days) *</label><input id="ivNewDays" type="number" min="1" step="1" value="1"></div>
 <div><label>Route *</label><input id="ivNewRoute" value="IV Infusion"></div>
@@ -277,7 +277,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <div><label>Expiry Date/Time *</label><input id="ivNewExpiry" type="datetime-local"></div>
 <div><label>Ordered By Physician *</label><input id="ivNewOrderedBy"></div>
 <div><label>Order Qty / Preparations *</label><input id="ivNewQty" type="number" min="1" step="1" value="1"><div id="ivNewQtyHint" class="sub" style="margin-top:4px"></div></div>
-</div><div class="note" style="margin-top:12px">Rate = Volume ÷ infusion time. Quantity is calculated from frequency × duration when possible.</div>
+</div><div class="note" style="margin-top:12px">Solution is required and stays linked to the IV order. Volume, infusion time and rate may be left blank. If volume and infusion time are entered, rate is calculated automatically.</div>
 <div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="saveIVOrder">Add IV Order</button><button class="btn soft" onclick="ivOrderDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="previewDialog"><div class="modal"><div style="display:flex;justify-content:space-between"><h2>Label Preview</h2><button class="btn soft" onclick="previewDialog.close()">✕</button></div><div id="previewArea"></div></div></dialog>
 <dialog id="patientSearchDialog"><div class="modal"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2 style="margin:0">Patient Search Results</h2><div class="sub" id="patientSearchSummary"></div></div><button class="btn soft" onclick="patientSearchDialog.close()">✕</button></div><div id="patientSearchResults" class="search-results"></div></div></dialog>
@@ -347,7 +347,7 @@ function isDoctor(){return userRole()==='doctor'}
 function applyRoleUI(){
   let doctor=isDoctor();document.body.classList.toggle('doctor-mode',doctor);
   if($('pharmacistLine')&&pharmacist){$('pharmacistLine').innerHTML='Signed in: '+esc(pharmacist.full_name||'')+' ('+esc(pharmacist.username||'')+')'+(doctor?'<span class="doctor-mode-badge">DOCTOR • READ ONLY</span>':'')}
-  if(doctor&&$('patientStatus')){$('patientStatus').className='note';$('patientStatus').textContent='Doctor access: search for a patient, then open Doctor View. This account is read-only.'}
+  if(doctor&&$('patientStatus')){$('patientStatus').className='note';$('patientStatus').textContent='Doctor access: search for a patient, then open Doctor View or Order History. This account is read-only.'}
 }
 document.querySelectorAll('.hospital-card').forEach(b=>b.onclick=()=>chooseHospital(b.dataset.h));
 async function chooseHospital(code){pendingHospital=code;if(!pharmacist){$('loginHospital').textContent=code==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginError').textContent='';$('loginDialog').showModal();return}await enterHospital(code)}
@@ -523,10 +523,22 @@ function patientDeptFromStaticRecord(profile,ph){
   for(const r of profile[6]||[]){if(r[1]!==ph)continue;let mon=DATA.months[r[0]];if(set.has(mon)){dept=DATA.depts[r[2]]||dept;if(dept)break}}
   return dept;
 }
+function wardGroup(location){
+  let s=String(location||'').trim();if(!s)return'';
+  let u=s.toUpperCase().replace(/\s+/g,' ').trim();
+  // Group bed/room locations under their parent ward, e.g. FMW 1-1 -> FMW.
+  let m=u.match(/^([A-Z][A-Z0-9]*)(?:\s|$)/);return m?m[1]:u;
+}
+function wardFilterEnabled(){let ph=$('pharmacy')?.value||'';return ph==='INPATIENT'||ph==='IV'}
+function updateWardFilterVisibility(){
+  let w=$('wardFilterWrap');if(!w)return;let show=wardFilterEnabled()&&!isDoctor();w.classList.toggle('hidden',!show);if(!show&&$('departmentFilter'))$('departmentFilter').value='';
+}
 function renderDepartmentFilter(){
-  if(!$('departmentFilter'))return;let old=$('departmentFilter').value||'',deps=[...new Set(patientListCache.map(x=>String(x.department||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  $('departmentFilter').innerHTML='<option value="">All Departments / جميع الأقسام</option>'+deps.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
-  $('departmentFilter').value=deps.includes(old)?old:'';
+  if(!$('departmentFilter'))return;updateWardFilterVisibility();let old=$('departmentFilter').value||'';
+  if(!wardFilterEnabled()){$('departmentFilter').innerHTML='<option value="">All Wards / جميع الأقسام</option>';return}
+  let wards=[...new Set(patientListCache.map(x=>wardGroup(x.department)).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  $('departmentFilter').innerHTML='<option value="">All Wards / جميع الأقسام</option>'+wards.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  $('departmentFilter').value=wards.includes(old)?old:'';
 }
 function buildPatientList(){
   let ph=$('pharmacy').value,cacheKey=(hospital||'')+'|'+ph;if(patientListCacheByKey[cacheKey]){patientListCache=patientListCacheByKey[cacheKey];renderDepartmentFilter();renderPatientList();return}let items=[],seen=new Set();
@@ -555,10 +567,10 @@ function buildPatientList(){
   items.sort((a,b)=>a.name.localeCompare(b.name));patientListCache=items;patientListCacheByKey[cacheKey]=items;renderDepartmentFilter();renderPatientList();
 }
 function renderPatientList(){
-  let q=normSearch($('patientListSearch')?.value||''),dept=$('departmentFilter')?.value||'';
-  let rows=patientListCache.filter(x=>(!dept||String(x.department||'')===dept)&&(!q||normSearch(x.name).includes(q)||normSearch(x.name_ar).includes(q)||normSearch(x.mrn).includes(q)||normSearch(x.nid).includes(q))).slice(0,350);
+  let q=normSearch($('patientListSearch')?.value||''),dept=(wardFilterEnabled()?($('departmentFilter')?.value||''):'');
+  let rows=patientListCache.filter(x=>(!dept||wardGroup(x.department)===dept)&&(!q||normSearch(x.name).includes(q)||normSearch(x.name_ar).includes(q)||normSearch(x.mrn).includes(q)||normSearch(x.nid).includes(q))).slice(0,350);
   if(q&&!dept&&rows.length<80){for(const mrn of masterMatches(q,80)){if(rows.some(x=>x.mrn===mrn))continue;let mp=masterPatient(mrn);rows.push({mrn,name:mp?.name||mrn,name_ar:mp?.name_ar||'',nid:mp?.national_id||'',department:''});if(rows.length>=80)break}}
-  let activeInDept=dept?patientListCache.filter(x=>String(x.department||'')===dept).length:patientListCache.length;
+  let activeInDept=dept?patientListCache.filter(x=>wardGroup(x.department)===dept).length:patientListCache.length;
   $('patientListCount').textContent=`${activeInDept}`;if($('departmentPatientCount'))$('departmentPatientCount').textContent=dept?`${activeInDept} active patient(s) in ${dept}`:`${patientListCache.length} active patient(s) in this pharmacy`;
   $('patientList').innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name||x.mrn)}${x.name_ar?`<div class="ar-small">${esc(x.name_ar)}</div>`:''}<div class="mrn-small">MRN ${esc(x.mrn)}${x.nid?' • ID '+esc(x.nid):''}</div>${x.department?`<div class="dept-small">${esc(x.department)}</div>`:''}</button>`).join(''):'<div class="sub" style="padding:12px">No active patients found for this department/pharmacy.</div>';
   $('patientList').querySelectorAll('button[data-mrn]').forEach(b=>b.onclick=()=>loadPatient(b.dataset.mrn));
@@ -590,7 +602,7 @@ $('backHome').onclick=()=>{$('dispensePage').classList.add('hidden');$('landing'
 function buildMonths(){selectedMonths=new Set((DATA?.months||[]).slice(-2))}
 function buildMonthsFromSelection(){}
 function clearPatient(){selectedMRN='';['mrn','pname','nid','dept','par','age','weight','dob'].forEach(x=>$(x).value='');$('meds').innerHTML='';$('activeOrderCount').textContent='0';$('patientBanner').classList.add('hidden');renderPatientList()}
-$('pharmacy').onchange=()=>{if($('departmentFilter'))$('departmentFilter').value='';updateAddMedicationButton();buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);if(selectedMRN)loadPatient(selectedMRN)};
+$('pharmacy').onchange=()=>{if($('departmentFilter'))$('departmentFilter').value='';updateAddMedicationButton();updateWardFilterVisibility();buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);if(selectedMRN)loadPatient(selectedMRN)};
 $('departmentFilter').onchange=renderPatientList;
 $('patientListSearch').oninput=async()=>{let q=String($('patientListSearch').value||'').trim();if(hospital==='QCH'&&/^\d+$/.test(q)&&q.length>=3)await ensureQCHOldProfileShard(q);renderPatientList()};
 $('patientListSearch').onkeydown=async e=>{if(e.key==='Enter'){e.preventDefault();let q=String($('patientListSearch').value||'').trim();if(!q)return;await searchPatient(q)}};
@@ -1058,8 +1070,8 @@ function prepareIVOrderDialog(){
 }
 $('ivNewVolume').addEventListener('input',recalcIVDialogRate);$('ivNewInfusion').addEventListener('input',recalcIVDialogRate);
 $('saveIVOrder').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');
-  let req=['ivNewMed','ivNewSolution','ivNewDose','ivNewAccess','ivNewVolume','ivNewInfusion','ivNewRate','ivNewFreq','ivNewDays','ivNewRoute','ivNewProd','ivNewExpiry','ivNewOrderedBy','ivNewQty'];
-  if(requiredOrderFields(req).length)return alert('Complete all IV order fields before Add IV Order.');
+  let req=['ivNewMed','ivNewSolution','ivNewDose','ivNewAccess','ivNewFreq','ivNewDays','ivNewRoute','ivNewProd','ivNewExpiry','ivNewOrderedBy','ivNewQty'];
+  if(requiredOrderFields(req).length)return alert('Complete the required IV order fields before Add IV Order. Volume, infusion time and rate may be blank.');
   let med=$('ivNewMed').value.trim();
   let item={medication:med,dosage_form:'INJECTION',dose:$('ivNewDose').value.trim(),route:$('ivNewRoute').value.trim(),frequency:$('ivNewFreq').value,supply_days:+$('ivNewDays').value,quantity:$('ivNewQty').value.trim(),unit:'dose',order_kind:'NEW',source_date:'',source_doctor:$('ivNewOrderedBy').value.trim(),notes:'',label_type:'IV',iv_solution:$('ivNewSolution').value,iv_access:$('ivNewAccess').value,iv_volume:$('ivNewVolume').value.trim(),iv_infusion_time:$('ivNewInfusion').value.trim(),iv_rate:$('ivNewRate').value.trim(),iv_production_at:$('ivNewProd').value,iv_expiry_at:$('ivNewExpiry').value,iv_ordered_by:$('ivNewOrderedBy').value.trim()};
   try{$('saveIVOrder').disabled=true;$('saveIVOrder').textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});$('ivOrderDialog').close();patientListCacheByKey[(hospital||'')+'|IV']=null;buildPatientList();await mergeSharedPatientsIntoSidebar('IV');await loadPatient(selectedMRN)}
