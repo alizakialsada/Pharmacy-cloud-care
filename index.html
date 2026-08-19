@@ -618,7 +618,7 @@ async function enterHospital(code){
   let [en,ar]=hospNames();$('hospitalTitle').textContent=ar+' — '+en;applyRoleUI();
   $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(x[2])} / ${esc(x[1])}</option>`).join('');updateAddMedicationButton();
   $('drugList').innerHTML=DATA.drugs.map(x=>`<option value="${esc(x)}">`).join('');
-  selectedMonths=new Set((DATA.months||[]).slice(-2));buildPatientIdIndex();if($('patientDbCount'))$('patientDbCount').textContent='Patient database: '+Object.keys(PATIENT_MASTER||{}).length.toLocaleString()+' patients';clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Search by MRN, National ID, English or Arabic name. Stopped orders remain in History.':'Search by MRN, National ID, English or Arabic name. PMFH current medications use the latest available dispensing data.';
+  selectedMonths=new Set((DATA.months||[]).slice(-2));buildPatientIdIndex();if($('patientDbCount'))$('patientDbCount').textContent='Patient database: '+Object.keys(PATIENT_MASTER||{}).length.toLocaleString()+' patients';clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Stopped orders remain in History.':'PMFH current medications use the latest available dispensing data.';
   await loadDirectionLibrary();buildPatientList();mergeSharedPatientsIntoSidebar($('pharmacy').value);
 }
 $('backHome').onclick=()=>{$('dispensePage').classList.add('hidden');$('landing').classList.remove('hidden')};
