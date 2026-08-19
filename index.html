@@ -107,7 +107,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <div id="landing" class="wrap hidden">
   <div class="top">
     <div><div class="brand">Pharmacy cloud care</div><div class="sub">Select hospital / اختر المستشفى</div></div>
-    <div style="display:flex;gap:8px"><span id="cloudBadge" class="badge">☁ Checking Cloud...</span><button class="btn dark" id="adminOpen">Admin</button></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="landingSignedIn" class="badge hidden"></span><span id="cloudBadge" class="badge">☁ Checking Cloud...</span><button class="btn soft hidden" id="logoutLanding">Logout</button><button class="btn dark" id="adminOpen">Admin</button></div>
   </div>
   <div class="hospital-grid">
     <button class="hospital-card" data-h="QCH"><div class="hospital-icon">🏥</div><h2>Qatif Central Hospital</h2><div class="ar">مستشفى القطيف المركزي</div></button>
@@ -118,7 +118,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <div id="dispensePage" class="wrap hidden">
   <div class="top">
     <div><button class="btn soft" id="backHome">← Hospitals</button><div class="brand" id="hospitalTitle" style="margin-top:10px"></div><div class="sub" id="pharmacistLine"></div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge">V6.1 DOCTOR FIX</span><span id="cloudBadge2" class="badge">☁ Cloud</span><button class="btn dark pharmacist-only" id="adminOpenDispense">⚙ Admin Panel</button></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="cloudBadge2" class="badge">☁ Cloud</span><button class="btn soft" id="logoutDispense">Logout</button><button class="btn dark pharmacist-only" id="adminOpenDispense">⚙ Admin Panel</button></div>
   </div>
 
   <div class="medica-shell">
@@ -247,7 +247,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 </div>
 <datalist id="routeList"></datalist><datalist id="frequencyList"></datalist>
 
-<dialog id="loginDialog"><div class="modal loginbox"><h2>User Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser"><label style="margin-top:9px">Password</label><input id="loginPass" type="password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" id="requestAccountOpen">Request Account</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div><div class="sub" style="margin-top:10px">New accounts require Admin approval before first login.</div></div></dialog>
+<dialog id="loginDialog"><div class="modal loginbox"><h2>User Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser" autocomplete="off" autocapitalize="none" spellcheck="false"><label style="margin-top:9px">Password</label><input id="loginPass" type="password" autocomplete="new-password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" id="requestAccountOpen">Request Account</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div><div class="sub" style="margin-top:10px">New accounts require Admin approval before first login.</div></div></dialog>
 <dialog id="requestAccountDialog"><div class="modal loginbox"><h2>Request Pharmacist Account</h2><p class="sub" id="requestHospital"></p><label>Full Name</label><input id="requestFullName"><label style="margin-top:9px">Username</label><input id="requestUser"><label style="margin-top:9px">Password</label><input id="requestPass" type="password"><label style="margin-top:9px">Confirm Password</label><input id="requestPass2" type="password"><div id="requestError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="requestAccountGo">Submit Request</button><button class="btn soft" onclick="requestAccountDialog.close()">Cancel</button></div><div class="note" style="margin-top:12px">The account will remain Pending until approved by Admin.</div></div></dialog>
 <dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN</label><input id="newMrn"></div><div><label>Patient Name</label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"><div class="sub" style="margin-top:4px">Automatically filled when missing. Edit here if the Arabic spelling is incorrect.</div></div><div><label>National ID</label><input id="newNid"></div><div><label>Department</label><input id="newDept"></div><div><label>Age</label><input id="newAge"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
@@ -353,18 +353,39 @@ function applyRoleUI(){
 }
 document.querySelectorAll('.hospital-card').forEach(b=>b.onclick=()=>chooseHospital(b.dataset.h));
 async function chooseHospital(code){pendingHospital=code;if(!pharmacist){$('loginHospital').textContent=code==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginError').textContent='';$('loginDialog').showModal();return}await enterHospital(code)}
-$('loginGo').onclick=async()=>{try{let x=await rpc('medica_pharmacist_login_hospital',{p_username:$('loginUser').value,p_password:$('loginPass').value,p_hospital:pendingHospital});pharmacist=x;sessionStorage.setItem('medica_pharmacist',JSON.stringify(x));$('loginDialog').close();await enterHospital(pendingHospital)}catch(e){$('loginError').textContent=e.message}};
+$('loginGo').onclick=async()=>{try{let x=await rpc('medica_pharmacist_login_hospital',{p_username:$('loginUser').value,p_password:$('loginPass').value,p_hospital:pendingHospital});pharmacist=x;sessionStorage.setItem('medica_pharmacist',JSON.stringify(x));updateSessionHeader();$('loginDialog').close();await enterHospital(pendingHospital)}catch(e){$('loginError').textContent=e.message}};
 $('requestAccountOpen').onclick=()=>{$('requestHospital').textContent=pendingHospital==='QCH'?'Qatif Central Hospital (QCH)':'Prince Mohammed Bin Fahd Hospital (PMFH)';$('requestFullName').value='';$('requestUser').value='';$('requestPass').value='';$('requestPass2').value='';$('requestError').textContent='';$('loginDialog').close();$('requestAccountDialog').showModal()};
 $('requestAccountGo').onclick=async()=>{let p1=$('requestPass').value,p2=$('requestPass2').value;if(p1!==p2){$('requestError').textContent='Passwords do not match';return}try{$('requestAccountGo').disabled=true;await rpc('medica_request_account',{p_hospital:pendingHospital,p_username:$('requestUser').value,p_full_name:$('requestFullName').value,p_password:p1});$('requestAccountDialog').close();alert('Account request submitted successfully. Please wait for Admin approval.');$('loginHospital').textContent=pendingHospital==='QCH'?'Qatif Central Hospital':'Prince Mohammed Bin Fahd Hospital';$('loginDialog').showModal()}catch(e){$('requestError').textContent=e.message}finally{$('requestAccountGo').disabled=false}};
 try{
   let p=JSON.parse(sessionStorage.getItem('medica_pharmacist')||'null');
   if(p?.token){
-    if(!p.role){sessionStorage.removeItem('medica_pharmacist');pharmacist=null;throw new Error('Role refresh required');}
     let exp=p.expires_at?new Date(p.expires_at).getTime():0;
     if(exp && exp<=Date.now()){sessionStorage.removeItem('medica_pharmacist');pharmacist=null}
     else pharmacist=p;
   }
 }catch{}
+
+function updateSessionHeader(){
+  const ls=$('landingSignedIn'), lo=$('logoutLanding');
+  if(!ls||!lo)return;
+  if(pharmacist?.token){
+    const role=String(pharmacist.role||'pharmacist').toLowerCase();
+    ls.textContent='Signed in: '+(pharmacist.full_name||pharmacist.username||'User')+' • '+(role==='doctor'?'Doctor':'Pharmacist');
+    ls.classList.remove('hidden');lo.classList.remove('hidden');
+  }else{ls.textContent='';ls.classList.add('hidden');lo.classList.add('hidden')}
+}
+function logoutUser(){
+  pharmacist=null; hospital=null; pendingHospital=null; selectedMRN=''; selectedMonths.clear();
+  DATA=null; PATIENT_MASTER=null; PATIENT_ID_INDEX=null; QORD=null; QOLD=null; QOLD_PATIENTS=null; QOLD_PREFIX=null; QOLD_PATIENT_PREFIX=null;
+  patientListCache=[]; patientListCacheByKey={}; sharedOrderById={}; sharedProfileDeptCache={}; currentHistory=[];
+  sessionStorage.removeItem('medica_pharmacist');
+  try{$('loginUser').value='';$('loginPass').value='';$('mrn').value='';$('pname').value='';$('nid').value='';$('par').value='';$('dept').value='';$('age').value='';$('weight').value='';$('dob').value='';}catch{}
+  try{$('patientBanner').classList.add('hidden');$('meds').innerHTML='';$('patientList').innerHTML='<div class="sub" style="padding:12px">Sign in to load patients.</div>';$('patientListCount').textContent='';$('activeOrderCount').textContent='0';}catch{}
+  $('dispensePage').classList.add('hidden');$('adminPage').classList.add('hidden');$('landing').classList.remove('hidden');
+  updateSessionHeader();
+}
+$('logoutLanding').onclick=logoutUser; $('logoutDispense').onclick=logoutUser;
+updateSessionHeader();
 
 
 function qarr(arr,i){return (i==null||i<0)?'':(arr?.[i]||'')}
