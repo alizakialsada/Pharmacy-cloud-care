@@ -1044,6 +1044,24 @@ function adminUnitPhrase(amount,unit,lang='en'){
   if(u==='ml')return niceNum(n)+' مل';
   return niceNum(n)+' '+(unit||'جرعة');
 }
+function prescribedDosePhrase(dose){
+  let raw=String(dose||'').trim();if(!raw)return['',''];
+  let m=raw.match(/^(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|IU|UNITS?|UNIT|MEQ|ML)\b/i);
+  if(!m)return[raw,raw];
+  let n=niceNum(+m[1]),u=String(m[2]||'').toUpperCase(),enUnit=u==='UG'||u==='µG'?'MCG':u==='GRAM'||u==='GRAMS'?'G':u==='UNITS'||u==='UNIT'?'UNIT':u;
+  let arUnit=({MCG:'ميكروجرام',UG:'ميكروجرام','µG':'ميكروجرام',MG:'ملجم',GRAM:'جم',GRAMS:'جم',G:'جم',IU:'وحدة',UNIT:'وحدة',UNITS:'وحدة',MEQ:'ملي مكافئ',ML:'مل'})[u]||u;
+  return[n+' '+enUnit,n+' '+arUnit];
+}
+function injectionConcentrationVolume(item){
+  let drug=String(item.drug||item.medication||'').toUpperCase(),dose=String(item.dose||'').trim();
+  let dm=dose.match(/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\b/i);
+  let cm=drug.match(/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\s*\/\s*(\d+(?:\.\d+)?)\s*ML\b/i);
+  if(!dm||!cm)return'';
+  let db=doseToBase(dm[1],dm[2]),cb=doseToBase(cm[1],cm[2]),den=parseFloat(cm[3]);
+  if(!db||!cb||db[1]!==cb[1]||!den||cb[0]<=0)return'';
+  let ml=db[0]*den/cb[0];if(!(ml>0&&ml<=5000))return'';
+  return niceNum(ml)+' mL';
+}
 function administrationFromStrength(item){
   let doseRaw=String(item.dose||'').trim(),drug=String(item.drug||item.medication||'').toUpperCase(),form=String(item.form||'').toUpperCase();
   let dm=doseRaw.toUpperCase().match(/(\d+(?:\.\d+)?)\s*(MCG|UG|µG|MG|GRAMS?|GRAM|G|UNITS?|UNIT|MEQ)\b/);
@@ -1069,7 +1087,14 @@ function unitDose(item){
   if(rule?.dose_mode==='FIXED' && rule?.fixed_amount && rule?.fixed_unit){
     return [adminUnitPhrase(rule.fixed_amount,rule.fixed_unit,'en'),adminUnitPhrase(rule.fixed_amount,rule.fixed_unit,'ar')];
   }
-  if(rule?.dose_mode==='PRESCRIBED')return[item.dose||'',item.dose||''];
+  if(rule?.dose_mode==='PRESCRIBED')return prescribedDosePhrase(item.dose);
+  // For vials/ampoules/injections, always print the PRESCRIBED clinical dose (e.g. 700 MG), not a vial fraction/count.
+  // If the product name contains an explicit concentration (e.g. 1000 MG/100 ML), append the calculated mL in parentheses.
+  if(String(form||'').toUpperCase()==='INJECTION'){
+    let [enDose,arDose]=prescribedDosePhrase(item.dose),vol=injectionConcentrationVolume(item);
+    if(vol){let arVol=vol.replace(/mL/i,'مل');return[enDose+' ('+vol+')',arDose+' ('+arVol+')'];}
+    return[enDose,arDose];
+  }
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(IU|UNITS?|UNIT)\b/))&&(/INSULIN|FLEXPEN|PENFILL/.test(drug))){let n=+m[1];return[niceNum(n)+' unit'+(Math.abs(n-1)<0.001?'':'s'),arUnits(n)];}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(TABLET|TAB)/))){let n=+m[1];return[n===1?'1 tablet':niceNum(n)+' tablets',arTablet(n)]}
   if((m=raw.match(/(\d+(?:\.\d+)?)\s*(CAPSULE|CAP)/))){let n=+m[1];return[n===1?'1 capsule':niceNum(n)+' capsules',arCapsule(n)]}
