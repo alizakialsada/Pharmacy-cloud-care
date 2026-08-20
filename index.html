@@ -773,9 +773,23 @@ async function getSharedOrders(mrn,ph){
 function bindSharedOrderQty(){
   document.querySelectorAll('.shared-order').forEach(m=>{
     let q=m.querySelector('.qty-visible'),qh=m.querySelector('.qty-hidden');if(!q)return;
-    let row=sharedOrderById[String(m.dataset.sharedOrderId||'')],max=parseFloat(row?.remaining_quantity??row?.quantity??'');
-    if(Number.isFinite(max)){q.max=max;q.title='Dispensing quantity only — Remaining '+max}
-    q.oninput=()=>{let v=parseFloat(q.value);if(Number.isFinite(max)&&Number.isFinite(v)&&v>max)q.value=max;if(qh)qh.value=q.value};
+    let row=sharedOrderById[String(m.dataset.sharedOrderId||'')]||{},ph=String(row.pharmacy||$('pharmacy').value||'').toUpperCase();
+    let monthlyQty=parseFloat(row.ordered_quantity??row.quantity??''),defaultQty=parseFloat(row.remaining_quantity??row.quantity??''),totalRemaining=parseFloat(row.total_remaining_quantity??row.remaining_quantity??row.quantity??'');
+    if(Number.isFinite(totalRemaining)&&totalRemaining>=0){q.max=totalRemaining;q.title='You may dispense up to the total remaining authorized quantity: '+niceNum(totalRemaining)}
+    if(Number.isFinite(defaultQty)&&defaultQty>=0&&(!q.value||parseFloat(q.value)>totalRemaining))q.value=niceNum(Math.min(defaultQty,totalRemaining));
+    const update=()=>{
+      let v=Math.max(0,parseFloat(q.value)||0);
+      if(Number.isFinite(totalRemaining)&&v>totalRemaining){v=totalRemaining;q.value=niceNum(v)}
+      if(qh)qh.value=String(v);
+      // OPD/OPD2 orders store the 30-day quantity as ordered_quantity. The pharmacist may dispense several months at once.
+      // Keep the original order duration on screen, but save the actual dispensed supply days to history/label.
+      if((ph==='OPD'||ph==='OPD2')&&Number.isFinite(monthlyQty)&&monthlyQty>0){
+        let dispenseDays=Math.max(1,Math.round(30*v/monthlyQty));
+        let hiddenDays=m.querySelector('.days');if(hiddenDays)hiddenDays.value=String(dispenseDays);
+        q.title='30-day Qty: '+niceNum(monthlyQty)+' • Total remaining: '+niceNum(totalRemaining)+' • Selected supply: '+dispenseDays+' day(s)';
+      }
+    };
+    q.oninput=update;update();
   })
 }
 async function mergeSharedPatientsIntoSidebar(ph){
@@ -853,7 +867,7 @@ async function loadPatient(mrn){
     medNames=medNames.filter(drug=>{let key=normDrug(splitIVDrug(drug).additive||drug),rows=cloudHist.filter(x=>!x.is_void&&(x.dispensed_local_date||localDateKey(x.dispensed_at))===today&&x.pharmacy===ph&&normDrug(x.medication)===key);if(!rows.length)return true;let latestDisp=Math.max(...rows.map(x=>new Date(x.dispensed_at).getTime()||0)),latestReopen=Math.max(0,...rows.map(x=>x.show_again_at?(new Date(x.show_again_at).getTime()||0):0));return latestReopen>latestDisp});let sharedKeys=new Set(sharedOrders.map(activeOrderDrugKey));medNames=medNames.filter(drug=>!sharedKeys.has(activeOrderDrugKey(drug)));
     renderMeds(medNames,sp);if(sharedOrders.length){$('meds').insertAdjacentHTML('beforeend',sharedOrders.map(sharedOrderCard).join(''))}if(localManual.length){$('meds').insertAdjacentHTML('beforeend',localManual.filter(x=>!sharedOrders.some(s=>activeOrderDrugKey(s)===activeOrderDrugKey(x))).map(manualOrderCard).join(''))}$('activeOrderCount').textContent=String(medNames.length+sharedOrders.length+localManual.filter(x=>!sharedOrders.some(s=>activeOrderDrugKey(s)===activeOrderDrugKey(x))).length);updatePatientBanner(selectedMRN,{name,name_ar:ar,weight,birth:dob,gender,age,nationality,height,mobile,location:dept},sharedOrders);bindSharedOrderQty();$('patientStatus').className='info';$('patientStatus').textContent=hospital==='QCH'?(oldprof&&!sp&&!qprof?`Patient profile loaded from historical Medica data • No current Active Order source found • Open Order History to review previous medications.`:`Loaded ${medNames.length} medication(s) from QCH OPD2 dispensing data • ${phMeta()[2]}`):`Loaded ${medNames.length} current medication(s) • ${phMeta()[2]} • PMFH order-status source not yet available.`;
   }
-  renderPatientList();
+  bindEditOrderButtons();renderPatientList();
 }
 function detectForm(drug){
   let d=String(drug||'').toUpperCase();
@@ -1153,9 +1167,10 @@ let ORDER_DIALOG_MODE='NEW',ORDER_DIALOG_SOURCE=null;
 function setOrderDialogTitle(){
   const h=$('medDialog').querySelector('h2');
   if(ORDER_DIALOG_MODE==='RENEW')h.textContent='Renew Order';
+  else if(ORDER_DIALOG_MODE==='EDIT')h.textContent='Edit Order';
   else h.textContent='Add Order';
-  if($('saveMed'))$('saveMed').textContent='Save & Add Another';
-  if($('saveMedClose'))$('saveMedClose').textContent='Save & Close';
+  if(ORDER_DIALOG_MODE==='EDIT'){if($('saveMed'))$('saveMed').textContent='Update Order';if($('saveMedClose'))$('saveMedClose').textContent='Update & Close';}
+  else{if($('saveMed'))$('saveMed').textContent='Save & Add Another';if($('saveMedClose'))$('saveMedClose').textContent='Save & Close';}
 }
 function prepareAddOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
@@ -1175,7 +1190,7 @@ function prepareRenewOrderDialog(x){
   $('historyDialog')?.close();$('medDialog').showModal();
 }
 function prefillAddOrderFromMedication(){
-  if(ORDER_DIALOG_MODE==='RENEW')return;
+  if(ORDER_DIALOG_MODE==='RENEW'||ORDER_DIALOG_MODE==='EDIT')return;
   let med=$('newMed').value.trim();if(!med)return;let rule=ruleFor(med),form=rule?.dosage_form||detectForm(med),route=rule?.route||defaultRouteForDrug(med,form),freq=rule?.frequency||'OD';
   if([...$('newMedForm').options].some(o=>o.value===form))$('newMedForm').value=form;$('newMedRoute').value=route;$('newMedFreq').innerHTML=freqOptions(freq);$('newMedUnit').value=rule?.unit||defaultUnitForForm(form)||'';autoOrderQty();
 }
@@ -1183,8 +1198,11 @@ function ivDialogDateValue(d){let x=d instanceof Date?d:new Date(d||Date.now());
 function populateIVSolutionSelect(selected=''){if(!$('ivNewSolution'))return;populateIVMedicationList();$('ivNewSolution').innerHTML=ivSolutionOptions(selected);}
 function recalcIVDialogRate(){let v=parseFloat($('ivNewVolume').value),m=parseFloat($('ivNewInfusion').value);if(Number.isFinite(v)&&v>=0&&Number.isFinite(m)&&m>0)$('ivNewRate').value=(v/(m/60)).toFixed(1).replace(/\.0$/,'')}
 function applyIVTemplateByName(){let name=String($('ivTemplateName').value||'').trim(),t=ivTemplates.find(x=>String(x.template_name||'').toLowerCase()===name.toLowerCase());if(!t)return;let parts=normalizeIVMedicationAndSolution(t.medication||'',t.solution||'');$('ivNewMed').value=parts.medication;populateIVSolutionSelect(parts.solution);$('ivNewDose').value=t.dose||'';$('ivNewAccess').value=t.iv_access||'Peripheral';$('ivNewVolume').value=t.volume_ml||'';$('ivNewInfusion').value=t.infusion_minutes||'';$('ivNewRate').value=t.rate_ml_hr||'';$('ivNewFreq').innerHTML=freqOptions(t.frequency||'OD');$('ivNewDuration').value=Math.min(7,Math.max(1,+t.duration_days||1));$('ivNewDays').value=$('ivNewDuration').value;$('ivNewRoute').value=t.route||'IV Infusion';$('ivNewQty').dataset.manual='';autoIVQty();let sf=safetyFlagsForDrug(t.medication||'');$('ivTemplateName').dataset.notes=t.preparation_notes||'';$('ivTemplateName').dataset.stability=String(t.stability_hours||'');let sh=parseFloat(t.stability_hours);if(Number.isFinite(sh)&&sh>0){let prod=new Date($('ivNewProd').value||Date.now());$('ivNewExpiry').value=ivDialogDateValue(new Date(prod.getTime()+sh*3600e3))}recalcIVDialogRate()}
+let IV_ORDER_DIALOG_MODE='NEW',IV_ORDER_DIALOG_SOURCE=null;
+function setIVOrderDialogTitle(){let h=$('ivOrderDialog')?.querySelector('h2');if(h)h.textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Edit IV Order / تعديل طلب وريدي':'IV Order Template / نموذج طلب المحاليل الوريدية';if($('saveIVOrder'))$('saveIVOrder').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update IV Order':'Save & Add Another';if($('saveIVOrderClose'))$('saveIVOrderClose').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update & Close':'Save & Close'}
 function prepareIVOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
+  IV_ORDER_DIALOG_MODE='NEW';IV_ORDER_DIALOG_SOURCE=null;setIVOrderDialogTitle();
   $('ivTemplateName').value='';$('ivTemplateName').dataset.notes='';$('ivTemplateName').dataset.stability='';$('ivNewMed').value='';$('ivNewDose').value='';populateIVSolutionSelect('');$('ivNewAccess').value='Peripheral';$('ivNewVolume').value='';$('ivNewInfusion').value='';$('ivNewRate').value='';$('ivNewFreq').innerHTML=freqOptions('OD');$('ivNewDuration').value='1';$('ivNewDays').value='1';$('ivNewPriority').value='ROUTINE';$('ivNewRoute').value='IV Infusion';$('ivNewOrderedBy').value='';$('ivNewQty').value='1';
   let now=new Date(),tom=new Date(now.getTime()+24*3600e3);$('ivNewProd').value=ivDialogDateValue(now);$('ivNewExpiry').value=ivDialogDateValue(tom);$('ivOrderDialog').showModal();
 }
@@ -1196,14 +1214,29 @@ async function saveIVSharedOrder(closeAfter=false){
   let req=['ivTemplateName','ivNewMed','ivNewSolution','ivNewDose','ivNewAccess','ivNewFreq','ivNewDays','ivNewRoute','ivNewProd','ivNewExpiry','ivNewOrderedBy','ivNewQty'];
   if(requiredOrderFields(req).length)return alert('Complete the required IV order fields before saving. Volume, infusion time and rate may be blank.');
   let parts=normalizeIVMedicationAndSolution($('ivNewMed').value,$('ivNewSolution').value),med=parts.medication;if(parts.solution)populateIVSolutionSelect(parts.solution);
-  let sf=safetyFlagsForDrug(med);let item={medication:med,dosage_form:'INJECTION',dose:$('ivNewDose').value.trim(),route:$('ivNewRoute').value.trim(),frequency:$('ivNewFreq').value,supply_days:+$('ivNewDays').value,quantity:$('ivNewQty').value.trim(),unit:'dose',order_kind:'NEW',source_date:'',source_doctor:$('ivNewOrderedBy').value.trim(),order_priority:$('ivNewPriority').value,duration_value:+$('ivNewDuration').value,duration_unit:'DAYS',template_name:$('ivTemplateName').value.trim(),notes:$('ivTemplateName').dataset.notes||'',label_type:'IV',refrigerated:sf.refrigerated,high_alert:sf.high_alert,high_risk:sf.high_risk,protect_from_light:sf.protect_from_light,iv_solution:parts.solution||$('ivNewSolution').value,iv_access:$('ivNewAccess').value,iv_volume:$('ivNewVolume').value.trim(),iv_infusion_time:$('ivNewInfusion').value.trim(),iv_rate:$('ivNewRate').value.trim(),iv_production_at:$('ivNewProd').value,iv_expiry_at:$('ivNewExpiry').value,iv_ordered_by:$('ivNewOrderedBy').value.trim()};
+  let sf=safetyFlagsForDrug(med);let item={medication:med,dosage_form:'INJECTION',dose:$('ivNewDose').value.trim(),route:$('ivNewRoute').value.trim(),frequency:$('ivNewFreq').value,supply_days:+$('ivNewDays').value,quantity:$('ivNewQty').value.trim(),unit:'dose',order_kind:(IV_ORDER_DIALOG_SOURCE?.order_kind||'NEW'),source_date:(IV_ORDER_DIALOG_SOURCE?.source_date||''),source_doctor:$('ivNewOrderedBy').value.trim(),order_priority:$('ivNewPriority').value,duration_value:+$('ivNewDuration').value,duration_unit:'DAYS',template_name:$('ivTemplateName').value.trim(),notes:$('ivTemplateName').dataset.notes||'',label_type:'IV',refrigerated:sf.refrigerated,high_alert:sf.high_alert,high_risk:sf.high_risk,protect_from_light:sf.protect_from_light,iv_solution:parts.solution||$('ivNewSolution').value,iv_access:$('ivNewAccess').value,iv_volume:$('ivNewVolume').value.trim(),iv_infusion_time:$('ivNewInfusion').value.trim(),iv_rate:$('ivNewRate').value.trim(),iv_production_at:$('ivNewProd').value,iv_expiry_at:$('ivNewExpiry').value,iv_ordered_by:$('ivNewOrderedBy').value.trim()};
   let b=closeAfter?$('saveIVOrderClose'):$('saveIVOrder');
-  try{b.disabled=true;b.textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});patientListCacheByKey[(hospital||'')+'|IV']=null;await loadPatient(selectedMRN);await mergeSharedPatientsIntoSidebar('IV');if(closeAfter){$('ivOrderDialog').close()}else{let keepDoctor=$('ivNewOrderedBy').value;prepareIVOrderDialog();$('ivNewOrderedBy').value=keepDoctor;$('ivNewMed').focus()}}
+  try{b.disabled=true;b.textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});patientListCacheByKey[(hospital||'')+'|IV']=null;await loadPatient(selectedMRN);await mergeSharedPatientsIntoSidebar('IV');if(closeAfter||IV_ORDER_DIALOG_MODE==='EDIT'){$('ivOrderDialog').close()}else{let keepDoctor=$('ivNewOrderedBy').value;prepareIVOrderDialog();$('ivNewOrderedBy').value=keepDoctor;$('ivNewMed').focus()}}
   catch(e){alert('Unable to save IV order: '+e.message)}
-  finally{b.disabled=false;b.textContent=closeAfter?'Save & Close':'Save & Add Another'}
+  finally{b.disabled=false;setIVOrderDialogTitle()}
 }
 $('saveIVOrder').onclick=()=>saveIVSharedOrder(false);
 $('saveIVOrderClose').onclick=()=>saveIVSharedOrder(true);
+function cardOrderSnapshot(card){
+  let drug=card?.dataset?.drug||'',shared=sharedOrderById[String(card?.dataset?.sharedOrderId||'')]||{},form=card.querySelector('.form')?.value||shared.dosage_form||detectForm(drug),dose=card.querySelector('.dose')?.value||shared.dose||'',freq=card.querySelector('.freq')?.value||shared.frequency||'',route=card.querySelector('.route')?.value||shared.route||'',qty=card.querySelector('.qty-visible')?.value||card.querySelector('.qty-hidden')?.value||shared.remaining_quantity||shared.quantity||'',days=card.querySelector('.days')?.value||shared.supply_days||defaultDays(),orderedBy=card.querySelector('.orderedby')?.value||shared.source_doctor||shared.iv_ordered_by||card.querySelector('.order-doctor')?.textContent?.trim()||'',unit=shared.unit||card.querySelector('.hidden-order-inputs .unit')?.value||'';
+  if(!unit){let cells=[...card.children];unit=(cells[7]?.textContent||'').trim();if(unit==='—')unit=''}
+  return{...shared,drug,medication:drug,dosage_form:form,dose,frequency:freq,route,quantity:qty,supply_days:+days||1,ordered_by:orderedBy,source_doctor:orderedBy,unit:unit||defaultUnitForForm(form)||'',order_priority:shared.order_priority||'ROUTINE'}
+}
+function prepareEditRegularOrder(card){
+  let x=cardOrderSnapshot(card);ORDER_DIALOG_MODE='EDIT';ORDER_DIALOG_SOURCE=x;setOrderDialogTitle();
+  $('newMed').disabled=true;$('newMed').value=x.medication||x.drug||'';let form=x.dosage_form||detectForm(x.medication||'');if([...$('newMedForm').options].some(o=>o.value===form))$('newMedForm').value=form;else $('newMedForm').value='OTHER';$('newMedDose').value=x.dose||'';$('newMedRoute').value=x.route||defaultRouteForDrug(x.medication,form);$('newMedFreq').innerHTML=freqOptions(x.frequency||'OD');let dd=Math.max(1,+x.supply_days||1),ph=$('pharmacy').value;if((ph==='OPD'||ph==='OPD2')&&dd%30===0){$('newMedDuration').value=Math.min(6,dd/30);$('newMedDurationUnit').value='MONTHS'}else{$('newMedDuration').value=dd;$('newMedDurationUnit').value='DAYS'}$('newMedDays').value=String(dd);$('regularPriorityWrap').classList.toggle('hidden',ph!=='INPATIENT');$('newMedPriority').value=x.order_priority||'ROUTINE';$('newMedOrderedBy').value=x.source_doctor||x.ordered_by||'';$('newMedQty').readOnly=(ph==='OPD'||ph==='OPD2');$('newMedQty').value=x.quantity||'';$('newMedQty').dataset.manual='1';$('newMedUnit').value=x.unit||defaultUnitForForm(form)||'';syncRegularDuration();$('medDialog').showModal();
+}
+function prepareEditIVOrder(card){
+  let x=cardOrderSnapshot(card),parts=normalizeIVMedicationAndSolution(x.medication||x.drug||'',x.iv_solution||'');IV_ORDER_DIALOG_MODE='EDIT';IV_ORDER_DIALOG_SOURCE=x;setIVOrderDialogTitle();$('ivTemplateName').value=x.template_name||'Custom IV Order';$('ivTemplateName').dataset.notes=x.notes||'';$('ivTemplateName').dataset.stability='';$('ivNewMed').value=parts.medication;populateIVSolutionSelect(parts.solution);$('ivNewDose').value=x.dose||'';$('ivNewAccess').value=x.iv_access||'Peripheral';$('ivNewVolume').value=x.iv_volume||'';$('ivNewInfusion').value=x.iv_infusion_time||'';$('ivNewRate').value=x.iv_rate||'';$('ivNewFreq').innerHTML=freqOptions(x.frequency||'OD');$('ivNewDuration').value=Math.min(7,Math.max(1,+x.supply_days||1));$('ivNewDays').value=$('ivNewDuration').value;$('ivNewPriority').value=x.order_priority||'ROUTINE';$('ivNewRoute').value=x.route||'IV Infusion';$('ivNewOrderedBy').value=x.iv_ordered_by||x.source_doctor||x.ordered_by||'';$('ivNewQty').value=x.quantity||'1';$('ivNewQty').dataset.manual='1';$('ivNewProd').value=x.iv_production_at?String(x.iv_production_at).slice(0,16):ivDialogDateValue(new Date());$('ivNewExpiry').value=x.iv_expiry_at?String(x.iv_expiry_at).slice(0,16):ivDialogDateValue(new Date(Date.now()+24*3600e3));recalcIVDialogRate();$('ivOrderDialog').showModal();
+}
+function bindEditOrderButtons(){
+  if(isDoctor())return;document.querySelectorAll('#meds .medica-order').forEach(card=>{if(card.querySelector('.edit-order-btn'))return;let host=card.children[1]||card;let b=document.createElement('button');b.type='button';b.className='btn soft edit-order-btn';b.style.cssText='margin-top:7px;padding:5px 10px;font-size:11px';b.textContent='✎ Edit Order';b.onclick=e=>{e.preventDefault();e.stopPropagation();($('pharmacy').value==='IV'?prepareEditIVOrder(card):prepareEditRegularOrder(card))};host.appendChild(b)});
+}
 function updateAddMedicationButton(){if(!$('addMedication'))return;$('addMedication').textContent=$('pharmacy').value==='IV'?'+ Add IV Order':'+ Add Medication'}
 function openAddOrderForCurrentPharmacy(){if(isDoctor())return alert('Doctor accounts are read-only.');if($('pharmacy').value==='IV')prepareIVOrderDialog();else prepareAddOrderDialog()}
 $('addMedication').onclick=openAddOrderForCurrentPharmacy;
@@ -1218,9 +1251,9 @@ async function saveRegularSharedOrder(closeAfter=false){
   let req=['newMed','newMedForm','newMedDose','newMedRoute','newMedFreq','newMedDays','newMedOrderedBy','newMedQty','newMedUnit'];
   if(requiredOrderFields(req).length)return alert('Complete all order fields before saving.');
   let med=$('newMed').value.trim();syncRegularDuration();let days=+$('newMedDays').value,ph=$('pharmacy').value;if(ph==='INPATIENT'&&days>7)return alert('Inpatient orders are limited to 7 days.');if(days>180)return alert('Maximum order duration is 6 months.');
-  let item={medication:med,dosage_form:$('newMedForm').value,dose:$('newMedDose').value.trim(),route:$('newMedRoute').value.trim(),frequency:$('newMedFreq').value,supply_days:days,quantity:$('newMedQty').value.trim(),unit:$('newMedUnit').value.trim(),order_kind:ORDER_DIALOG_MODE,source_date:ORDER_DIALOG_SOURCE?.date||ORDER_DIALOG_SOURCE?.last_dispense||'',source_doctor:$('newMedOrderedBy').value.trim(),order_priority:ph==='INPATIENT'?$('newMedPriority').value:'ROUTINE',duration_value:+$('newMedDuration').value,duration_unit:$('newMedDurationUnit').value,notes:ORDER_DIALOG_SOURCE?.prescription||''};
+  let item={medication:med,dosage_form:$('newMedForm').value,dose:$('newMedDose').value.trim(),route:$('newMedRoute').value.trim(),frequency:$('newMedFreq').value,supply_days:days,quantity:$('newMedQty').value.trim(),unit:$('newMedUnit').value.trim(),order_kind:(ORDER_DIALOG_MODE==='RENEW'?'RENEW':(ORDER_DIALOG_SOURCE?.order_kind||'NEW')),source_date:ORDER_DIALOG_SOURCE?.date||ORDER_DIALOG_SOURCE?.last_dispense||'',source_doctor:$('newMedOrderedBy').value.trim(),order_priority:ph==='INPATIENT'?$('newMedPriority').value:'ROUTINE',duration_value:+$('newMedDuration').value,duration_unit:$('newMedDurationUnit').value,notes:ORDER_DIALOG_SOURCE?.prescription||''};
   let b=closeAfter?$('saveMedClose'):$('saveMed');
-  try{b.disabled=true;b.textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order:item});removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,[med]);removeLocalManualMeds(selectedMRN,$('pharmacy').value,[med]);await loadPatient(selectedMRN);if(closeAfter||ORDER_DIALOG_MODE==='RENEW'){$('medDialog').close();$('newMed').disabled=false}else{let keepDoctor=$('newMedOrderedBy').value;prepareAddOrderDialog();$('newMedOrderedBy').value=keepDoctor;$('newMed').focus()}}
+  try{b.disabled=true;b.textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order:item});removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,[med]);removeLocalManualMeds(selectedMRN,$('pharmacy').value,[med]);await loadPatient(selectedMRN);if(closeAfter||ORDER_DIALOG_MODE==='RENEW'||ORDER_DIALOG_MODE==='EDIT'){$('medDialog').close();$('newMed').disabled=false}else{let keepDoctor=$('newMedOrderedBy').value;prepareAddOrderDialog();$('newMedOrderedBy').value=keepDoctor;$('newMed').focus()}}
   catch(e){alert('Unable to save order: '+e.message)}
   finally{b.disabled=false;setOrderDialogTitle()}
 }
