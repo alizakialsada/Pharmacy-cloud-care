@@ -1,0 +1,62 @@
+PHARMACY CLOUD CARE — SAFE ADDITIVE DATA MERGE
+Date: 20 Aug 2026
+
+Source files reviewed:
+1) mustafa alhadad.xlsx -> PMFH
+2) sal.xlsx -> QCH (Alsalman / OPD2)
+3) salman.xlsx -> QCH mixed pharmacy history
+
+SAFETY RULES USED
+- Existing patient records were not deleted.
+- Existing history rows were not deleted.
+- Existing values were preserved; blank demographic fields were filled only when the new files had a value.
+- Patient ID from the source files was treated as MRN, NOT National ID.
+- History rows were added only when a matching date + pharmacy + medication + department event did not already exist.
+- Rows marked Not Dispensed were not inserted into dispense history.
+- Rows marked Dispensed but missing both dispense date/store were not inserted into history.
+- qch-orders-data.js / active order source was NOT changed.
+
+RESULTS
+QCH
+- Patients: 53,010 -> 53,394  (+384)
+- History events: 482,038 -> 489,279  (+7,241)
+- Medication catalog: 2,259 -> 2,604  (+345)
+- Patient search records: 45,505 -> 45,526  (+21)
+  Note: many of the +384 patients already existed in the larger patient-search file, so only 21 new search rows were required.
+
+PMFH
+- Patients: 16,099 -> 16,099  (+0)
+- History events: 149,669 -> 149,734  (+65)
+- Medication catalog: 1,064 -> 1,090  (+26)
+- Patient search records: 17,955 -> 17,958  (+3)
+  Note: the 3 PMFH search additions were already present in PMFH_DATA but absent from the patient-search file.
+
+SOURCE-BY-SOURCE
+mustafa alhadad.xlsx
+- New PMFH history events: +65
+- New PMFH medication names/formulations: +26
+- Patient-search additions: +3
+- Existing search records enriched: 54
+
+sal.xlsx
+- New QCH patients: +293
+- New QCH history events: +4,072
+- New QCH medication names/formulations: +69
+- Existing search records enriched: 1,019
+
+salman.xlsx
+- Additional new QCH patients after sal.xlsx merge: +91
+- Additional QCH history events: +3,169
+- Additional QCH medication names/formulations: +276
+- Patient-search additions: +21
+- Existing search records enriched: 604
+- 69 rows said Dispensed but had no usable dispense date/store, so they were deliberately NOT inserted into history.
+
+FILES TO UPLOAD
+- qch-data.js
+- qch-history.js
+- qch-patient-search.js
+- pmfh-data.js
+- pmfh-history.js
+- pmfh-patient-search.js
+- index.html (same latest index; included for convenience)
