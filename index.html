@@ -217,7 +217,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
       <div class="kpis">
         <div class="kpi"><span class="sub">Dispensed rows — selected range</span><b id="kpiToday">0</b></div>
         <div class="kpi"><span class="sub">Patients dispensed — selected range</span><b id="kpiPatientsToday">0</b></div>
-        <div class="kpi"><span class="sub">Pharmacists active — selected range</span><b id="kpiStaff">0</b></div>
+        <div class="kpi"><span class="sub">Pharmacists signed in now</span><b id="kpiStaff">0</b></div>
         <div class="kpi"><span class="sub">Latest activity</span><b id="kpiLatest" style="font-size:15px">—</b></div>
         <div class="kpi"><span class="sub">STAT dispensed</span><b id="kpiStatCount">0</b></div>
         <div class="kpi"><span class="sub">STAT average time</span><b id="kpiStatAvg">—</b></div>
@@ -318,7 +318,7 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 <script>
 const $=id=>document.getElementById(id);
 const ACCESS='124620';
-let hospital=null, DATA=null, PATIENT_MASTER=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[], patientListCacheByKey={}, directionLibraryLoadedAt=0, adminReturnPage='landing', HISTORY_RENEW_PREFILL=null, sharedOrderById={}, PATIENT_ID_INDEX=null, sharedProfileDeptCache={}, medicationLabelRules={}, ivTemplates=[], pendingNewPatientIdentifier='';
+let hospital=null, DATA=null, PATIENT_MASTER=null, QORD=null, QOLD=null, QOLD_PREFIX=null, QOLD_PATIENTS=null, QOLD_PATIENT_PREFIX=null, selectedMonths=new Set(), selectedMRN='', pharmacist=null, adminToken='', adminAccounts=[], adminLogs=[], adminOrderEvents=[], adminActiveSessions=[], currentHistory=[], calCursor=new Date(), pendingHospital=null, directionRules={}, routeLibrary=[], frequencyLibrary=[], patientListCache=[], patientListCacheByKey={}, directionLibraryLoadedAt=0, adminReturnPage='landing', HISTORY_RENEW_PREFILL=null, sharedOrderById={}, PATIENT_ID_INDEX=null, sharedProfileDeptCache={}, medicationLabelRules={}, ivTemplates=[], pendingNewPatientIdentifier='';
 
 function configOK(){const c=window.SUPABASE_CONFIG||{};return /^https:\/\/.+\.supabase\.co\/?$/.test(String(c.url||''))&&/^sb_publishable_/.test(String(c.publishableKey||''))}
 async function rpc(name,args={}){
@@ -1636,10 +1636,12 @@ async function refreshAccounts(){
 $('createAccount').onclick=async()=>{try{await rpc('medica_admin_create_account_v2',{p_admin_token:adminToken,p_hospital:$('newAccountHospital').value,p_username:$('newUser').value,p_full_name:$('newFullName').value,p_password:$('newPassword').value,p_role:$('newRole').value});$('newUser').value=$('newFullName').value=$('newPassword').value='';$('newRole').value='pharmacist';await refreshAccounts()}catch(e){alert(e.message)}};
 async function refreshAdmin(){if(!adminToken)return;try{
   let args={p_admin_token:adminToken,p_from:$('adminFrom').value,p_to:$('adminTo').value,p_hospital:$('adminHospital').value,p_pharmacy:$('adminPharmacy').value,p_pharmacist_id:$('adminPharmacist').value};
-  [adminLogs,adminOrderEvents]=await Promise.all([
-    rpc('medica_admin_logs',args).catch(()=>[]),
-    rpc('medica_admin_order_events_report',args).catch(()=>[])
-  ]);adminLogs=adminLogs||[];adminOrderEvents=adminOrderEvents||[];renderAdmin()
+  let activeArgs={p_admin_token:adminToken,p_hospital:$('adminHospital').value};
+  [adminLogs,adminOrderEvents,adminActiveSessions]=await Promise.all([
+    rpc('medica_admin_logs',args),
+    rpc('medica_admin_order_events_report',args),
+    rpc('medica_admin_active_sessions',activeArgs)
+  ]);adminLogs=adminLogs||[];adminOrderEvents=adminOrderEvents||[];adminActiveSessions=adminActiveSessions||[];renderAdmin()
 }catch(e){$('adminLive').textContent='● '+e.message}}
 function statMinutesFor(x){let a=x.order_created_at?new Date(x.order_created_at):null,b=x.dispensed_at?new Date(x.dispensed_at):null;if(!a||!b||isNaN(a)||isNaN(b))return null;let m=Math.round((b-a)/60000);return m>=0?m:null}
 function renderAdmin(){
@@ -1650,7 +1652,7 @@ function renderAdmin(){
  if(eventType==='DISPENSE')rows=rows.filter(x=>x._type==='DISPENSE');else if(eventType==='STAT')rows=rows.filter(x=>x._type==='STAT');else if(eventType==='HOLD')rows=rows.filter(x=>x._type==='HOLD');
  rows.sort((a,b)=>new Date(b._when||0)-new Date(a._when||0));
  $('adminRows').innerHTML=rows.map(x=>{let sm=x._type==='STAT'?statMinutesFor(x):null;return `<tr style="${x.is_void?'opacity:.65;text-decoration:line-through':''}"><td><b>${esc(x._type)}</b></td><td>${esc(fmtDT(x._when))}${x.is_void?'<br><b style="color:#b42318;text-decoration:none;display:inline-block">VOIDED</b>':''}</td><td>${esc(x._by||'—')}</td><td>${esc(x.hospital||'')}</td><td>${esc(x.pharmacy||'')}</td><td>${esc(x.mrn||'')}</td><td>${esc(x.patient_name||'')}</td><td>${esc(x.medication||'')}</td><td>${esc(x.dose||'')}</td><td>${esc(x.quantity||'')}</td><td>${sm==null?'—':esc(sm+' min')}</td><td>${esc(x._reason||x.status||'')}</td></tr>`}).join('');
- let rangeRows=(adminLogs||[]).filter(x=>!x.is_void);$('kpiToday').textContent=rangeRows.length;$('kpiPatientsToday').textContent=new Set(rangeRows.map(x=>String(x.hospital||'')+'|'+String(x.mrn||'')).filter(x=>x&&!x.endsWith('|'))).size;$('kpiStaff').textContent=new Set(rangeRows.map(x=>x.pharmacist_id).filter(Boolean)).size;let latest=rangeRows[0]||null;$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';
+ let rangeRows=(adminLogs||[]).filter(x=>!x.is_void);$('kpiToday').textContent=rangeRows.length;$('kpiPatientsToday').textContent=new Set(rangeRows.map(x=>String(x.hospital||'')+'|'+String(x.mrn||'')).filter(x=>x&&!x.endsWith('|'))).size;$('kpiStaff').textContent=(adminActiveSessions||[]).length;$('kpiStaff').title=(adminActiveSessions||[]).map(x=>x.full_name||x.username||'').filter(Boolean).join(' • ');let latest=rangeRows[0]||null;$('kpiLatest').textContent=latest?latest.pharmacist_name+' • '+fmtDT(latest.dispensed_at):'—';
  let stats=rangeRows.filter(x=>String(x.order_priority||'').toUpperCase()==='STAT'),mins=stats.map(statMinutesFor).filter(x=>x!=null);$('kpiStatCount').textContent=stats.length;$('kpiStatAvg').textContent=mins.length?(Math.round(mins.reduce((a,b)=>a+b,0)/mins.length)+' min'):'—';$('kpiHoldCount').textContent=(adminOrderEvents||[]).filter(x=>String(x.event_type||'').toUpperCase()==='HOLD').length;$('adminLive').textContent='● LIVE '+new Date().toLocaleTimeString()
 }
 $('adminRefresh').onclick=refreshAdmin;$('adminAll').onclick=()=>{$('adminFrom').value=$('adminTo').value='';refreshAdmin()};$('adminEventType').onchange=renderAdmin;
