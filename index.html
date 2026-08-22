@@ -114,7 +114,16 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 .hold-audit-line{margin-top:5px;font-size:11px;font-weight:900;color:#7b2733}
 @media(max-width:1200px){.admin-pane[data-admin-pane="reports"] .grid{grid-template-columns:repeat(3,1fr)}.admin-pane[data-admin-pane="reports"] .kpis{grid-template-columns:repeat(3,1fr)}}
 
-.ward-chip-bar{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.ward-chip{border:1px solid #d8bfc3;background:#fff8f8;color:#6b2530;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:900;cursor:pointer}.ward-chip.active{background:#6b2530;color:#fff;border-color:#6b2530;box-shadow:0 4px 12px #6b253022}.medica-order.continuing-order{background:#fff6cf!important;border-left-color:#d6a21d!important}.medica-order.continuing-order .status-pill{background:#f4d35e!important;color:#654d00!important}.custom-history-range{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:10px;max-width:760px}.renew-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}.bed-chip{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:#eef4f7;color:#21485a;font-size:10px;font-weight:900}
+.ward-chip-bar{display:flex;gap:7px;flex-wrap:nowrap;margin-top:7px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 7px;scrollbar-width:thin}
+.ward-chip-bar::-webkit-scrollbar{height:6px}
+.ward-chip{white-space:nowrap;flex:0 0 auto}
+.ward-count{display:inline-flex;min-width:18px;height:18px;padding:0 5px;align-items:center;justify-content:center;border-radius:999px;background:rgba(107,37,48,.10);font-size:9px;margin-left:4px}
+.ward-chip.active .ward-count{background:rgba(255,255,255,.22)}
+.dept-filter-wrap{margin-top:0}
+.dept-filter-wrap.ward-filter-top{grid-column:1/-1;border-top:1px solid #dce7eb;padding-top:8px;margin-top:2px}
+.dept-filter-wrap.ward-filter-top>label{display:inline-block;margin:0 10px 0 0!important;font-size:11px}
+.dept-filter-wrap.ward-filter-top #departmentPatientCount{display:inline-block;margin:0 0 0 8px!important}
+.ward-chip{border:1px solid #d8bfc3;background:#fff8f8;color:#6b2530;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:900;cursor:pointer}.ward-chip.active{background:#6b2530;color:#fff;border-color:#6b2530;box-shadow:0 4px 12px #6b253022}.medica-order.continuing-order{background:#fff6cf!important;border-left-color:#d6a21d!important}.medica-order.continuing-order .status-pill{background:#f4d35e!important;color:#654d00!important}.custom-history-range{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:10px;max-width:760px}.renew-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}.bed-chip{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:#eef4f7;color:#21485a;font-size:10px;font-weight:900}
 </style>
 </head>
 <body>
@@ -632,7 +641,13 @@ function wardGroup(location){
   let m=u.match(/^([A-Z][A-Z0-9]*)(?:\s|$)/);return m?m[1]:u;
 }
 function wardFilterEnabled(){let ph=$('pharmacy')?.value||'';return ph==='INPATIENT'||ph==='IV'}
+function placeWardFilterBelowSearch(){
+  let w=$('wardFilterWrap'),toolbar=document.querySelector('.medica-toolbar');if(!w||!toolbar)return;
+  if(w.parentElement!==toolbar){toolbar.appendChild(w)}
+  w.classList.add('ward-filter-top');
+}
 function updateWardFilterVisibility(){
+  placeWardFilterBelowSearch();
   let w=$('wardFilterWrap');if(!w)return;let show=wardFilterEnabled()&&!isDoctor();w.classList.toggle('hidden',!show);if(!show&&$('departmentFilter'))$('departmentFilter').value='';
 }
 function renderDepartmentFilter(){
@@ -643,7 +658,9 @@ function renderDepartmentFilter(){
   $('departmentFilter').value=wards.includes(old)?old:'';
   if($('wardChips')){
     let selected=$('departmentFilter').value||'';
-    $('wardChips').innerHTML=[`<button type="button" class="ward-chip ${selected?'':'active'}" data-ward="">All Wards</button>`,...wards.map(d=>`<button type="button" class="ward-chip ${selected===d?'active':''}" data-ward="${esc(d)}">${esc(d)}</button>`)].join('');
+    let counts={};for(const p of patientListCache){let w=wardGroup(p.department);if(w)counts[w]=(counts[w]||0)+1}
+    // wards is already built from current active patients only, so a ward disappears automatically when its count reaches zero.
+    $('wardChips').innerHTML=[`<button type="button" class="ward-chip ${selected?'':'active'}" data-ward="">All <span class="ward-count">${patientListCache.length}</span></button>`,...wards.map(d=>`<button type="button" class="ward-chip ${selected===d?'active':''}" data-ward="${esc(d)}">${esc(d)} <span class="ward-count">${counts[d]||0}</span></button>`)].join('');
     $('wardChips').querySelectorAll('.ward-chip').forEach(b=>b.onclick=()=>{$('departmentFilter').value=b.dataset.ward||'';renderDepartmentFilter();renderPatientList()});
   }
 }
@@ -1493,7 +1510,12 @@ function historyFiltered(){let ph=$('pharmacy').value,fr=$('historyFrom').value,
 function applyHistoryFilters(){let ph=$('pharmacy').value,sel=$('historyDepartment')?.value||'',deps=[...new Set(currentHistory.filter(x=>x.pharmacy===ph).map(x=>String(x.department||'').trim()).filter(Boolean))].sort();if($('historyDepartment')){$('historyDepartment').innerHTML='<option value="">All Departments</option>'+deps.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');$('historyDepartment').value=deps.includes(sel)?sel:''}let rows=historyFiltered(),latest=rows[0]?.date;calCursor=latest?new Date(latest+'T12:00:00'):new Date();renderLastDispenseSummary(rows);renderAllHistoryRecords(rows)}
 $('historyApply').onclick=()=>{document.querySelectorAll('.historyQuickBtn').forEach(b=>{b.classList.toggle('dark',b.dataset.range==='custom');b.classList.toggle('soft',b.dataset.range!=='custom')});applyHistoryFilters()};
 $('historyDrugSearch').oninput=applyHistoryFilters;$('historyDepartment').onchange=applyHistoryFilters;$('historyClear').onclick=()=>{$('historyDrugSearch').value='';$('historyDepartment').value='';setHistoryQuickRange('today')};
-function historyRowCanRenew(x){if(isDoctor())return false;return !!(x&&(x.historical_only||x.order_status==='Stopped'||x.event_kind==='stopped'||x.event_kind==='completed'))}
+function historyRowCanRenew(x){
+  if(isDoctor()||!x||x.is_void)return false;
+  // Any real historical medication record may be selected for renewal.
+  // The renewal creates a new shared order and never alters the original history record.
+  return !!(x.medication && (x.source==='Platform'||x.historical_only||x.order_status||x.event_kind||x.date||x.dispensed_at));
+}
 function historyRowDateValue(x){let v=x?.dispensed_at||x?.date||'';let t=x?.dispense_time||'';let d=new Date(String(v)+(t?' '+t:''));return isNaN(d)?0:d.getTime()}
 function historyPlatformActionsHTML(x,scope){
  if(isDoctor()||x?.source!=='Platform')return '';
@@ -1562,7 +1584,7 @@ function renderAllHistoryRecords(rows){
  let vals=[...(rows||[])].sort((a,b)=>historyRowDateValue(b)-historyRowDateValue(a)),ro=isDoctor();
  $('allHistoryRecords').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><b>All medication history — selected date range</b><div class="sub">'+(ro?'Read-only history for the selected pharmacy.':'Every dispensing/order-history record in the selected range. Select multiple historical medications and renew them together.')+'</div></div><div style="display:flex;gap:8px;align-items:center"><span class="badge">'+vals.length+' record(s)</span>'+(ro?'':'<button class="btn primary renewSelectedBtn" disabled>↻ Renew Selected (<span class="renewSelectedCount">0</span>)</button>')+'</div></div>'+ 
  (vals.length?'<div class="tablebox" style="margin-top:10px;max-height:520px"><table><thead><tr>'+(ro?'':'<th style="width:34px">✓</th>')+'<th>Date/Time</th><th>Medication</th><th>Status</th><th>Dose / Frequency / Route</th><th>Qty</th><th>Doctor</th><th>Dispensed By</th><th>Source</th>'+(ro?'':'<th>Actions</th>')+'</tr></thead><tbody>'+vals.map(x=>{let i=currentHistory.indexOf(x),can=historyRowCanRenew(x),st=x.order_status==='Stopped'||x.event_kind==='stopped'||x.event_kind==='completed';return `<tr class="${st?'history-stopped':''}">${ro?'':`<td>${can?`<input type="checkbox" class="renewpick" data-hidx="${i}" style="width:auto">`:''}</td>`}<td>${x.source==='Platform'?esc(fmtDT(x.dispensed_at)):esc(fmtDate(x.date))}${x.dispense_time?' '+esc(x.dispense_time):''}</td><td><b>${esc(x.medication||'—')}</b>${(x.label_type==='IV'||x.pharmacy==='IV')?'<div class="dept-chip">IV</div>':''}</td><td>${st?'<span class="stopped-badge">STOPPED</span>':esc(x.order_status||'Dispensed')}${x.is_void?'<div style="color:#b42318;font-weight:900">VOIDED</div>':''}</td><td>${esc([x.dose,x.frequency,x.route].filter(Boolean).join(' • ')||'—')}${(x.label_type==='IV'||x.pharmacy==='IV')?`<div class="iv-detail"><b>Solution:</b> ${esc(x.iv_solution||'—')} • <b>Volume:</b> ${esc(x.iv_volume||'—')} • <b>Rate:</b> ${esc(x.iv_rate||'—')} • <b>Infusion:</b> ${esc(x.iv_infusion_time||'—')} • <b>Access:</b> ${esc(x.iv_access||'—')}</div>`:''}</td><td>${esc(x.quantity||'—')} ${esc(x.unit||'')}</td><td>${esc(x.prescriber||x.source_doctor||x.ordered_by||'—')}</td><td><b>${esc(x.pharmacist_name||x.dispensed_by||'—')}</b></td><td>${esc(x.source||'—')}</td>${ro?'':`<td><div style="display:flex;gap:6px;flex-wrap:wrap">${can?`<button class="btn primary renewone" data-hidx="${i}">↻ Renew</button>`:''}${historyPlatformActionsHTML(x,'all')}</div></td>`}</tr>`}).join('')+'</tbody></table></div>':'<div class="sub" style="margin-top:8px">No records in this range for the current pharmacy.</div>');
- if(!ro){document.querySelectorAll('.renewSelectedBtn').forEach(b=>b.onclick=renewSelectedHistory);bindHistoryTableActions($('allHistoryRecords'));updateRenewSelectedCount()}
+ if(!ro){document.querySelectorAll('.renewSelectedBtn').forEach(b=>b.onclick=renewSelectedHistory);bindHistoryTableActions($('allHistoryRecords'));bindRenewPickSync();updateRenewSelectedCount()}
 }
 function renderLastDispenseSummary(rows){
  let active=rows.filter(x=>!x.is_void&&x.event_kind!=='stopped'),map=new Map();for(const x of active){let k=normDrug(x.medication),old=map.get(k),tx=new Date((x.dispensed_at||x.date)+' '+(x.dispense_time||'')).getTime()||0,ot=old?(new Date((old.dispensed_at||old.date)+' '+(old.dispense_time||'')).getTime()||0):-1;if(!old||tx>ot)map.set(k,x)}
