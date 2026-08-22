@@ -771,7 +771,7 @@ function renderDepartmentFilter(){
     let counts={};for(const p of patientListCache){let w=wardGroup(p.department);if(w)counts[w]=(counts[w]||0)+1}
     // wards is already built from current active patients only, so a ward disappears automatically when its count reaches zero.
     $('wardChips').innerHTML=[`<button type="button" class="ward-chip ${selected?'':'active'}" data-ward="">All <span class="ward-count">${patientListCache.length}</span></button>`,...wards.map(d=>`<button type="button" class="ward-chip ${selected===d?'active':''}" data-ward="${esc(d)}">${esc(d)} <span class="ward-count">${counts[d]||0}</span></button>`)].join('');
-    $('wardChips').querySelectorAll('.ward-chip').forEach(b=>b.onclick=()=>{$('departmentFilter').value=b.dataset.ward||'';renderDepartmentFilter();renderPatientList()});
+    $('wardChips').querySelectorAll('.ward-chip').forEach(b=>b.onclick=()=>{$('departmentFilter').value=b.dataset.ward||'';if($('patientList'))$('patientList').scrollTop=0;renderDepartmentFilter();renderPatientList()});
   }
 }
 let todayDispensedByMrn={},sourceCancelledByMrn={},sourceAcceptedByMrn={};
@@ -789,7 +789,20 @@ function applyTodayCompletedPatientFilter(ph,items){
   if(!(ph==='INPATIENT'||ph==='IV'))return items;
   return items.filter(x=>{let keys=activeSourceDrugKeysForPatient(String(x.mrn),ph),done=todayDispensedByMrn[String(x.mrn)]||new Set();return !(keys.length&&keys.every(k=>done.has(k)))})
 }
-async function refreshActivePatientSidebar(ph=$('pharmacy').value){patientListCacheByKey[(hospital||'')+'|'+ph]=null;await refreshTodayDispensedMap(ph);buildPatientList();await mergeSharedPatientsIntoSidebar(ph);renderPatientList()}
+async function refreshActivePatientSidebar(ph=$('pharmacy').value){
+  let ward=$('departmentFilter')?.value||'',scroll=$('patientList')?.scrollTop||0;
+  patientListCacheByKey[(hospital||'')+'|'+ph]=null;
+  await refreshTodayDispensedMap(ph);
+  buildPatientList();
+  await mergeSharedPatientsIntoSidebar(ph);
+  if(wardFilterEnabled()&&$('departmentFilter')){
+    let options=[...$('departmentFilter').options].map(o=>o.value);
+    if(options.includes(ward))$('departmentFilter').value=ward;
+    renderDepartmentFilter();
+  }
+  renderPatientList();
+  requestAnimationFrame(()=>{if($('patientList'))$('patientList').scrollTop=scroll});
+}
 let sidebarLocalDay=localDateKey(new Date());setInterval(async()=>{let d=localDateKey(new Date());if(d!==sidebarLocalDay){sidebarLocalDay=d;try{await refreshActivePatientSidebar()}catch(e){console.warn(e)}}},60000);
 
 function buildPatientList(){
@@ -819,13 +832,17 @@ function buildPatientList(){
   items=applyTodayCompletedPatientFilter(ph,items);items.sort((a,b)=>a.name.localeCompare(b.name));patientListCache=items;patientListCacheByKey[cacheKey]=items;renderDepartmentFilter();renderPatientList();
 }
 function renderPatientList(){
+  let list=$('patientList'),oldScroll=list?.scrollTop||0;
   let q=normSearch($('patientListSearch')?.value||''),dept=(wardFilterEnabled()?($('departmentFilter')?.value||''):'');
   let rows=patientListCache.filter(x=>(!wardFilterEnabled()||wardGroup(x.department)!=='VIRTUAL')&&(!dept||wardGroup(x.department)===dept)&&(!q||normSearch(x.name).includes(q)||normSearch(x.name_ar).includes(q)||normSearch(x.mrn).includes(q)||normSearch(x.nid).includes(q))).slice(0,350);
   if(q&&!dept&&rows.length<80){for(const mrn of masterMatches(q,80)){if(rows.some(x=>x.mrn===mrn))continue;let mp=masterPatient(mrn);rows.push({mrn,name:mp?.name||mrn,name_ar:mp?.name_ar||'',nid:mp?.national_id||'',department:''});if(rows.length>=80)break}}
   let activeInDept=dept?patientListCache.filter(x=>wardGroup(x.department)===dept).length:patientListCache.length;
   $('patientListCount').textContent=`${activeInDept}`;if($('departmentPatientCount'))$('departmentPatientCount').textContent=dept?`${activeInDept} active patient(s) in ${dept}`:`${patientListCache.length} active patient(s) in this pharmacy`;
-  $('patientList').innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name||x.mrn)}${x.name_ar?`<div class="ar-small">${esc(x.name_ar)}</div>`:''}<div class="mrn-small">MRN ${esc(x.mrn)}${x.nid?' • ID '+esc(x.nid):''}</div>${x.department?`<div class="dept-small">${esc(x.department)}</div>`:''}</button>`).join(''):'<div class="sub" style="padding:12px">No active patients found for this department/pharmacy.</div>';
-  $('patientList').querySelectorAll('button[data-mrn]').forEach(b=>b.onclick=()=>loadPatient(b.dataset.mrn));
+  list.innerHTML=rows.length?rows.map(x=>`<button data-mrn="${esc(x.mrn)}" class="${x.mrn===selectedMRN?'active':''}">${esc(x.name||x.mrn)}${x.name_ar?`<div class="ar-small">${esc(x.name_ar)}</div>`:''}<div class="mrn-small">MRN ${esc(x.mrn)}${x.nid?' • ID '+esc(x.nid):''}</div>${x.department?`<div class="dept-small">${esc(x.department)}</div>`:''}</button>`).join(''):'<div class="sub" style="padding:12px">No active patients found for this department/pharmacy.</div>';
+  list.querySelectorAll('button[data-mrn]').forEach(b=>b.onclick=()=>loadPatient(b.dataset.mrn));
+  // Re-rendering after Hold / Accept / Cancel / Dispense must not throw the user
+  // back to the top of the ward's patient list.
+  requestAnimationFrame(()=>{list.scrollTop=oldScroll});
 }
 function qchHistoryForPatient(mrn){
   let p=qPatient(mrn),out=[];if(!p)return out;
