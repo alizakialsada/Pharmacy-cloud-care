@@ -178,6 +178,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;p
 select,option,input,button,.btn,.note,.sub,.toolbar,label{
   direction:ltr;
 }
+
+/* v28 runtime English cleanup */
+#pharmacy,#pharmacy option{direction:ltr!important;text-align:left!important;font-family:Arial,sans-serif!important}
+#hospitalTitle{text-align:center!important;font-size:36px!important;font-weight:900!important}
 </style>
 </head>
 <body>
@@ -415,13 +419,27 @@ function regularDispensePeriodDays(){let ph=$('pharmacy')?.value||'';return (ph=
 
 function historyPharmacyLabel(code){let old=$('pharmacy').value;let m=(DATA?.pharmacies||[]).find(x=>x[0]===code);return m?m[1]:(code||'Pharmacy')}
 function hospNames(){return hospital==='QCH'?['Qatif Central Hospital','']:['Prince Mohammed Bin Fahd Hospital','']}
-function phMeta(){return (DATA?.pharmacies||[]).find(x=>x[0]===$('pharmacy').value)||['','Pharmacy','Pharmacy',1]}
+function englishPharmacyName(code){
+  return ({
+    OPD:'Outpatient Pharmacy',
+    OPD2:'OPD 2 Pharmacy',
+    INPATIENT:'Inpatient Pharmacy',
+    ER:'Emergency Pharmacy',
+    IV:'IV Drug Pharmacy',
+    NARCOTICS:'Narcotics & Controlled Pharmacy',
+    DISCHARGE:'Discharge Pharmacy'
+  })[String(code||'').toUpperCase()]||'Pharmacy';
+}
+function phMeta(){
+  let x=(DATA?.pharmacies||[]).find(v=>v[0]===$('pharmacy').value);
+  return x?[x[0],englishPharmacyName(x[0]),englishPharmacyName(x[0]),x[3]||1]:['','Pharmacy','Pharmacy',1];
+}
 function defaultDays(){return +phMeta()[3]||1}
 function prettyMonth(m){let [y,mo]=m.split('-');return new Date(+y,+mo-1,1).toLocaleString('en-US',{month:'short',year:'numeric'})}
 let previewDirectionRule=null;
 function ruleFor(drug){let k=normDrug(splitIVDrug(drug).additive||drug);if(previewDirectionRule&&previewDirectionRule.drug_key===k)return previewDirectionRule;return directionRules[k]||null}
 async function loadDirectionLibrary(){if(!pharmacist?.token)return;try{let x=await rpc('medica_get_direction_library',{p_token:pharmacist.token});directionRules={};for(const r of x?.rules||[])directionRules[r.drug_key]=r;routeLibrary=x?.routes||[];frequencyLibrary=x?.frequencies||[];renderLibraryLookups();directionLibraryLoadedAt=Date.now()}catch(e){console.warn('Directions library',e.message)}}
-function renderLibraryLookups(){let routes=routeLibrary.length?routeLibrary:[{code:'PO',label_en:'Oral',label_ar:'عن طريق الفم'},{code:'RECTAL',label_en:'Rectal',label_ar:'عن طريق المستقيم'},{code:'TOPICAL',label_en:'Topical',label_ar:'موضعي'},{code:'OPHTHALMIC',label_en:'Ophthalmic',label_ar:'للعين'},{code:'OTIC',label_en:'Otic',label_ar:'للأذن'},{code:'NASAL',label_en:'Nasal',label_ar:'عن طريق الأنف'},{code:'INHALATION',label_en:'Inhalation',label_ar:'استنشاق'},{code:'SC',label_en:'Subcutaneous',label_ar:'تحت الجلد'},{code:'IM',label_en:'Intramuscular',label_ar:'عضلي'},{code:'IV',label_en:'Intravenous',label_ar:'وريدي'},{code:'IV INFUSION',label_en:'IV Infusion',label_ar:'تسريب وريدي'}];let freqs=frequencyLibrary.length?frequencyLibrary:[{code:'OD',label_en:'once daily',label_ar:'مرة يوميًا'},{code:'BID',label_en:'twice daily',label_ar:'مرتين يوميًا'},{code:'TID',label_en:'three times daily',label_ar:'ثلاث مرات يوميًا'}];$('routeList').innerHTML=routes.map(x=>`<option value="${esc(x.code)}">${esc(x.label_en||'')} ${esc(x.label_ar||'')}</option>`).join('');$('frequencyList').innerHTML=freqs.map(x=>`<option value="${esc(x.code)}">${esc(x.label_en||'')} ${esc(x.label_ar||'')}</option>`).join('')}
+function renderLibraryLookups(){let routes=routeLibrary.length?routeLibrary:[{code:'PO',label_en:'Oral',label_ar:'عن طريق الفم'},{code:'RECTAL',label_en:'Rectal',label_ar:'عن طريق المستقيم'},{code:'TOPICAL',label_en:'Topical',label_ar:'موضعي'},{code:'OPHTHALMIC',label_en:'Ophthalmic',label_ar:'للعين'},{code:'OTIC',label_en:'Otic',label_ar:'للأذن'},{code:'NASAL',label_en:'Nasal',label_ar:'عن طريق الأنف'},{code:'INHALATION',label_en:'Inhalation',label_ar:'استنشاق'},{code:'SC',label_en:'Subcutaneous',label_ar:'تحت الجلد'},{code:'IM',label_en:'Intramuscular',label_ar:'عضلي'},{code:'IV',label_en:'Intravenous',label_ar:'وريدي'},{code:'IV INFUSION',label_en:'IV Infusion',label_ar:'تسريب وريدي'}];let freqs=frequencyLibrary.length?frequencyLibrary:[{code:'OD',label_en:'once daily',label_ar:'مرة يوميًا'},{code:'BID',label_en:'twice daily',label_ar:'مرتين يوميًا'},{code:'TID',label_en:'three times daily',label_ar:'ثلاث مرات يوميًا'}];$('routeList').innerHTML=routes.map(x=>`<option value="${esc(x.code)}">${esc(x.label_en||x.code||'')}</option>`).join('');$('frequencyList').innerHTML=freqs.map(x=>`<option value="${esc(x.code)}">${esc(x.label_en||x.code||'')}</option>`).join('')}
 function applyTemplate(t,i,lang){if(!t)return'';let [de,da]=unitDose(i),map={dose:lang==='ar'?da:de,frequency:lang==='ar'?freqAr(i.freq):freqEn(i.freq),days:i.days||'',route:lang==='ar'?routeAr(i.route):i.route||'',unit:(ruleFor(i.drug)?.unit||'')};return String(t).replace(/\{(dose|frequency|days|route|unit)\}/g,(_,k)=>map[k]??'').replace(/\s+/g,' ').trim()}
 
 function unlock(){if(($('accessCode').value||'').trim()===ACCESS){sessionStorage.setItem('medica_access','1');$('lockScreen').classList.add('hidden');$('landing').classList.remove('hidden')}else $('lockError').textContent='Incorrect code'}
@@ -825,8 +843,8 @@ function qchHistoryForPatient(mrn){
 async function enterHospital(code){
   hospital=code;patientListCacheByKey={};PATIENT_ID_INDEX=null;$('landing').classList.add('hidden');$('dispensePage').classList.remove('hidden');$('patientStatus').textContent='Loading hospital data...';
   try{[DATA,PATIENT_MASTER]=await Promise.all([ensureHospitalData(code),ensurePatientSearchData(code)]);QORD=code==='QCH'?await ensureQCHOrders():null}catch(e){$('patientStatus').className='note error';$('patientStatus').textContent=e.message;return}
-  let [en,ar]=hospNames();$('hospitalTitle').textContent=ar+' — '+en;applyRoleUI();
-  $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(x[2])} / ${esc(x[1])}</option>`).join('');updateAddMedicationButton();
+  let [en,ar]=hospNames();$('hospitalTitle').textContent=en;applyRoleUI();
+  $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(englishPharmacyName(x[0]))}</option>`).join('');updateAddMedicationButton();
   $('drugList').innerHTML=DATA.drugs.map(x=>`<option value="${esc(x)}">`).join('');
   selectedMonths=new Set((DATA.months||[]).slice(-2));buildPatientIdIndex();if($('patientDbCount'))$('patientDbCount').textContent='Patient database: '+Object.keys(PATIENT_MASTER||{}).length.toLocaleString()+' patients';clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Stopped orders remain in History.':'PMFH current medications use the latest available dispensing data.';
   await Promise.all([loadDirectionLibrary(),loadMedicationLabelRules(),loadIVTemplates()]);await refreshTodayDispensedMap($('pharmacy').value);buildPatientList();await mergeSharedPatientsIntoSidebar($('pharmacy').value);
@@ -1164,7 +1182,7 @@ function medCard(drug,i,sp){
   return `<div class="med" data-drug="${esc(drug)}" data-source-order="1" data-source-order-key="${esc(legacySourceOrderKey(drug))}"><div class="medhead"><input class="pick" type="checkbox"><div class="medname">${esc(drug)}</div><span class="badge">${esc(p.form)}</span></div><div class="medgrid">
   <div><div class="fieldcap">Dosage Form</div><select class="form">${formOptions(p.form)}</select></div><div><div class="fieldcap">Dose</div><input class="dose" value="${esc(p.dose)}"></div><div><div class="fieldcap">Frequency</div><select class="freq">${freqOptions(p.freq)}</select></div><div><div class="fieldcap">Qty</div><input class="qty" type="number" min="0"></div><div><div class="fieldcap">Days</div><input class="days" type="number" min="1" value="${days}"></div>
   </div><div class="grid" style="margin-top:9px"><div><div class="fieldcap">Route</div><input class="route" list="routeList" value="${esc(rule?.route||defaultRouteForDrug(drug,p.form))}"></div><div><div class="fieldcap">Expiry Date (optional)</div><input class="expiry" type="date"></div><div style="display:flex;gap:12px;align-items:center;padding-top:20px"><label><input class="refrig" type="checkbox" style="width:auto"> Refrigerated</label><label><input class="alert" type="checkbox" style="width:auto"> High Alert</label><label><input class="risk" type="checkbox" style="width:auto"> High Risk</label></div></div>
-  ${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Directions / طريقة الاستعمال">${esc(opts[0]||'')}</textarea></div>`
+  ${opts.length?`<select class="rxsel" style="margin-top:10px">${opts.map((x,j)=>`<option value="${esc(x)}">${j?esc(x):'Latest: '+esc(x)}</option>`).join('')}</select>`:''}<textarea class="free" placeholder="Directions">${esc(opts[0]||'')}</textarea></div>`
 }
 function formOptions(sel){return['TABLET','CAPSULE','LIQUID','DROPS','INHALER','SPRAY','STRIP','SACHET','SUPPOSITORY','TOPICAL','INJECTION','OTHER'].map(x=>`<option ${x===sel?'selected':''}>${x}</option>`).join('')}
 function freqOptions(sel){let base=['','OD','BID','TID','QID','Q4H','Q6H','Q8H','Q12H','QHS','PRN','ONCE','WEEKLY','MONTHLY','3 TIMES WEEKLY'],extra=frequencyLibrary.map(x=>x.code).filter(Boolean),all=[...new Set([...base,...extra])];if(sel&&!all.includes(sel))all.push(sel);return all.map(x=>`<option ${x===sel?'selected':''}>${x||'—'}</option>`).join('')}
@@ -1442,7 +1460,7 @@ function populateIVSolutionSelect(selected=''){if(!$('ivNewSolution'))return;pop
 function recalcIVDialogRate(){let v=parseFloat($('ivNewVolume').value),m=parseFloat($('ivNewInfusion').value);if(Number.isFinite(v)&&v>=0&&Number.isFinite(m)&&m>0)$('ivNewRate').value=(v/(m/60)).toFixed(1).replace(/\.0$/,'')}
 function applyIVTemplateByName(){let name=String($('ivTemplateName').value||'').trim(),t=ivTemplates.find(x=>String(x.template_name||'').toLowerCase()===name.toLowerCase());if(!t)return;let parts=normalizeIVMedicationAndSolution(t.medication||'',t.solution||'');$('ivNewMed').value=parts.medication;populateIVSolutionSelect(parts.solution);$('ivNewDose').value=t.dose||'';$('ivNewAccess').value=t.iv_access||'Peripheral';$('ivNewVolume').value=t.volume_ml||'';$('ivNewInfusion').value=t.infusion_minutes||'';$('ivNewRate').value=t.rate_ml_hr||'';$('ivNewFreq').innerHTML=freqOptions(t.frequency||'OD');$('ivNewDuration').value=Math.min(7,Math.max(1,+t.duration_days||1));$('ivNewDays').value=$('ivNewDuration').value;$('ivNewRoute').value=t.route||'IV Infusion';$('ivNewQty').dataset.manual='';autoIVQty();let sf=safetyFlagsForDrug(t.medication||'');$('ivTemplateName').dataset.notes=t.preparation_notes||'';$('ivTemplateName').dataset.stability=String(t.stability_hours||'');let sh=parseFloat(t.stability_hours);if(Number.isFinite(sh)&&sh>0){let prod=new Date($('ivNewProd').value||Date.now());$('ivNewExpiry').value=ivDialogDateValue(new Date(prod.getTime()+sh*3600e3))}recalcIVDialogRate()}
 let IV_ORDER_DIALOG_MODE='NEW',IV_ORDER_DIALOG_SOURCE=null;
-function setIVOrderDialogTitle(){let h=$('ivOrderDialog')?.querySelector('h2');if(h)h.textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Edit IV Order / تعديل طلب وريدي':'IV Order Template';if($('saveIVOrder'))$('saveIVOrder').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update IV Order':'Save & Add Another';if($('saveIVOrderClose'))$('saveIVOrderClose').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update & Close':'Save & Close'}
+function setIVOrderDialogTitle(){let h=$('ivOrderDialog')?.querySelector('h2');if(h)h.textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Edit IV Order':'IV Order Template';if($('saveIVOrder'))$('saveIVOrder').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update IV Order':'Save & Add Another';if($('saveIVOrderClose'))$('saveIVOrderClose').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update & Close':'Save & Close'}
 function prepareIVOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
   IV_ORDER_DIALOG_MODE='NEW';IV_ORDER_DIALOG_SOURCE=null;setIVOrderDialogTitle();
@@ -1556,7 +1574,7 @@ $('holdOrderBtn').onclick=async()=>{
   let rows=selectedOrderRows();if(!rows.length)return alert('Select order(s) first');
   if(rows.some(m=>!m.dataset.sharedOrderId))return alert('Hold is available only for orders added or renewed in Pharmacy cloud care. Medica source orders must be changed in Medica.');
   if(rows.some(m=>String(m.dataset.orderStatus||'ACTIVE').toUpperCase()==='HOLD'))return alert('One or more selected orders are already ON HOLD. Use Release Hold first.');
-  let reason=prompt('Reason for HOLD / سبب الهولد');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter the hold reason');
+  let reason=prompt('Reason for Hold');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter the hold reason');
   if(!confirm('Put the selected order(s) on HOLD? While held, no edit/preview/print/dispense/cancel actions are allowed until Release Hold.'))return;
   try{await setSelectedSharedOrderStatus('HOLD',reason);alert('Selected order(s) placed ON HOLD.')}catch(e){alert('Unable to hold order: '+e.message)}
 };
@@ -1564,7 +1582,7 @@ $('releaseHoldBtn').onclick=async()=>{
   let rows=selectedOrderRows();if(!rows.length)return alert('Select held order(s) first');
   if(rows.some(m=>!m.dataset.sharedOrderId))return alert('Release Hold is available only for Pharmacy cloud care orders.');
   if(rows.some(m=>String(m.dataset.orderStatus||'').toUpperCase()!=='HOLD'))return alert('Select only ON HOLD orders.');
-  let reason=prompt('Reason for Release Hold / سبب رفع التعليق','Hold entered by mistake');if(reason===null||!reason.trim())return;
+  let reason=prompt('Reason for Release Hold','Hold entered by mistake');if(reason===null||!reason.trim())return;
   try{await setSelectedSharedOrderStatus('ACTIVE',reason.trim());alert('Hold released successfully.')}catch(e){alert('Unable to release hold: '+e.message)}
 };
 $('acceptOrderBtn').onclick=async()=>{
@@ -1581,7 +1599,7 @@ $('acceptOrderBtn').onclick=async()=>{
 };
 $('cancelOrderBtn').onclick=async()=>{
   let rows=selectedOrderRows();if(rows.some(m=>String(m.dataset.orderStatus||'').toUpperCase()==='HOLD'))return alert('This order is ON HOLD. Release Hold before any other action.');if(!rows.length)return alert('Select order(s) first');
-  let reason=prompt('Reason for cancelling the order / سبب إلغاء الطلب');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');
+  let reason=prompt('Reason for cancelling the order');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');
   if(!confirm('Cancel the selected order(s)? They will be removed from Active Medication Orders but kept in the database audit trail.'))return;
   try{let shared=rows.filter(m=>m.dataset.sharedOrderId),source=rows.filter(m=>m.dataset.sourceOrderKey);if(shared.length){let ids=shared.map(m=>Number(m.dataset.sharedOrderId)).filter(Number.isFinite);await rpc('medica_set_shared_order_status',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order_ids:ids,p_status:'CANCELLED',p_reason:reason})}if(source.length){let orders=source.map(m=>({order_key:m.dataset.sourceOrderKey,medication:m.dataset.drug||''}));await rpc('medica_set_source_order_status',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_orders:orders,p_status:'CANCELLED',p_reason:reason})}if(!shared.length&&!source.length)return alert('No cancellable order selected');await loadPatient(selectedMRN);await refreshActivePatientSidebar($('pharmacy').value);alert('Selected order(s) cancelled in Pharmacy Cloud Care. Source Medica records remain unchanged for audit/history.')}catch(e){alert('Unable to cancel order: '+e.message)}
 };
@@ -1630,14 +1648,14 @@ function historyPlatformActionsHTML(x,scope){
 async function historyCancelDispense(x){
  if(isDoctor())return alert('Doctor accounts are read-only.');
  if(!x||x.source!=='Platform'||x.is_void)return;
- let reason=prompt('Reason for cancellation / سبب الإلغاء');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');
+ let reason=prompt('Reason for cancellation');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');
  if(!confirm('Cancel this dispensing record? The order will return to the patient screen and the record will remain as VOIDED.'))return;
  try{let r=await rpc('medica_void_dispense',{p_token:pharmacist.token,p_dispense_id:Number(x.id),p_reason:reason});x.is_void=true;x.voided_at=r.voided_at;x.voided_by_name=r.voided_by;x.void_reason=reason;applyHistoryFilters();await loadPatient(selectedMRN);alert('Dispense cancelled. Order returned to the patient screen.')}catch(e){alert('Cancellation failed: '+e.message)}
 }
 async function historyShowAgain(x){
  if(isDoctor())return alert('Doctor accounts are read-only.');
  if(!x||x.source!=='Platform'||x.is_void)return;
- let reason=prompt('Reason to show this order again (example: dose lost in ward) / السبب');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a reason');
+ let reason=prompt('Reason to show this order again (example: dose lost in ward)');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a reason');
  try{let r=await rpc('medica_show_order_again',{p_token:pharmacist.token,p_dispense_id:Number(x.id),p_reason:reason});x.show_again_at=r.show_again_at;x.show_again_by_name=r.show_again_by;x.show_again_reason=reason;applyHistoryFilters();await loadPatient(selectedMRN);alert('Order is available again on the patient screen. Original dispensing remains in History.')}catch(e){alert('Show Order Again failed: '+e.message)}
 }
 function bindHistoryTableActions(root=document){
@@ -1668,7 +1686,7 @@ function ensureRenewQueueVisibleOnPatient(){
 async function renewSelectedHistory(){
  let idx=[...new Set([...document.querySelectorAll('.renewpick:checked')].map(x=>Number(x.dataset.hidx)).filter(Number.isFinite))],rows=idx.map(i=>currentHistory[i]).filter(historyRowCanRenew);
  if(!rows.length)return alert('Select medication(s) to renew.');
- const ans=prompt(`Renew ${rows.length} selected medication(s) for how many days? / مدة التجديد كم يوم؟`,'30');if(ans===null)return;const renewDays=Math.max(1,parseInt(ans,10)||30);
+ const ans=prompt(`Renew ${rows.length} selected medication(s) for how many days?`,'30');if(ans===null)return;const renewDays=Math.max(1,parseInt(ans,10)||30);
  if(!confirm(`Add ${rows.length} renewal order(s) for ${renewDays} day(s)? You can review quantity and directions on the patient screen before dispensing.`))return;
  try{
    for(const x of rows){
@@ -1726,8 +1744,8 @@ function showHistoryDay(date){
    ${platform?`<div style="margin-top:10px;padding-top:9px;border-top:1px solid #eadfe1"><div style="font-size:12px;font-weight:900;margin-bottom:7px;color:#6b2530">Dispense Actions</div><div style="display:flex;gap:8px;flex-wrap:wrap">${!x.is_void?`<button class="btn red voiddisp" data-id="${x.id}" data-date="${date}">↶ Cancel Dispense</button><button class="btn soft showagain" data-id="${x.id}" data-date="${date}">↻ Show Order Again</button>`:''}<button class="btn dark reprintlabel" data-id="${x.id}">▣ Reprint Label</button></div></div>`:''}</div>`
  }).join(''):'<div class="sub">No records.</div>');
  document.querySelectorAll('.renewhistday').forEach(b=>b.onclick=()=>renewHistoricalMedication(currentHistory[Number(b.dataset.hidx)]));
- document.querySelectorAll('.voiddisp').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason for cancellation / سبب الإلغاء');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');if(!confirm('Cancel this dispensing record? The order will return to the patient screen and the record will remain as VOIDED.'))return;try{let r=await rpc('medica_void_dispense',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.is_void=true;row.voided_at=r.voided_at;row.voided_by_name=r.voided_by;row.void_reason=reason}showHistoryDay(b.dataset.date);renderLastDispenseSummary(historyFiltered());await loadPatient(selectedMRN);alert('Dispense cancelled. Order returned to the patient screen.')}catch(e){alert('Cancellation failed: '+e.message)}});
- document.querySelectorAll('.showagain').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason to show this order again (example: dose lost in ward) / السبب');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a reason');try{let r=await rpc('medica_show_order_again',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.show_again_at=r.show_again_at;row.show_again_by_name=r.show_again_by;row.show_again_reason=reason}showHistoryDay(b.dataset.date);await loadPatient(selectedMRN);alert('Order is available again on the patient screen. Original dispensing remains in History.')}catch(e){alert('Show Order Again failed: '+e.message)}});
+ document.querySelectorAll('.voiddisp').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason for cancellation');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a cancellation reason');if(!confirm('Cancel this dispensing record? The order will return to the patient screen and the record will remain as VOIDED.'))return;try{let r=await rpc('medica_void_dispense',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.is_void=true;row.voided_at=r.voided_at;row.voided_by_name=r.voided_by;row.void_reason=reason}showHistoryDay(b.dataset.date);renderLastDispenseSummary(historyFiltered());await loadPatient(selectedMRN);alert('Dispense cancelled. Order returned to the patient screen.')}catch(e){alert('Cancellation failed: '+e.message)}});
+ document.querySelectorAll('.showagain').forEach(b=>b.onclick=async()=>{let reason=prompt('Reason to show this order again (example: dose lost in ward)');if(reason===null)return;reason=reason.trim();if(!reason)return alert('Please enter a reason');try{let r=await rpc('medica_show_order_again',{p_token:pharmacist.token,p_dispense_id:Number(b.dataset.id),p_reason:reason});let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row){row.show_again_at=r.show_again_at;row.show_again_by_name=r.show_again_by;row.show_again_reason=reason}showHistoryDay(b.dataset.date);await loadPatient(selectedMRN);alert('Order is available again on the patient screen. Original dispensing remains in History.')}catch(e){alert('Show Order Again failed: '+e.message)}});
  document.querySelectorAll('.reprintlabel').forEach(b=>b.onclick=()=>{let row=currentHistory.find(x=>x.source==='Platform'&&Number(x.id)===Number(b.dataset.id));if(row)printHistoryLabel(row)});
 }
 
