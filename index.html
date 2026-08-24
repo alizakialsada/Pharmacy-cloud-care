@@ -349,7 +349,7 @@ select,option,input,button,.btn,.note,.sub,.toolbar,label{
 <dialog id="loginDialog"><div class="modal loginbox"><h2>User Login</h2><p class="sub" id="loginHospital"></p><label>Username</label><input id="loginUser" autocomplete="off" autocapitalize="none" spellcheck="false"><label style="margin-top:9px">Password</label><input id="loginPass" type="password" autocomplete="new-password"><div id="loginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn primary" id="loginGo">Login</button><button class="btn soft" id="requestAccountOpen">Request Account</button><button class="btn soft" onclick="loginDialog.close()">Cancel</button></div><div class="sub" style="margin-top:10px">New accounts require Admin approval before first login.</div></div></dialog>
 <dialog id="requestAccountDialog"><div class="modal loginbox"><h2>Request Pharmacist Account</h2><p class="sub" id="requestHospital"></p><label>Full Name</label><input id="requestFullName"><label style="margin-top:9px">Username</label><input id="requestUser"><label style="margin-top:9px">Password</label><input id="requestPass" type="password"><label style="margin-top:9px">Confirm Password</label><input id="requestPass2" type="password"><div id="requestError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="requestAccountGo">Submit Request</button><button class="btn soft" onclick="requestAccountDialog.close()">Cancel</button></div><div class="note" style="margin-top:12px">The account will remain Pending until approved by Admin.</div></div></dialog>
 <dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
-<dialog id="patientDialog"><div class="modal"><h2>Add / Update Patient</h2><div class="grid2"><div><label>MRN <span class="required-mark">*</span></label><input id="newMrn"></div><div><label>Patient Name <span class="required-mark">*</span></label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"><div class="sub" style="margin-top:4px">Automatically filled when missing. Edit here if the Arabic spelling is incorrect.</div></div><div><label>National ID <span class="required-mark">*</span></label><input id="newNid"></div><div><label>Department <span class="required-mark">*</span></label><input id="newDept"></div><div><label>Bed <span class="required-mark">*</span></label><input id="newBed" placeholder="Example: 12-B"></div><div><label>Age</label><input id="newAge"></div><div><label>Gender</label><select id="newGender"><option value=""></option><option value="MALE">Male</option><option value="FEMALE">Female</option></select></div><div><label>Nationality</label><input id="newNationality"></div><div><label>Mobile</label><input id="newMobile"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Height</label><input id="newHeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
+<dialog id="patientDialog"><div class="modal"><h2 id="patientDialogTitle">Add Patient</h2><div class="grid2"><div><label>MRN <span class="required-mark">*</span></label><input id="newMrn"></div><div><label>Patient Name <span class="required-mark">*</span></label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"><div class="sub" style="margin-top:4px">Automatically filled when missing. Edit here if the Arabic spelling is incorrect.</div></div><div><label>National ID <span class="required-mark">*</span></label><input id="newNid"></div><div><label>Department <span class="required-mark">*</span></label><input id="newDept"></div><div><label>Bed <span class="required-mark">*</span></label><input id="newBed" placeholder="Example: 12-B"></div><div><label>Age</label><input id="newAge"></div><div><label>Gender</label><select id="newGender"><option value=""></option><option value="MALE">Male</option><option value="FEMALE">Female</option></select></div><div><label>Nationality</label><input id="newNationality"></div><div><label>Mobile</label><input id="newMobile"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Height</label><input id="newHeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="medDialog"><div class="modal"><h2>Add Order</h2><div class="grid2">
 <div><label>Medication *</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist></div>
 <div><label>Dosage Form *</label><select id="newMedForm"><option>TABLET</option><option>CAPSULE</option><option>LIQUID</option><option>DROPS</option><option>INHALER</option><option>SPRAY</option><option>STRIP</option><option>SACHET</option><option>SUPPOSITORY</option><option>TOPICAL</option><option>INJECTION</option><option>SYRINGE</option><option>PEN</option><option>OTHER</option></select></div>
@@ -805,6 +805,24 @@ async function refreshActivePatientSidebar(ph=$('pharmacy').value){
 }
 let sidebarLocalDay=localDateKey(new Date());setInterval(async()=>{let d=localDateKey(new Date());if(d!==sidebarLocalDay){sidebarLocalDay=d;try{await refreshActivePatientSidebar()}catch(e){console.warn(e)}}},60000);
 
+function inpatientSourceDiagnostics(){
+  if(hospital!=='QCH'||!QORD)return;
+  let today=localDateKey(new Date()),active=0,expiredYesterday=0,total=0;
+  for(const [mrn,raw] of Object.entries(QORD.p||{})){
+    let p=qPatient(mrn);
+    for(const o of (p?.orders||[]).map(orderDecoded)){
+      if(o.pharmacy!=='INPATIENT'||o.status!=='Active')continue;
+      total++;
+      let end=isoFromDMY(o.end_date);
+      if(!end||end>=today)active++;
+      else {
+        let d=new Date(today+'T00:00:00'),e=new Date(end+'T00:00:00');
+        if(Number.isFinite(d.getTime())&&Number.isFinite(e.getTime())&&Math.round((d-e)/86400000)<=1)expiredYesterday++;
+      }
+    }
+  }
+  console.info('[Inpatient source diagnostic]',{today,total,active,expiredYesterday});
+}
 function buildPatientList(){
   let ph=$('pharmacy').value,cacheKey=(hospital||'')+'|'+ph;if(patientListCacheByKey[cacheKey]){patientListCache=patientListCacheByKey[cacheKey];renderDepartmentFilter();renderPatientList();return}let items=[],seen=new Set();
   const add=(mrn,name,department='')=>{mrn=String(mrn||'');if(!mrn||seen.has(mrn))return;seen.add(mrn);let mp=masterPatient(mrn)||{};items.push({mrn,name:name||mp.name||mrn,name_ar:mp.name_ar||'',nid:mp.national_id||'',department:String(department||'').trim()})};
@@ -864,7 +882,7 @@ async function enterHospital(code){
   $('pharmacy').innerHTML=DATA.pharmacies.map(x=>`<option value="${x[0]}">${esc(englishPharmacyName(x[0]))}</option>`).join('');updateAddMedicationButton();
   $('drugList').innerHTML=DATA.drugs.map(x=>`<option value="${esc(x)}">`).join('');
   selectedMonths=new Set((DATA.months||[]).slice(-2));buildPatientIdIndex();if($('patientDbCount'))$('patientDbCount').textContent='Patient database: '+Object.keys(PATIENT_MASTER||{}).length.toLocaleString()+' patients';clearPatient();$('patientStatus').className='note';$('patientStatus').textContent=code==='QCH'?'Stopped orders remain in History.':'PMFH current medications use the latest available dispensing data.';
-  await Promise.all([loadDirectionLibrary(),loadMedicationLabelRules(),loadIVTemplates()]);await refreshTodayDispensedMap($('pharmacy').value);buildPatientList();await mergeSharedPatientsIntoSidebar($('pharmacy').value);
+  await Promise.all([loadDirectionLibrary(),loadMedicationLabelRules(),loadIVTemplates()]);inpatientSourceDiagnostics();await refreshTodayDispensedMap($('pharmacy').value);buildPatientList();await mergeSharedPatientsIntoSidebar($('pharmacy').value);
 }
 $('backHome').onclick=()=>{$('dispensePage').classList.add('hidden');$('landing').classList.remove('hidden')};
 
@@ -990,7 +1008,10 @@ function sharedOrderCard(x){
 }
 async function getSharedOrders(mrn,ph){
   try{
-    let rows=await rpc('medica_get_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:String(mrn),p_pharmacy:ph})||[];
+    let rows=await rpc(ph==='INPATIENT'?'medica_get_inpatient_shared_orders':'medica_get_shared_orders',
+      ph==='INPATIENT'
+        ?{p_token:pharmacist.token,p_hospital:hospital,p_mrn:mrn}
+        :{p_token:pharmacist.token,p_hospital:hospital,p_mrn:mrn,p_pharmacy:ph})||[];
     for(const x of rows){if(x?.id)sharedOrderById[String(x.id)]=x}
     return rows
   }catch(e){console.warn('Orders',e.message);return[]}
@@ -1029,7 +1050,11 @@ function bindSharedOrderQty(){
 }
 async function mergeSharedPatientsIntoSidebar(ph){
   try{
-    let rows=await rpc('medica_get_shared_order_patients',{p_token:pharmacist.token,p_hospital:hospital,p_pharmacy:ph})||[],seen=new Set(patientListCache.map(x=>String(x.mrn)));
+    let fn=(ph==='INPATIENT')?'medica_get_inpatient_sidebar_patients':'medica_get_shared_order_patients';
+    let args=(ph==='INPATIENT')
+      ?{p_token:pharmacist.token,p_hospital:hospital}
+      :{p_token:pharmacist.token,p_hospital:hospital,p_pharmacy:ph};
+    let rows=await rpc(fn,args)||[],seen=new Set(patientListCache.map(x=>String(x.mrn)));
     for(const r of rows){
       let mrn=String(r.mrn||'');if(!mrn||seen.has(mrn))continue;seen.add(mrn);
       let department=String(r.department||'').trim();
@@ -1437,10 +1462,17 @@ $('addPatient').onclick=()=>{if(isDoctor())return alert('Doctor accounts are rea
     let raw=String(pendingNewPatientIdentifier||$('mrn').value||'').trim();
     ['newMrn','newPname','newPar','newNid','newDept','newBed','newAge','newNationality','newMobile','newWeight','newHeight','newDob'].forEach(id=>$(id).value='');$('newGender').value='';
     if(raw){if(looksLikeNationalId(raw))$('newNid').value=raw;else $('newMrn').value=raw}
+    $('patientDialogTitle').textContent='Add Patient';
+    $('savePatient').textContent='Save Patient';
+    $('savePatient').dataset.mode='NEW';
     $('patientDialog').showModal();return;
   }
-  $('newMrn').value=selectedMRN;$('newPname').value=$('pname').value;$('newPar').value=$('par').value;$('newNid').value=$('nid').value;$('newDept').value=$('dept').value;$('newBed').value=window.__currentPatientExtra?.bed||'';$('newAge').value=$('age').value;let mp=masterPatient(selectedMRN)||{};$('newGender').value=(window.__currentPatientExtra?.gender||mp.gender||'').toUpperCase();$('newNationality').value=window.__currentPatientExtra?.nationality||mp.nationality||'';$('newMobile').value=window.__currentPatientExtra?.mobile||mp.mobile||'';$('newWeight').value=$('weight').value;$('newHeight').value=window.__currentPatientExtra?.height||mp.height||'';$('newDob').value=$('dob').value;$('patientDialog').showModal()};
-$('savePatient').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');try{let p={hospital,mrn:$('newMrn').value.trim(),patient_name:$('newPname').value.trim(),patient_name_ar:$('newPar').value.trim(),national_id:$('newNid').value.trim(),department:$('newDept').value.trim(),bed:$('newBed').value.trim(),age:$('newAge').value.trim(),gender:$('newGender').value,nationality:$('newNationality').value.trim(),mobile:$('newMobile').value.trim(),weight:$('newWeight').value.trim(),height:$('newHeight').value.trim(),birth_date:$('newDob').value.trim()};let missing=[];if(!p.mrn)missing.push('MRN');if(!p.patient_name)missing.push('English Patient Name');if(!p.national_id)missing.push('National ID');if(!p.department)missing.push('Department');if(!p.bed)missing.push('Bed');if(missing.length)return alert('Complete required patient fields before saving:\n• '+missing.join('\n• '));await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});$('patientDialog').close();$('mrn').value=p.mrn;patientListCacheByKey={};await loadPatient(p.mrn)}catch(e){if(/Invalid or expired pharmacist session/i.test(e.message)){sessionStorage.removeItem('medica_pharmacist');alert('Your pharmacist session expired. Please sign in again once, then save the patient. The entered patient data is still on this form.');}else alert(e.message)}}
+  $('newMrn').value=selectedMRN;$('newPname').value=$('pname').value;$('newPar').value=$('par').value;$('newNid').value=$('nid').value;$('newDept').value=$('dept').value;$('newBed').value=window.__currentPatientExtra?.bed||'';$('newAge').value=$('age').value;let mp=masterPatient(selectedMRN)||{};$('newGender').value=(window.__currentPatientExtra?.gender||mp.gender||'').toUpperCase();$('newNationality').value=window.__currentPatientExtra?.nationality||mp.nationality||'';$('newMobile').value=window.__currentPatientExtra?.mobile||mp.mobile||'';$('newWeight').value=$('weight').value;$('newHeight').value=window.__currentPatientExtra?.height||mp.height||'';$('newDob').value=$('dob').value;
+  $('patientDialogTitle').textContent='Update Patient';
+  $('savePatient').textContent='Update Patient';
+  $('savePatient').dataset.mode='UPDATE';
+  $('patientDialog').showModal()};
+$('savePatient').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');try{let p={hospital,mrn:$('newMrn').value.trim(),patient_name:$('newPname').value.trim(),patient_name_ar:$('newPar').value.trim(),national_id:$('newNid').value.trim(),department:$('newDept').value.trim(),bed:$('newBed').value.trim(),age:$('newAge').value.trim(),gender:$('newGender').value,nationality:$('newNationality').value.trim(),mobile:$('newMobile').value.trim(),weight:$('newWeight').value.trim(),height:$('newHeight').value.trim(),birth_date:$('newDob').value.trim()};let missing=[];if(!p.mrn)missing.push('MRN');if(!p.patient_name)missing.push('English Patient Name');if(!p.national_id)missing.push('National ID');if(!p.department)missing.push('Department');if(!p.bed)missing.push('Bed');if(missing.length)return alert('Complete required patient fields before saving:\n• '+missing.join('\n• '));await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});$('patientDialog').close();$('savePatient').textContent='Save Patient';$('savePatient').dataset.mode='';$('mrn').value=p.mrn;patientListCacheByKey={};await loadPatient(p.mrn)}catch(e){if(/Invalid or expired pharmacist session/i.test(e.message)){sessionStorage.removeItem('medica_pharmacist');alert('Your pharmacist session expired. Please sign in again once, then save the patient. The entered patient data is still on this form.');}else alert(e.message)}}
 let ORDER_DIALOG_MODE='NEW',ORDER_DIALOG_SOURCE=null;
 function setOrderDialogTitle(){
   const h=$('medDialog').querySelector('h2');
