@@ -1655,7 +1655,11 @@ function bindEditOrderButtons(){
   if(isDoctor())return;document.querySelectorAll('#meds .medica-order').forEach(card=>{let held=String(card.dataset.orderStatus||'').toUpperCase()==='HOLD';card.classList.toggle('hold-locked',held);card.classList.toggle('hold-full',held);if(held&&!card.querySelector('.hold-lock-note')){let h=card.children[1]||card;h.insertAdjacentHTML('beforeend','<span class="hold-lock-note">ON HOLD — Release Hold to continue</span>')}if(card.querySelector('.edit-order-btn'))return;let host=card.children[1]||card;let b=document.createElement('button');b.type='button';b.className='btn soft edit-order-btn';b.style.cssText='margin-top:7px;padding:5px 10px;font-size:11px';b.textContent='✎ Edit Order';b.disabled=held;b.title=held?'Release Hold before editing':'';b.onclick=e=>{e.preventDefault();e.stopPropagation();($('pharmacy').value==='IV'?prepareEditIVOrder(card):prepareEditRegularOrder(card))};host.appendChild(b)});
 }
 function updateAddMedicationButton(){if(!$('addMedication'))return;$('addMedication').textContent=$('pharmacy').value==='IV'?'+ Add IV Order':'+ Add Medication'}
-function openAddOrderForCurrentPharmacy(){if(isDoctor())return alert('Doctor accounts are read-only.');if($('pharmacy').value==='IV')prepareIVOrderDialog();else prepareAddOrderDialog()}
+function openAddOrderForCurrentPharmacy(){
+  if(isDoctor())return alert('Doctor accounts are read-only.');
+  if(!selectedMRN)return alert('Load a patient before adding an order.');
+  if($('pharmacy').value==='IV')prepareIVOrderDialog();else prepareAddOrderDialog()
+}
 $('addMedication').onclick=openAddOrderForCurrentPharmacy;
 $('newMedQty').addEventListener('input',()=>{$('newMedQty').dataset.manual='1';$('newMedQtyHint').textContent='Manual override: '+$('newMedQty').value;$('manualQtyVerifyWrap').classList.remove('hidden');$('manualQtyVerify').checked=false;$('doseCalcSafety').className='qty-safety warn';$('doseCalcSafety').textContent='⚠ Manual quantity entered. Verify it before saving.'});
 $('newMedDose').addEventListener('input',autoOrderQty);$('newMedPrnMax').addEventListener('input',autoOrderQty);$('newMedPriority').addEventListener('change',autoOrderQty);$('newMedDuration').addEventListener('input',syncRegularDuration);$('newMedDurationUnit').addEventListener('change',syncRegularDuration);$('newMedFreq').addEventListener('change',autoOrderQty);
@@ -1665,14 +1669,88 @@ $('newMed').addEventListener('blur',prefillAddOrderFromMedication);
 $('newMedForm').addEventListener('change',()=>{let med=$('newMed').value.trim();if(!$('newMedRoute').value||['PO','SC','IV',''].includes($('newMedRoute').value))$('newMedRoute').value=defaultRouteForDrug(med,$('newMedForm').value);if(!$('newMedUnit').value)$('newMedUnit').value=defaultUnitForForm($('newMedForm').value)||''});
 async function saveRegularSharedOrder(closeAfter=false){
   if(isDoctor())return alert('Doctor accounts are read-only.');
+  if(!selectedMRN)return alert('Load a patient before saving the order.');
+
+  // Calculate first. Previously Qty was checked as "required" before the
+  // automatic quantity engine ran, which could block otherwise valid
+  // Inpatient orders.
+  syncRegularDuration();
+  autoOrderQty();
+
   let req=['newMed','newMedForm','newMedDose','newMedRoute','newMedFreq','newMedDays','newMedOrderedBy','newMedQty','newMedUnit'];
-  if(requiredOrderFields(req).length)return alert('Complete all order fields before saving.');autoOrderQty();if(!$('manualQtyVerifyWrap').classList.contains('hidden')&&!$('manualQtyVerify').checked)return alert('Quantity could not be calculated safely. Verify the quantity manually and tick the verification box before saving.');
-  let med=$('newMed').value.trim();syncRegularDuration();let days=+$('newMedDays').value,ph=$('pharmacy').value;if(ph==='INPATIENT'&&days>7)return alert('Inpatient orders are limited to 7 days.');if(days>180)return alert('Maximum order duration is 6 months.');
-  let item={id:(ORDER_DIALOG_MODE==='EDIT'?(ORDER_DIALOG_SOURCE?.id||ORDER_DIALOG_SOURCE?.shared_order_id||null):null),medication:med,dosage_form:$('newMedForm').value,dose:$('newMedDose').value.trim(),route:$('newMedRoute').value.trim(),frequency:$('newMedFreq').value,supply_days:days,quantity:$('newMedQty').value.trim(),unit:$('newMedUnit').value.trim(),order_kind:(ORDER_DIALOG_MODE==='RENEW'?'RENEW':(ORDER_DIALOG_SOURCE?.order_kind||'NEW')),source_date:ORDER_DIALOG_SOURCE?.date||ORDER_DIALOG_SOURCE?.last_dispense||'',source_doctor:$('newMedOrderedBy').value.trim(),order_priority:ph==='INPATIENT'?$('newMedPriority').value:'ROUTINE',duration_value:+$('newMedDuration').value,duration_unit:$('newMedDurationUnit').value,notes:ORDER_DIALOG_SOURCE?.prescription||''};
+  let missing=requiredOrderFields(req);
+  if(missing.length)return alert('Complete all order fields before saving.');
+
+  if(!$('manualQtyVerifyWrap').classList.contains('hidden')&&!$('manualQtyVerify').checked)
+    return alert('Quantity could not be calculated safely. Verify the quantity manually and tick the verification box before saving.');
+
+  let med=$('newMed').value.trim();
+  let days=+$('newMedDays').value;
+  let ph=$('pharmacy').value;
+
+  if(ph==='INPATIENT'&&days>7)return alert('Inpatient orders are limited to 7 days.');
+  if(days>180)return alert('Maximum order duration is 6 months.');
+
+  let item={
+    id:(ORDER_DIALOG_MODE==='EDIT'?(ORDER_DIALOG_SOURCE?.id||ORDER_DIALOG_SOURCE?.shared_order_id||null):null),
+    medication:med,
+    dosage_form:$('newMedForm').value,
+    dose:$('newMedDose').value.trim(),
+    route:$('newMedRoute').value.trim(),
+    frequency:$('newMedFreq').value,
+    supply_days:days,
+    quantity:$('newMedQty').value.trim(),
+    unit:$('newMedUnit').value.trim(),
+    order_kind:(ORDER_DIALOG_MODE==='RENEW'?'RENEW':(ORDER_DIALOG_SOURCE?.order_kind||'NEW')),
+    source_date:ORDER_DIALOG_SOURCE?.date||ORDER_DIALOG_SOURCE?.last_dispense||'',
+    source_doctor:$('newMedOrderedBy').value.trim(),
+    order_priority:ph==='INPATIENT'?$('newMedPriority').value:'ROUTINE',
+    duration_value:+$('newMedDuration').value,
+    duration_unit:$('newMedDurationUnit').value,
+    notes:ORDER_DIALOG_SOURCE?.prescription||''
+  };
+
   let b=closeAfter?$('saveMedClose'):$('saveMed');
-  try{b.disabled=true;b.textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:$('pharmacy').value,p_order:item});removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,[med]);removeLocalManualMeds(selectedMRN,$('pharmacy').value,[med]);await loadPatient(selectedMRN);if(closeAfter||ORDER_DIALOG_MODE==='RENEW'||ORDER_DIALOG_MODE==='EDIT'){$('medDialog').close();$('newMed').disabled=false}else{let keepDoctor=$('newMedOrderedBy').value;prepareAddOrderDialog();$('newMedOrderedBy').value=keepDoctor;$('newMed').focus()}}
-  catch(e){alert('Unable to save order: '+e.message)}
-  finally{b.disabled=false;setOrderDialogTitle()}
+  try{
+    b.disabled=true;
+    b.textContent='Saving...';
+
+    let saved=await rpc('medica_upsert_shared_order',{
+      p_token:pharmacist.token,
+      p_hospital:hospital,
+      p_mrn:String(selectedMRN),   // exact MRN; do not normalize/remove hyphens
+      p_pharmacy:ph,
+      p_order:item
+    });
+
+    removeHistoryRenewQueueItems(selectedMRN,ph,[med]);
+    removeLocalManualMeds(selectedMRN,ph,[med]);
+
+    // Force a fresh read after every save. This is especially important for
+    // Inpatient because it uses a dedicated Supabase reader/sidebar function.
+    patientListCacheByKey[(hospital||'')+'|'+ph]=null;
+    await refreshActivePatientSidebar(ph);
+    await loadPatient(selectedMRN);
+
+    $('patientStatus').className='info';
+    $('patientStatus').textContent='✓ Order saved successfully.';
+
+    if(closeAfter||ORDER_DIALOG_MODE==='RENEW'||ORDER_DIALOG_MODE==='EDIT'){
+      $('medDialog').close();
+      $('newMed').disabled=false;
+    }else{
+      let keepDoctor=$('newMedOrderedBy').value;
+      prepareAddOrderDialog();
+      $('newMedOrderedBy').value=keepDoctor;
+      $('newMed').focus();
+    }
+  }catch(e){
+    console.error('Add/Update order failed',e);
+    alert('Unable to save order: '+(e?.message||String(e)));
+  }finally{
+    b.disabled=false;
+    setOrderDialogTitle();
+  }
 }
 $('saveMed').onclick=()=>saveRegularSharedOrder(false);
 $('saveMedClose').onclick=()=>saveRegularSharedOrder(true);
