@@ -911,24 +911,73 @@ async function focusLoadedPatient(mrn){
 async function searchPatient(value){
   value=String(value||'').trim();if(!value)return;
   const raw=value, key=normID(value);
-  // Exact MRN first.
-  if(PATIENT_MASTER?.[raw]||DATA?.patients?.[raw]||QORD?.p?.[raw])return focusLoadedPatient(raw);
-  // Exact National ID lookup from the complete patient master.
-  let byId=masterByNationalId(raw);
-  if(byId.length===1)return focusLoadedPatient(byId[0]);
-  if(byId.length>1){openPatientSearchResults(byId,raw);return}
-  // QCH historical profile exact MRN.
-  if(hospital==='QCH'&&/^\d+$/.test(raw)){await ensureQCHOldProfileShard(raw);if(oldQchPatient(raw))return focusLoadedPatient(raw)}
-  // Name / partial name / normalized identifier search.
-  let matches=masterMatches(raw,80);
+  let found=new Set();
+
+  // Local/current databases first, but DO NOT immediately open a single National ID match.
+  // A mother and child can legally share the same National ID in the source data.
+  if(PATIENT_MASTER?.[raw]||DATA?.patients?.[raw]||QORD?.p?.[raw])found.add(String(raw));
+
+  for(const mrn of masterByNationalId(raw))found.add(String(mrn));
+  for(const mrn of masterMatches(raw,80))found.add(String(mrn));
+
+  let ids=[];for(const [mrn,p] of Object.entries(DATA?.patients||{})){if(normID(p?.[1])===key)ids.push(String(mrn))}
+  ids.forEach(x=>found.add(x));
+
+  // QCH historical exact MRN.
+  if(hospital==='QCH'&&/^\d+$/.test(raw)){
+    await ensureQCHOldProfileShard(raw);
+    if(oldQchPatient(raw))found.add(String(raw));
+  }
+
+  // CLOUD SEARCH: includes patients added/updated in Supabase even when they are not
+  // present in the static patient-search.js file yet.
+  try{
+    let cloudRows=await rpc('medica_search_patient_profiles',{
+      p_token:pharmacist.token,
+      p_hospital:hospital,
+      p_query:raw
+    })||[];
+    for(const cp of cloudRows){
+      let mrn=String(cp.mrn||'').trim();if(!mrn)continue;
+      found.add(mrn);
+
+      // Inject current cloud demographics into the local search cache so the
+      // result dialog can show Name / ID / DOB / etc. immediately.
+      if(!PATIENT_MASTER)PATIENT_MASTER={};
+      let old=PATIENT_MASTER[mrn]||[];
+      PATIENT_MASTER[mrn]=[
+        cp.patient_name||old[0]||'',
+        cp.patient_name_ar||old[1]||'',
+        cp.national_id||old[2]||'',
+        cp.mobile||old[3]||'',
+        cp.birth_date||old[4]||'',
+        cp.age||old[5]||'',
+        cp.weight||old[6]||'',
+        cp.height||old[7]||'',
+        cp.nationality||old[8]||'',
+        old[9]||false,
+        cp.gender||old[10]||''
+      ];
+    }
+    PATIENT_ID_INDEX=null;
+  }catch(e){console.warn('Cloud patient search',e.message)}
+
+  let matches=[...found];
+
   if(matches.length===1)return focusLoadedPatient(matches[0]);
   if(matches.length>1){openPatientSearchResults(matches,raw);return}
-  // Legacy dataset National ID fallback.
-  let ids=[];for(const [mrn,p] of Object.entries(DATA?.patients||{})){if(normID(p?.[1])===key)ids.push(String(mrn))}
-  if(ids.length===1)return focusLoadedPatient(ids[0]);if(ids.length>1){openPatientSearchResults(ids,raw);return}
-  try{let cp=await rpc('medica_find_profile_by_identifier',{p_token:pharmacist.token,p_hospital:hospital,p_identifier:raw});if(cp?.mrn)return focusLoadedPatient(String(cp.mrn))}catch(e){}
+
+  // Backward-compatible exact cloud lookup.
+  try{
+    let cp=await rpc('medica_find_profile_by_identifier',{
+      p_token:pharmacist.token,p_hospital:hospital,p_identifier:raw
+    });
+    if(cp?.mrn)return focusLoadedPatient(String(cp.mrn))
+  }catch(e){}
+
   clearLoadedPatientForNotFound(raw);
-  $('patientStatus').className='note error';$('patientStatus').textContent='No patient matched this MRN, National ID, English name or Arabic name.';
+  $('patientStatus').className='note error';
+  $('patientStatus').textContent='No patient matched this MRN, National ID, English name or Arabic name.';
 }
 function looksLikeNationalId(v){return /^\d{10}$/.test(normID(v))}
 function clearLoadedPatientForNotFound(raw=''){
