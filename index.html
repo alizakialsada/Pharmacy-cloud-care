@@ -216,7 +216,7 @@ select,option,input,button,.btn,.note,.sub,.toolbar,label{
     <div class="medica-toolbar">
       <div><label>Dispensing Pharmacy</label><select id="pharmacy"></select><div class="dept-filter-wrap pharmacist-only hidden" id="wardFilterWrap"><label style="margin-top:8px">Ward Filter</label><select id="departmentFilter" class="hidden"><option value="">All Wards</option></select><div id="wardChips" class="ward-chip-bar"></div><div id="departmentPatientCount" class="sub" style="margin-top:6px"></div></div></div>
       <div><label>Patient Search</label><div style="display:flex;gap:7px"><input id="mrn" placeholder=""><button class="btn dark" id="loadMrn">Search</button></div><div class="db-badge" id="patientDbCount"></div></div>
-      <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn patient-nav pharmacist-only" id="addPatient">👤 Patient</button><button class="btn soft" id="refreshPage" title="Refresh current pharmacy and patient data">↻ Refresh</button><button class="btn med-nav pharmacist-only" id="addMedication">＋ Add Medication</button></div>
+      <div style="display:flex;gap:7px;align-items:end;flex-wrap:wrap"><button class="btn patient-nav pharmacist-only" id="newPatient">＋ New Patient</button><button class="btn soft pharmacist-only" id="updatePatient">👤 Update Patient</button><button class="btn soft" id="refreshPage" title="Refresh current pharmacy and patient data">↻ Refresh</button><button class="btn med-nav pharmacist-only" id="addMedication">＋ Add Medication</button></div>
     </div>
 
     <div id="patientBanner" class="patient-banner hidden">
@@ -1506,26 +1506,66 @@ function selectedItems(){
 }
 $('selectAll').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x.checked=true);$('deselectAll').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x.checked=false);
 
-$('addPatient').onclick=()=>{if(isDoctor())return alert('Doctor accounts are read-only.');
-  if(!selectedMRN){
-    let raw=String(pendingNewPatientIdentifier||$('mrn').value||'').trim();
-    ['newMrn','newPname','newPar','newNid','newDept','newBed','newAge','newNationality','newMobile','newWeight','newHeight','newDob'].forEach(id=>$(id).value='');$('newGender').value='';
-    if(raw){if(looksLikeNationalId(raw))$('newNid').value=raw;else $('newMrn').value=raw}
-    $('patientDialogTitle').textContent='Add Patient';
-    $('savePatient').textContent='Save Patient';
-    $('savePatient').dataset.mode='NEW';
-    $('newMrn').readOnly=false;
-    $('newMrn').title='Enter the patient MRN exactly as issued, including hyphens.';
-    $('patientDialog').showModal();return;
+
+function openNewPatientDialog(){
+  if(isDoctor())return alert('Doctor accounts are read-only.');
+
+  // New Patient is always a clean CREATE workflow, even if another patient is loaded.
+  let raw=String($('mrn').value||'').trim();
+
+  ['newMrn','newPname','newPar','newNid','newDept','newBed','newAge',
+   'newNationality','newMobile','newWeight','newHeight','newDob']
+    .forEach(id=>$(id).value='');
+  $('newGender').value='';
+
+  // If the search box contains an identifier, use it only as a convenience.
+  if(raw){
+    if(looksLikeNationalId(raw))$('newNid').value=raw;
+    else $('newMrn').value=raw;
   }
-  $('newMrn').value=selectedMRN;$('newPname').value=$('pname').value;$('newPar').value=$('par').value;$('newNid').value=$('nid').value;$('newDept').value=$('dept').value;$('newBed').value=window.__currentPatientExtra?.bed||'';$('newAge').value=$('age').value;let mp=masterPatient(selectedMRN)||{};$('newGender').value=(window.__currentPatientExtra?.gender||mp.gender||'').toUpperCase();$('newNationality').value=window.__currentPatientExtra?.nationality||mp.nationality||'';$('newMobile').value=window.__currentPatientExtra?.mobile||mp.mobile||'';$('newWeight').value=$('weight').value;$('newHeight').value=window.__currentPatientExtra?.height||mp.height||'';$('newDob').value=$('dob').value;
+
+  $('patientDialogTitle').textContent='Add New Patient';
+  $('savePatient').textContent='Save New Patient';
+  $('savePatient').dataset.mode='NEW';
+  $('newMrn').readOnly=false;
+  $('newMrn').title='Enter the patient MRN exactly as issued, including hyphens.';
+  $('patientDialog').showModal();
+}
+
+function openUpdatePatientDialog(){
+  if(isDoctor())return alert('Doctor accounts are read-only.');
+  if(!selectedMRN)return alert('Load an existing patient first.');
+
+  $('newMrn').value=selectedMRN;
+  $('newPname').value=$('pname').value;
+  $('newPar').value=$('par').value;
+  $('newNid').value=$('nid').value;
+  $('newDept').value=$('dept').value;
+  $('newBed').value=window.__currentPatientExtra?.bed||'';
+  $('newAge').value=$('age').value;
+
+  let mp=masterPatient(selectedMRN)||{};
+  $('newGender').value=(window.__currentPatientExtra?.gender||mp.gender||'').toUpperCase();
+  $('newNationality').value=window.__currentPatientExtra?.nationality||mp.nationality||'';
+  $('newMobile').value=window.__currentPatientExtra?.mobile||mp.mobile||'';
+  $('newWeight').value=$('weight').value;
+  $('newHeight').value=window.__currentPatientExtra?.height||mp.height||'';
+  $('newDob').value=$('dob').value;
+
   $('patientDialogTitle').textContent='Update Patient';
   $('savePatient').textContent='Update Patient';
   $('savePatient').dataset.mode='UPDATE';
+
+  // Existing patient's MRN is immutable.
   $('newMrn').readOnly=true;
   $('newMrn').value=selectedMRN;
   $('newMrn').title='MRN cannot be changed while updating an existing patient.';
-  $('patientDialog').showModal()};
+  $('patientDialog').showModal();
+}
+
+$('newPatient').onclick=openNewPatientDialog;
+$('updatePatient').onclick=openUpdatePatientDialog;
+
 $('savePatient').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');
   try{
     let mode=$('savePatient').dataset.mode||'NEW';
