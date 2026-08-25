@@ -1872,7 +1872,77 @@ function payload(){
  let items=selectedItems();for(const i of items){if(i.label_type==='REGULAR'&&!i.directions_en){let d=smartDirections(i);i.directions_en=d.en;i.directions_ar=d.ar}}
  return{hospital,pharmacy:$('pharmacy').value,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,bed:window.__currentPatientExtra?.bed||'',age:$('age').value,weight:$('weight').value,birth_date:$('dob').value,profile:{hospital,mrn:selectedMRN,patient_name:$('pname').value,patient_name_ar:$('par').value,national_id:$('nid').value,department:$('dept').value,bed:window.__currentPatientExtra?.bed||'',age:$('age').value,weight:$('weight').value,birth_date:$('dob').value,gender:window.__currentPatientExtra?.gender||'',nationality:window.__currentPatientExtra?.nationality||'',mobile:window.__currentPatientExtra?.mobile||'',height:window.__currentPatientExtra?.height||'',bed:window.__currentPatientExtra?.bed||''},items}
 }
-$('dispenseBtn').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');if(!selectedMRN)return alert('Load patient first');if(selectedOrderRows().some(m=>String(m.dataset.orderStatus||'').toUpperCase()==='HOLD'))return alert('One or more selected orders are ON HOLD. Resume the order before dispensing.');let p=payload();if(!p.items.length)return alert('Select medication(s)');$('dispenseBtn').disabled=true;$('dispenseBtn').textContent='Saving...';try{let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});let currentPh=$('pharmacy').value,isDailyWardPharmacy=(currentPh==='INPATIENT'||currentPh==='IV'),consumed=isDailyWardPharmacy?[]:p.items.filter(i=>i.shared_order_id).map(i=>({id:Number(i.shared_order_id),quantity:Number(i.quantity||0)})).filter(i=>Number.isFinite(i.id)&&i.id>0&&Number.isFinite(i.quantity)&&i.quantity>0);if(consumed.length){try{await rpc('medica_consume_shared_orders',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:currentPh,p_items:consumed})}catch(ce){console.warn('Unable to update shared order balance',ce.message)}}removeHistoryRenewQueueItems(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));removeLocalManualMeds(selectedMRN,$('pharmacy').value,p.items.filter(i=>i).map(i=>i.medication));$('patientStatus').className='info';$('patientStatus').textContent=`✓ Saved — ${r.saved} medication(s) by ${r.pharmacist}`;alert('✓ Dispense saved successfully');await loadPatient(selectedMRN);await refreshActivePatientSidebar(currentPh)}catch(e){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');q.push({token:pharmacist.token,payload:p});localStorage.setItem('medica_pending',JSON.stringify(q));$('patientStatus').className='note error';$('patientStatus').textContent='Unable to save. Pending sync: '+e.message;alert('Unable to connect. Dispense saved as pending sync.')}finally{$('dispenseBtn').disabled=false;$('dispenseBtn').textContent='✓ Dispense Selected'}};
+$('dispenseBtn').onclick=async()=>{
+  if(isDoctor())return alert('Doctor accounts are read-only.');
+  if(!selectedMRN)return alert('Load patient first');
+  if(selectedOrderRows().some(m=>String(m.dataset.orderStatus||'').toUpperCase()==='HOLD'))
+    return alert('One or more selected orders are ON HOLD. Resume the order before dispensing.');
+
+  let p=payload();
+  if(!p.items.length)return alert('Select medication(s)');
+
+  $('dispenseBtn').disabled=true;
+  $('dispenseBtn').textContent='Saving...';
+
+  try{
+    let r=await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:p});
+    let currentPh=$('pharmacy').value;
+    let isDailyWardPharmacy=(currentPh==='INPATIENT'||currentPh==='IV');
+
+    let consumed=isDailyWardPharmacy?[]:p.items
+      .filter(i=>i.shared_order_id)
+      .map(i=>({id:Number(i.shared_order_id),quantity:Number(i.quantity||0)}))
+      .filter(i=>Number.isFinite(i.id)&&i.id>0&&Number.isFinite(i.quantity)&&i.quantity>0);
+
+    if(consumed.length){
+      try{
+        await rpc('medica_consume_shared_orders',{
+          p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,
+          p_pharmacy:currentPh,p_items:consumed
+        });
+      }catch(ce){console.warn('Unable to update shared order balance',ce.message)}
+    }
+
+    // If Show Order Again reopened a daily ward order, close that forced-visible
+    // override immediately after the second successful dispense.
+    if(isDailyWardPharmacy){
+      let sharedIds=[...new Set(
+        p.items.map(i=>Number(i.shared_order_id))
+          .filter(id=>Number.isFinite(id)&&id>0)
+      )];
+      if(sharedIds.length){
+        await rpc('medica_close_show_again',{
+          p_token:pharmacist.token,
+          p_hospital:hospital,
+          p_mrn:selectedMRN,
+          p_pharmacy:currentPh,
+          p_order_ids:sharedIds
+        });
+      }
+    }
+
+    removeHistoryRenewQueueItems(selectedMRN,currentPh,p.items.filter(i=>i).map(i=>i.medication));
+    removeLocalManualMeds(selectedMRN,currentPh,p.items.filter(i=>i).map(i=>i.medication));
+
+    $('patientStatus').className='info';
+    $('patientStatus').textContent=`✓ Saved — ${r.saved} medication(s) by ${r.pharmacist}`;
+
+    patientListCacheByKey[(hospital||'')+'|'+currentPh]=null;
+    await loadPatient(selectedMRN);
+    await refreshActivePatientSidebar(currentPh);
+    alert('✓ Dispense saved successfully');
+  }catch(e){
+    let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');
+    q.push({token:pharmacist.token,payload:p});
+    localStorage.setItem('medica_pending',JSON.stringify(q));
+    $('patientStatus').className='note error';
+    $('patientStatus').textContent='Unable to save. Pending sync: '+e.message;
+    alert('Unable to connect. Dispense saved as pending sync.');
+  }finally{
+    $('dispenseBtn').disabled=false;
+    $('dispenseBtn').textContent='✓ Dispense Selected';
+  }
+};
 async function syncPending(){let q=JSON.parse(localStorage.getItem('medica_pending')||'[]');if(!q.length||!pharmacist)return;let left=[];for(const x of q){try{await rpc('medica_save_dispense',{p_token:pharmacist.token,p_payload:x.payload})}catch{left.push(x)}}localStorage.setItem('medica_pending',JSON.stringify(left))}
 setInterval(syncPending,60000);
 
