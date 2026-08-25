@@ -1589,6 +1589,30 @@ $('savePatient').onclick=async()=>{if(isDoctor())return alert('Doctor accounts a
     }else alert(e.message)
   }
 }
+
+let ORDER_DIALOG_MODE='NEW', ORDER_DIALOG_SOURCE=null;
+function setOrderDialogTitle(){
+  let h=$('medDialog')?.querySelector('h2');
+  if(h){
+    h.textContent =
+      ORDER_DIALOG_MODE==='EDIT' ? 'Edit Order' :
+      ORDER_DIALOG_MODE==='RENEW' ? 'Renew Order' :
+      'Add Order';
+  }
+  if($('saveMed')){
+    $('saveMed').textContent =
+      ORDER_DIALOG_MODE==='EDIT' ? 'Update Order' :
+      ORDER_DIALOG_MODE==='RENEW' ? 'Save Renewal' :
+      'Save & Add Another';
+  }
+  if($('saveMedClose')){
+    $('saveMedClose').textContent =
+      ORDER_DIALOG_MODE==='EDIT' ? 'Update & Close' :
+      ORDER_DIALOG_MODE==='RENEW' ? 'Save Renewal & Close' :
+      'Save & Close';
+  }
+}
+
 function prepareAddOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
   ORDER_DIALOG_MODE='NEW';ORDER_DIALOG_SOURCE=null;setOrderDialogTitle();
@@ -1658,7 +1682,13 @@ function updateAddMedicationButton(){if(!$('addMedication'))return;$('addMedicat
 function openAddOrderForCurrentPharmacy(){
   if(isDoctor())return alert('Doctor accounts are read-only.');
   if(!selectedMRN)return alert('Load a patient before adding an order.');
-  if($('pharmacy').value==='IV')prepareIVOrderDialog();else prepareAddOrderDialog()
+  try{
+    if($('pharmacy').value==='IV')prepareIVOrderDialog();
+    else prepareAddOrderDialog();
+  }catch(e){
+    console.error('Unable to open Add Order dialog',e);
+    alert('Unable to open Add Order: '+(e?.message||String(e)));
+  }
 }
 $('addMedication').onclick=openAddOrderForCurrentPharmacy;
 $('newMedQty').addEventListener('input',()=>{$('newMedQty').dataset.manual='1';$('newMedQtyHint').textContent='Manual override: '+$('newMedQty').value;$('manualQtyVerifyWrap').classList.remove('hidden');$('manualQtyVerify').checked=false;$('doseCalcSafety').className='qty-safety warn';$('doseCalcSafety').textContent='⚠ Manual quantity entered. Verify it before saving.'});
