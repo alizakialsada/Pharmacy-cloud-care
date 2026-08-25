@@ -1514,22 +1514,80 @@ $('addPatient').onclick=()=>{if(isDoctor())return alert('Doctor accounts are rea
     $('patientDialogTitle').textContent='Add Patient';
     $('savePatient').textContent='Save Patient';
     $('savePatient').dataset.mode='NEW';
+    $('newMrn').readOnly=false;
+    $('newMrn').title='Enter the patient MRN exactly as issued, including hyphens.';
     $('patientDialog').showModal();return;
   }
   $('newMrn').value=selectedMRN;$('newPname').value=$('pname').value;$('newPar').value=$('par').value;$('newNid').value=$('nid').value;$('newDept').value=$('dept').value;$('newBed').value=window.__currentPatientExtra?.bed||'';$('newAge').value=$('age').value;let mp=masterPatient(selectedMRN)||{};$('newGender').value=(window.__currentPatientExtra?.gender||mp.gender||'').toUpperCase();$('newNationality').value=window.__currentPatientExtra?.nationality||mp.nationality||'';$('newMobile').value=window.__currentPatientExtra?.mobile||mp.mobile||'';$('newWeight').value=$('weight').value;$('newHeight').value=window.__currentPatientExtra?.height||mp.height||'';$('newDob').value=$('dob').value;
   $('patientDialogTitle').textContent='Update Patient';
   $('savePatient').textContent='Update Patient';
   $('savePatient').dataset.mode='UPDATE';
+  $('newMrn').readOnly=true;
+  $('newMrn').value=selectedMRN;
+  $('newMrn').title='MRN cannot be changed while updating an existing patient.';
   $('patientDialog').showModal()};
-$('savePatient').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');try{let p={hospital,mrn:$('newMrn').value.trim(),patient_name:$('newPname').value.trim(),patient_name_ar:$('newPar').value.trim(),national_id:$('newNid').value.trim(),department:$('newDept').value.trim(),bed:$('newBed').value.trim(),age:$('newAge').value.trim(),gender:$('newGender').value,nationality:$('newNationality').value.trim(),mobile:$('newMobile').value.trim(),weight:$('newWeight').value.trim(),height:$('newHeight').value.trim(),birth_date:$('newDob').value.trim()};let missing=[];if(!p.mrn)missing.push('MRN');if(!p.patient_name)missing.push('English Patient Name');if(!p.national_id)missing.push('National ID');if(!p.department)missing.push('Department');if(!p.bed)missing.push('Bed');if(missing.length)return alert('Complete required patient fields before saving:\n• '+missing.join('\n• '));await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});$('patientDialog').close();$('savePatient').textContent='Save Patient';$('savePatient').dataset.mode='';$('mrn').value=p.mrn;patientListCacheByKey={};await loadPatient(p.mrn)}catch(e){if(/Invalid or expired pharmacist session/i.test(e.message)){sessionStorage.removeItem('medica_pharmacist');alert('Your pharmacist session expired. Please sign in again once, then save the patient. The entered patient data is still on this form.');}else alert(e.message)}}
-let ORDER_DIALOG_MODE='NEW',ORDER_DIALOG_SOURCE=null;
-function setOrderDialogTitle(){
-  const h=$('medDialog').querySelector('h2');
-  if(ORDER_DIALOG_MODE==='RENEW')h.textContent='Renew Order';
-  else if(ORDER_DIALOG_MODE==='EDIT')h.textContent='Edit Order';
-  else h.textContent='Add Order';
-  if(ORDER_DIALOG_MODE==='EDIT'){if($('saveMed'))$('saveMed').textContent='Update Order';if($('saveMedClose'))$('saveMedClose').textContent='Update & Close';}
-  else{if($('saveMed'))$('saveMed').textContent='Save & Add Another';if($('saveMedClose'))$('saveMedClose').textContent='Save & Close';}
+$('savePatient').onclick=async()=>{if(isDoctor())return alert('Doctor accounts are read-only.');
+  try{
+    let mode=$('savePatient').dataset.mode||'NEW';
+    let typedMrn=$('newMrn').value.trim();
+    let mrn=(mode==='UPDATE'&&selectedMRN)?String(selectedMRN):typedMrn;
+
+    let p={
+      hospital,
+      mrn,
+      patient_name:$('newPname').value.trim(),
+      patient_name_ar:$('newPar').value.trim(),
+      national_id:$('newNid').value.trim(),
+      department:$('newDept').value.trim(),
+      bed:$('newBed').value.trim(),
+      age:$('newAge').value.trim(),
+      gender:$('newGender').value,
+      nationality:$('newNationality').value.trim(),
+      mobile:$('newMobile').value.trim(),
+      weight:$('newWeight').value.trim(),
+      height:$('newHeight').value.trim(),
+      birth_date:$('newDob').value.trim()
+    };
+
+    let missing=[];
+    if(!p.mrn)missing.push('MRN');
+    if(!p.patient_name)missing.push('English Patient Name');
+    if(!p.national_id)missing.push('National ID');
+    if(!p.department)missing.push('Department');
+    if(!p.bed)missing.push('Bed');
+    if(missing.length)return alert('Complete required patient fields before saving:\n• '+missing.join('\n• '));
+
+    if(mode==='NEW'){
+      let dup=await rpc('medica_check_patient_mrn',{
+        p_token:pharmacist.token,
+        p_hospital:hospital,
+        p_mrn:p.mrn
+      }).catch(()=>null);
+
+      if(dup?.exists){
+        return alert(
+          'This MRN already exists for another patient:\n\n'+
+          (dup.patient_name||'Patient')+'\nMRN: '+p.mrn+
+          '\n\nOpen the existing patient and use Update Patient instead.'
+        );
+      }
+    }
+
+    await rpc('medica_save_profile',{p_token:pharmacist.token,p_profile:p});
+    $('patientDialog').close();
+    $('newMrn').readOnly=false;
+    $('savePatient').textContent='Save Patient';
+    $('savePatient').dataset.mode='';
+    $('mrn').value=p.mrn;
+    patientListCacheByKey={};
+    PATIENT_ID_INDEX=null;
+    await loadPatient(p.mrn);
+  }catch(e){
+    if(/Invalid or expired pharmacist session/i.test(e.message)){
+      sessionStorage.removeItem('medica_pharmacist');
+      alert('Your pharmacist session expired. Please sign in again once, then save the patient. The entered patient data is still on this form.');
+    }else alert(e.message)
+  }
 }
 function prepareAddOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
