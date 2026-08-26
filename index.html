@@ -1694,6 +1694,10 @@ const THERAPY_CLASS_RULES = [
   ['ANTICHOLINERGIC BRONCHODILATOR', /\b(IPRATROPIUM|TIOTROPIUM|GLYCOPYRRONIUM|ACLIDINIUM|UMECLIDINIUM)\b/i]
 ];
 
+function exactMedicationKeyForSafety(med){
+  return String(med||'').toUpperCase().normalize('NFKD').replace(/[‐‑‒–—]/g,'-').replace(/\s+/g,' ').trim();
+}
+
 function genericNameForSafety(med){
   let s=String(med||'').toUpperCase().trim();
   if(!s)return '';
@@ -1747,54 +1751,55 @@ async function patientActiveOrdersForSafety(){
 }
 async function medicationSafetyCheck(candidate,excludeSharedId=null,showBox=true,candidateRoute='',candidateForm=''){
   let med=String(candidate||'').trim();
-  if(!med)return {duplicates:[],sameIngredientDifferentForm:[],sameClass:[],generic:'',therapyClass:''};
+  if(!med)return {exactDuplicates:[],duplicates:[],sameIngredientDifferentForm:[],sameClass:[],generic:'',therapyClass:''};
 
-  let g=genericKeyForSafety(med),
+  let exactKey=exactMedicationKeyForSafety(med),
+      g=genericKeyForSafety(med),
       cls=therapyClassForSafety(med),
       candRoute=String(candidateRoute||'').trim().toUpperCase(),
       candForm=String(candidateForm||'').trim().toUpperCase(),
       active=await patientActiveOrdersForSafety();
 
-  // Enrich active rows with route/form where available.
-  active=active.map(x=>({
-    ...x,
-    route:String(x.route||'').trim().toUpperCase(),
-    dosage_form:String(x.dosage_form||'').trim().toUpperCase()
-  }));
+  active=active.map(x=>({...x,route:String(x.route||'').trim().toUpperCase(),dosage_form:String(x.dosage_form||'').trim().toUpperCase()}));
 
-  // Same generic + same route/form = strongest duplicate warning.
+  let exactDuplicates=active.filter(x=>{
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId))return false;
+    return exactMedicationKeyForSafety(x.medication)===exactKey;
+  });
+
   let dup=active.filter(x=>{
-    if(genericKeyForSafety(x.medication)!==g) return false;
-    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId)) return false;
-
-    let sameRoute = candRoute && x.route ? x.route===candRoute : false;
-    let sameForm  = candForm && x.dosage_form ? x.dosage_form===candForm : false;
-
-    // If route/form are unavailable on the active row, be conservative and treat as duplicate.
-    if((!x.route&&!x.dosage_form) || (!candRoute&&!candForm)) return true;
-    return sameRoute || sameForm;
+    if(exactDuplicates.includes(x))return false;
+    if(genericKeyForSafety(x.medication)!==g)return false;
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId))return false;
+    let sameRoute=candRoute&&x.route?x.route===candRoute:false;
+    let sameForm=candForm&&x.dosage_form?x.dosage_form===candForm:false;
+    if((!x.route&&!x.dosage_form)||(!candRoute&&!candForm))return true;
+    return sameRoute||sameForm;
   });
 
-  // Same generic but clearly different route/form = amber warning.
   let sameIngredientDifferentForm=active.filter(x=>{
-    if(genericKeyForSafety(x.medication)!==g) return false;
-    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId)) return false;
-    if(dup.includes(x)) return false;
-
-    let routeDifferent = candRoute && x.route && x.route!==candRoute;
-    let formDifferent  = candForm && x.dosage_form && x.dosage_form!==candForm;
-    return routeDifferent || formDifferent;
+    if(exactDuplicates.includes(x)||dup.includes(x))return false;
+    if(genericKeyForSafety(x.medication)!==g)return false;
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId))return false;
+    let routeDifferent=candRoute&&x.route&&x.route!==candRoute;
+    let formDifferent=candForm&&x.dosage_form&&x.dosage_form!==candForm;
+    return routeDifferent||formDifferent;
   });
 
-  // Different generic but same therapeutic class = yellow warning.
   let same=cls?active.filter(x=>{
-    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId)) return false;
-    return therapyClassForSafety(x.medication)===cls && genericKeyForSafety(x.medication)!==g;
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId))return false;
+    return therapyClassForSafety(x.medication)===cls&&genericKeyForSafety(x.medication)!==g;
   }):[];
 
   let box=$('medSafetyWarning');
   if(showBox&&box){
-    if(dup.length){
+    if(exactDuplicates.length){
+      box.className='note error';
+      box.innerHTML='<b>⛔ EXACT ACTIVE MEDICATION DUPLICATE</b><br><b>'+esc(med)+'</b> already has an ACTIVE/HOLD order for this patient.<br>'+
+        exactDuplicates.map(x=>'• '+esc(x.medication)+' — '+esc(x.pharmacy||'')+' ('+esc(x.source||'')+')').join('<br>')+
+        '<br><b>Please check the existing order before adding the same medication again.</b>';
+      box.classList.remove('hidden');
+    }else if(dup.length){
       box.className='note error';
       box.innerHTML='<b>⚠ ACTIVE DUPLICATE GENERIC / SAME FORM OR ROUTE</b><br>'+
         esc(genericNameForSafety(med))+' already has an active order:<br>'+
@@ -1816,14 +1821,24 @@ async function medicationSafetyCheck(candidate,excludeSharedId=null,showBox=true
       box.classList.remove('hidden');
     }else{
       box.className='info';
-      box.textContent='✓ No active duplicate generic detected.';
+      box.textContent='✓ No active duplicate medication detected.';
       box.classList.remove('hidden');
     }
   }
-  return {duplicates:dup,sameIngredientDifferentForm,sameClass:same,generic:g,therapyClass:cls};
+  return {exactDuplicates,duplicates:dup,sameIngredientDifferentForm,sameClass:same,generic:g,therapyClass:cls};
 }
 async function confirmMedicationSafetyBeforeSave(candidate,excludeSharedId=null,candidateRoute='',candidateForm=''){
   let r=await medicationSafetyCheck(candidate,excludeSharedId,true,candidateRoute,candidateForm);
+
+  if(r.exactDuplicates.length){
+    alert(
+      '⛔ EXACT ACTIVE MEDICATION DUPLICATE\n\n'+candidate+
+      '\n\nThis exact medication already has an ACTIVE/HOLD order for this patient.\n\n'+
+      r.exactDuplicates.map(x=>'- '+x.medication+' ['+(x.pharmacy||'')+']').join('\n')+
+      '\n\nPlease check the existing order before adding the same medication again.'
+    );
+    return false;
+  }
 
   if(r.duplicates.length){
     return confirm(
