@@ -351,7 +351,7 @@ select,option,input,button,.btn,.note,.sub,.toolbar,label{
 <dialog id="adminLoginDialog"><div class="modal loginbox"><h2>Admin Login</h2><label>Admin Password</label><input id="adminPass" type="password"><div id="adminLoginError" style="color:#b42318;margin-top:8px"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn dark" id="adminLoginGo">Open Admin</button><button class="btn soft" onclick="adminLoginDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="patientDialog"><div class="modal"><h2 id="patientDialogTitle">Add Patient</h2><div class="grid2"><div><label>MRN <span class="required-mark">*</span></label><input id="newMrn"></div><div><label>Patient Name <span class="required-mark">*</span></label><input id="newPname"></div><div><label>Arabic Name</label><input id="newPar"><div class="sub" style="margin-top:4px">Automatically filled when missing. Edit here if the Arabic spelling is incorrect.</div></div><div><label>National ID <span class="required-mark">*</span></label><input id="newNid"></div><div><label>Department <span class="required-mark">*</span></label><input id="newDept"></div><div><label>Bed <span class="required-mark">*</span></label><input id="newBed" placeholder="Example: 12-B"></div><div><label>Age</label><input id="newAge"></div><div><label>Gender</label><select id="newGender"><option value=""></option><option value="MALE">Male</option><option value="FEMALE">Female</option></select></div><div><label>Nationality</label><input id="newNationality"></div><div><label>Mobile</label><input id="newMobile"></div><div><label>Weight</label><input id="newWeight"></div><div><label>Height</label><input id="newHeight"></div><div><label>Birth Date</label><input id="newDob"></div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" id="savePatient">Save Patient</button><button class="btn soft" onclick="patientDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="medDialog"><div class="modal"><h2>Add Order</h2><div class="grid2">
-<div><label>Medication *</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist></div>
+<div><label>Medication *</label><input id="newMed" list="drugList"><datalist id="drugList"></datalist></div><div id="medSafetyWarning" class="note hidden" style="grid-column:1/-1"></div>
 <div><label>Dosage Form *</label><select id="newMedForm"><option>TABLET</option><option>CAPSULE</option><option>LIQUID</option><option>DROPS</option><option>INHALER</option><option>SPRAY</option><option>STRIP</option><option>SACHET</option><option>SUPPOSITORY</option><option>TOPICAL</option><option>INJECTION</option><option>SYRINGE</option><option>PEN</option><option>OTHER</option></select></div>
 <div><label>Dose *</label><input id="newMedDose" placeholder="Example: 1 TABLET or 500 MG"></div>
 <div><label>Route *</label><input id="newMedRoute" list="routeList" placeholder="PO / SC / IV ..."></div>
@@ -362,7 +362,7 @@ select,option,input,button,.btn,.note,.sub,.toolbar,label{
 <div><label>Unit *</label><input id="newMedUnit" placeholder="TAB / CAP / PEN / mL ..."></div>
 </div><div id="doseCalcSafety" class="qty-safety">Enter medication, dose and frequency to calculate a verified quantity.</div><label id="manualQtyVerifyWrap" class="priority-opt hidden" style="margin-top:9px"><input type="checkbox" id="manualQtyVerify"> I verified the dispensing quantity manually</label><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn primary" id="saveMed">Save & Add Another</button><button class="btn dark" id="saveMedClose">Save & Close</button><button class="btn soft" onclick="medDialog.close()">Cancel</button></div></div></dialog>
 <dialog id="ivOrderDialog"><div class="modal"><h2>IV Order Template</h2>
-<div class="grid2"><div><label>IV Template Name *</label><input id="ivTemplateName" list="ivTemplateList" placeholder="Search template name"><datalist id="ivTemplateList"></datalist></div><div><label>Medication / Additive *</label><input id="ivNewMed" list="ivMedicationList"></div>
+<div class="grid2"><div><label>IV Template Name *</label><input id="ivTemplateName" list="ivTemplateList" placeholder="Search template name"><datalist id="ivTemplateList"></datalist></div><div><label>Medication / Additive *</label><input id="ivNewMed" list="ivMedicationList"></div><div id="ivMedSafetyWarning" class="note hidden" style="grid-column:1/-1"></div>
 <div><label>Solution / Diluent *</label><select id="ivNewSolution"></select></div>
 <div><label>Additive Dose *</label><input id="ivNewDose"></div>
 <div><label>IV Access *</label><select id="ivNewAccess"><option>Peripheral</option><option>Central</option></select></div>
@@ -1653,10 +1653,210 @@ function setOrderDialogTitle(){
   }
 }
 
+
+// ===== v40 Medication Duplicate / Therapeutic Class Safety =====
+// Conservative classifier: only warns when a class match is reasonably confident.
+// Same-class warning is NOT a clinical contraindication; pharmacist review is required.
+const THERAPY_CLASS_RULES = [
+  ['ANTICOAGULANT', /\b(ENOXAPARIN|HEPARIN|WARFARIN|APIXABAN|RIVAROXABAN|DABIGATRAN|EDOXABAN)\b/i],
+  ['ANTIPLATELET', /\b(ASPIRIN|CLOPIDOGREL|TICAGRELOR|PRASUGREL)\b/i],
+  ['PPI', /\b(OMEPRAZOLE|PANTOPRAZOLE|ESOMEPRAZOLE|LANSOPRAZOLE|RABEPRAZOLE)\b/i],
+  ['H2 BLOCKER', /\b(FAMOTIDINE|NIZATIDINE|CIMETIDINE)\b/i],
+  ['NSAID', /\b(IBUPROFEN|DICLOFENAC|NAPROXEN|CELECOXIB|ETORICOXIB|KETOROLAC|MELOXICAM|INDOMETHACIN)\b/i],
+  ['OPIOID', /\b(MORPHINE|FENTANYL|OXYCODONE|HYDROMORPHONE|TRAMADOL|CODEINE)\b/i],
+  ['STATIN', /\b(ATORVASTATIN|ROSUVASTATIN|SIMVASTATIN|PRAVASTATIN|FLUVASTATIN)\b/i],
+  ['ACE INHIBITOR', /\b(LISINOPRIL|ENALAPRIL|RAMIPRIL|PERINDOPRIL|CAPTOPRIL)\b/i],
+  ['ARB', /\b(LOSARTAN|VALSARTAN|CANDESARTAN|IRBESARTAN|TELMISARTAN|OLMESARTAN)\b/i],
+  ['BETA BLOCKER', /\b(METOPROLOL|BISOPROLOL|CARVEDILOL|ATENOLOL|PROPRANOLOL|LABETALOL)\b/i],
+  ['CALCIUM CHANNEL BLOCKER', /\b(AMLODIPINE|NIFEDIPINE|DILTIAZEM|VERAPAMIL|FELODIPINE)\b/i],
+  ['LOOP DIURETIC', /\b(FUROSEMIDE|BUMETANIDE|TORSEMIDE)\b/i],
+  ['THIAZIDE DIURETIC', /\b(HYDROCHLOROTHIAZIDE|CHLORTHALIDONE|INDAPAMIDE)\b/i],
+  ['SYSTEMIC CORTICOSTEROID', /\b(PREDNISOLONE|PREDNISONE|METHYLPREDNISOLONE|DEXAMETHASONE|HYDROCORTISONE)\b/i],
+  ['SSRI', /\b(SERTRALINE|FLUOXETINE|ESCITALOPRAM|CITALOPRAM|PAROXETINE|FLUVOXAMINE)\b/i],
+  ['SNRI', /\b(VENLAFAXINE|DULOXETINE|DESVENLAFAXINE)\b/i],
+  ['BENZODIAZEPINE', /\b(LORAZEPAM|DIAZEPAM|MIDAZOLAM|CLONAZEPAM|ALPRAZOLAM)\b/i],
+  ['ANTIPSYCHOTIC', /\b(QUETIAPINE|OLANZAPINE|RISPERIDONE|HALOPERIDOL|ARIPIPRAZOLE|CLOZAPINE)\b/i],
+  ['ANTIEMETIC', /\b(ONDANSETRON|METOCLOPRAMIDE|DOMPERIDONE|PROCHLORPERAZINE|GRANISETRON)\b/i],
+  ['LAXATIVE', /\b(POLYETHYLENE GLYCOL|MACROGOL|LACTULOSE|SENNA|BISACODYL|GLYCERIN)\b/i],
+  ['INSULIN', /\b(INSULIN|GLARGINE|DEGLUDEC|DETEMIR|ASPART|LISPRO|GLULISINE|HUMULIN|NOVORAPID|NOVOMIX)\b/i],
+  ['SULFONYLUREA', /\b(GLICLAZIDE|GLIMEPIRIDE|GLIPIZIDE|GLIBENCLAMIDE|GLYBURIDE)\b/i],
+  ['SGLT2 INHIBITOR', /\b(DAPAGLIFLOZIN|EMPAGLIFLOZIN|CANAGLIFLOZIN|ERTUGLIFLOZIN)\b/i],
+  ['DPP4 INHIBITOR', /\b(SITAGLIPTIN|LINAGLIPTIN|SAXAGLIPTIN|VILDAGLIPTIN|ALOGLIPTIN)\b/i],
+  ['GLP1 AGONIST', /\b(SEMAGLUTIDE|LIRAGLUTIDE|DULAGLUTIDE|EXENATIDE|TIRZEPATIDE)\b/i],
+  ['CARBAPENEM', /\b(MEROPENEM|IMIPENEM|ERTAPENEM|DORIPENEM)\b/i],
+  ['GLYCOPEPTIDE ANTIBIOTIC', /\b(VANCOMYCIN|TEICOPLANIN)\b/i],
+  ['CEPHALOSPORIN', /\b(CEFTRIAXONE|CEFTAZIDIME|CEFEPIME|CEFAZOLIN|CEFUROXIME|CEFIXIME|CEPHALEXIN|CEFTAROLINE)\b/i],
+  ['PENICILLIN / BETA-LACTAM', /\b(PIPERACILLIN|TAZOBACTAM|AMOXICILLIN|CLAVULANATE|AMPICILLIN|SULBACTAM|BENZYLPENICILLIN|PENICILLIN)\b/i],
+  ['MACROLIDE', /\b(AZITHROMYCIN|CLARITHROMYCIN|ERYTHROMYCIN)\b/i],
+  ['FLUOROQUINOLONE', /\b(CIPROFLOXACIN|LEVOFLOXACIN|MOXIFLOXACIN|OFLOXACIN)\b/i],
+  ['ANTIFUNGAL AZOLE', /\b(FLUCONAZOLE|VORICONAZOLE|ITRACONAZOLE|POSACONAZOLE|ISAVUCONAZOLE)\b/i],
+  ['BETA2 AGONIST', /\b(SALBUTAMOL|ALBUTEROL|FORMOTEROL|SALMETEROL|TERBUTALINE)\b/i],
+  ['ANTICHOLINERGIC BRONCHODILATOR', /\b(IPRATROPIUM|TIOTROPIUM|GLYCOPYRRONIUM|ACLIDINIUM|UMECLIDINIUM)\b/i]
+];
+
+function genericNameForSafety(med){
+  let s=String(med||'').toUpperCase().trim();
+  if(!s)return '';
+  s=s.replace(/[–—]/g,'-').replace(/\s+/g,' ');
+  // Most inventory names use GENERIC - BRAND/STRENGTH or GENERIC-BRAND-STRENGTH.
+  let cut=s.split(/\s+-\s+|-(?=[A-Z][A-Z0-9]{2,})/)[0] || s;
+  cut=cut.replace(/\b\d+(?:\.\d+)?\s*(MG|MCG|G|GRAM|ML|MEQ|MMOL|UNIT|UNITS|IU|%)\b.*$/i,'');
+  cut=cut.replace(/\b(TABLET|TAB|CAPSULE|CAP|VIAL|SYRINGE|SACHET|CREAM|OINTMENT|SOLUTION|INJECTION|INJ|SPRAY|DROP|DROPS)\b.*$/i,'');
+  cut=cut.replace(/[;,/]+/g,' ').replace(/\s+/g,' ').trim();
+  return cut;
+}
+function genericKeyForSafety(med){return genericNameForSafety(med).replace(/[^A-Z0-9]+/g,' ').trim()}
+function therapyClassForSafety(med){
+  let g=genericNameForSafety(med);
+  for(const [name,re] of THERAPY_CLASS_RULES)if(re.test(g))return name;
+  return '';
+}
+async function patientActiveOrdersForSafety(){
+  if(!selectedMRN||!pharmacist?.token)return [];
+  let out=[];
+  try{
+    let rows=await rpc('medica_get_active_patient_orders_for_safety',{
+      p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN
+    })||[];
+    out.push(...rows.map(x=>({
+      id:x.id||null,
+      medication:x.medication||'',
+      pharmacy:x.pharmacy||'',
+      status:x.order_status||'ACTIVE',
+      route:x.route||'',
+      dosage_form:x.dosage_form||'',
+      source:'Platform'
+    })));
+  }catch(e){console.warn('Safety active shared orders',e.message)}
+  // QCH source orders are also checked so Medica active orders are not missed.
+  try{
+    if(hospital==='QCH'&&QORD){
+      for(const o of qOrdersFor(selectedMRN)){
+        if(orderIsCurrent(o)){
+          out.push({id:null,medication:o.drug||'',pharmacy:o.pharmacy||'',status:o.status||'Active',route:o.route||'',dosage_form:detectForm(o.drug||''),source:'Medica'});
+        }
+      }
+    }
+  }catch(e){console.warn('Safety source orders',e.message)}
+  // De-duplicate the warning list.
+  let seen=new Set();
+  return out.filter(x=>{
+    let k=[genericKeyForSafety(x.medication),String(x.pharmacy||''),String(x.id||''),String(x.source||'')].join('|');
+    if(!genericKeyForSafety(x.medication)||seen.has(k))return false;seen.add(k);return true;
+  });
+}
+async function medicationSafetyCheck(candidate,excludeSharedId=null,showBox=true,candidateRoute='',candidateForm=''){
+  let med=String(candidate||'').trim();
+  if(!med)return {duplicates:[],sameIngredientDifferentForm:[],sameClass:[],generic:'',therapyClass:''};
+
+  let g=genericKeyForSafety(med),
+      cls=therapyClassForSafety(med),
+      candRoute=String(candidateRoute||'').trim().toUpperCase(),
+      candForm=String(candidateForm||'').trim().toUpperCase(),
+      active=await patientActiveOrdersForSafety();
+
+  // Enrich active rows with route/form where available.
+  active=active.map(x=>({
+    ...x,
+    route:String(x.route||'').trim().toUpperCase(),
+    dosage_form:String(x.dosage_form||'').trim().toUpperCase()
+  }));
+
+  // Same generic + same route/form = strongest duplicate warning.
+  let dup=active.filter(x=>{
+    if(genericKeyForSafety(x.medication)!==g) return false;
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId)) return false;
+
+    let sameRoute = candRoute && x.route ? x.route===candRoute : false;
+    let sameForm  = candForm && x.dosage_form ? x.dosage_form===candForm : false;
+
+    // If route/form are unavailable on the active row, be conservative and treat as duplicate.
+    if((!x.route&&!x.dosage_form) || (!candRoute&&!candForm)) return true;
+    return sameRoute || sameForm;
+  });
+
+  // Same generic but clearly different route/form = amber warning.
+  let sameIngredientDifferentForm=active.filter(x=>{
+    if(genericKeyForSafety(x.medication)!==g) return false;
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId)) return false;
+    if(dup.includes(x)) return false;
+
+    let routeDifferent = candRoute && x.route && x.route!==candRoute;
+    let formDifferent  = candForm && x.dosage_form && x.dosage_form!==candForm;
+    return routeDifferent || formDifferent;
+  });
+
+  // Different generic but same therapeutic class = yellow warning.
+  let same=cls?active.filter(x=>{
+    if(excludeSharedId&&Number(x.id)===Number(excludeSharedId)) return false;
+    return therapyClassForSafety(x.medication)===cls && genericKeyForSafety(x.medication)!==g;
+  }):[];
+
+  let box=$('medSafetyWarning');
+  if(showBox&&box){
+    if(dup.length){
+      box.className='note error';
+      box.innerHTML='<b>⚠ ACTIVE DUPLICATE GENERIC / SAME FORM OR ROUTE</b><br>'+
+        esc(genericNameForSafety(med))+' already has an active order:<br>'+
+        dup.map(x=>'• '+esc(x.medication)+' — '+esc(x.route||'')+' '+esc(x.dosage_form||'')+' — '+esc(x.pharmacy||'')+' ('+esc(x.source||'')+')').join('<br>')+
+        '<br><b>Please check the existing active order before adding another.</b>';
+      box.classList.remove('hidden');
+    }else if(sameIngredientDifferentForm.length){
+      box.className='note';
+      box.innerHTML='<b>⚠ SAME ACTIVE INGREDIENT — DIFFERENT FORMULATION / ROUTE</b><br>'+
+        esc(genericNameForSafety(med))+' is already active in another formulation/route:<br>'+
+        sameIngredientDifferentForm.map(x=>'• '+esc(x.medication)+' — '+esc(x.route||'')+' '+esc(x.dosage_form||'')+' — '+esc(x.pharmacy||'')+' ('+esc(x.source||'')+')').join('<br>')+
+        '<br><b>Review the total daily dose and whether both formulations are intended.</b>';
+      box.classList.remove('hidden');
+    }else if(same.length){
+      box.className='note';
+      box.innerHTML='<b>⚠ SAME THERAPEUTIC CLASS: '+esc(cls)+'</b><br>'+
+        same.map(x=>'• '+esc(x.medication)+' — '+esc(x.pharmacy||'')+' ('+esc(x.source||'')+')').join('<br>')+
+        '<br>Review for intentional combination / duplicate therapy.';
+      box.classList.remove('hidden');
+    }else{
+      box.className='info';
+      box.textContent='✓ No active duplicate generic detected.';
+      box.classList.remove('hidden');
+    }
+  }
+  return {duplicates:dup,sameIngredientDifferentForm,sameClass:same,generic:g,therapyClass:cls};
+}
+async function confirmMedicationSafetyBeforeSave(candidate,excludeSharedId=null,candidateRoute='',candidateForm=''){
+  let r=await medicationSafetyCheck(candidate,excludeSharedId,true,candidateRoute,candidateForm);
+
+  if(r.duplicates.length){
+    return confirm(
+      '⚠ ACTIVE DUPLICATE GENERIC / SAME FORM OR ROUTE\n\n'+genericNameForSafety(candidate)+
+      ' already has '+r.duplicates.length+' active order(s).\n\n'+
+      r.duplicates.map(x=>'- '+x.medication+' ['+(x.route||'')+' '+(x.dosage_form||'')+']').join('\n')+
+      '\n\nPlease check the existing order. Add another order anyway?'
+    );
+  }
+
+  if(r.sameIngredientDifferentForm.length){
+    return confirm(
+      '⚠ SAME ACTIVE INGREDIENT — DIFFERENT FORMULATION / ROUTE\n\n'+genericNameForSafety(candidate)+
+      ' is already active in another formulation/route:\n\n'+
+      r.sameIngredientDifferentForm.map(x=>'- '+x.medication+' ['+(x.route||'')+' '+(x.dosage_form||'')+']').join('\n')+
+      '\n\nReview the total daily dose and confirm both formulations are intended. Continue?'
+    );
+  }
+
+  if(r.sameClass.length){
+    return confirm(
+      '⚠ SAME THERAPEUTIC CLASS: '+r.therapyClass+'\n\n'+
+      r.sameClass.map(x=>'- '+x.medication+' ['+(x.pharmacy||'')+']').join('\n')+
+      '\n\nThis may be intentional. Continue after pharmacist review?'
+    );
+  }
+  return true;
+}
+
 function prepareAddOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
   ORDER_DIALOG_MODE='NEW';ORDER_DIALOG_SOURCE=null;setOrderDialogTitle();
-  $('newMed').disabled=false;$('newMed').value='';$('newMedDose').value='';$('newMedQty').value='';$('newMedQty').dataset.manual='';$('newMedUnit').value='';let ph=$('pharmacy').value;$('newMedQty').readOnly=(ph==='OPD'||ph==='OPD2');$('newMedDuration').value=ph==='INPATIENT'?1:1;$('newMedDurationUnit').value=ph==='OPD'||ph==='OPD2'?'MONTHS':'DAYS';$('newMedDays').value=String(ph==='OPD'||ph==='OPD2'?30:1);$('regularPriorityWrap').classList.toggle('hidden',ph!=='INPATIENT');$('newMedPriority').value='ROUTINE';syncRegularDuration();$('newMedOrderedBy').value='';$('newMedQtyHint').textContent='';$('manualQtyVerify').checked=false;$('manualQtyVerifyWrap').classList.add('hidden');$('doseCalcSafety').className='qty-safety';$('doseCalcSafety').textContent='Enter medication, dose and frequency to calculate a verified quantity.';$('newMedPrnMax').value='';updatePrnVisibility();
+  $('newMed').disabled=false;$('newMed').value='';if($('medSafetyWarning'))$('medSafetyWarning').classList.add('hidden');$('newMedDose').value='';$('newMedQty').value='';$('newMedQty').dataset.manual='';$('newMedUnit').value='';let ph=$('pharmacy').value;$('newMedQty').readOnly=(ph==='OPD'||ph==='OPD2');$('newMedDuration').value=ph==='INPATIENT'?1:1;$('newMedDurationUnit').value=ph==='OPD'||ph==='OPD2'?'MONTHS':'DAYS';$('newMedDays').value=String(ph==='OPD'||ph==='OPD2'?30:1);$('regularPriorityWrap').classList.toggle('hidden',ph!=='INPATIENT');$('newMedPriority').value='ROUTINE';syncRegularDuration();$('newMedOrderedBy').value='';$('newMedQtyHint').textContent='';$('manualQtyVerify').checked=false;$('manualQtyVerifyWrap').classList.add('hidden');$('doseCalcSafety').className='qty-safety';$('doseCalcSafety').textContent='Enter medication, dose and frequency to calculate a verified quantity.';$('newMedPrnMax').value='';updatePrnVisibility();
   $('newMedForm').value='TABLET';$('newMedRoute').value='PO';$('newMedFreq').innerHTML=freqOptions('OD');
   $('medDialog').showModal();
 }
@@ -1681,15 +1881,35 @@ function recalcIVDialogRate(){let v=parseFloat($('ivNewVolume').value),m=parseFl
 function applyIVTemplateByName(){let name=String($('ivTemplateName').value||'').trim(),t=ivTemplates.find(x=>String(x.template_name||'').toLowerCase()===name.toLowerCase());if(!t)return;let parts=normalizeIVMedicationAndSolution(t.medication||'',t.solution||'');$('ivNewMed').value=parts.medication;populateIVSolutionSelect(parts.solution);$('ivNewDose').value=t.dose||'';$('ivNewAccess').value=t.iv_access||'Peripheral';$('ivNewVolume').value=t.volume_ml||'';$('ivNewInfusion').value=t.infusion_minutes||'';$('ivNewRate').value=t.rate_ml_hr||'';$('ivNewFreq').innerHTML=freqOptions(t.frequency||'OD');$('ivNewDuration').value=Math.min(7,Math.max(1,+t.duration_days||1));$('ivNewDays').value=$('ivNewDuration').value;$('ivNewRoute').value=t.route||'IV Infusion';$('ivNewQty').dataset.manual='';autoIVQty();let sf=safetyFlagsForDrug(t.medication||'');$('ivTemplateName').dataset.notes=t.preparation_notes||'';$('ivTemplateName').dataset.stability=String(t.stability_hours||'');let sh=parseFloat(t.stability_hours);if(Number.isFinite(sh)&&sh>0){let prod=new Date($('ivNewProd').value||Date.now());$('ivNewExpiry').value=ivDialogDateValue(new Date(prod.getTime()+sh*3600e3))}recalcIVDialogRate()}
 let IV_ORDER_DIALOG_MODE='NEW',IV_ORDER_DIALOG_SOURCE=null;
 function setIVOrderDialogTitle(){let h=$('ivOrderDialog')?.querySelector('h2');if(h)h.textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Edit IV Order':'IV Order Template';if($('saveIVOrder'))$('saveIVOrder').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update IV Order':'Save & Add Another';if($('saveIVOrderClose'))$('saveIVOrderClose').textContent=IV_ORDER_DIALOG_MODE==='EDIT'?'Update & Close':'Save & Close'}
+
+async function medicationSafetyCheckIV(candidate,excludeSharedId=null){
+  let r=await medicationSafetyCheck(candidate,excludeSharedId,false,$('ivNewRoute').value,'INJECTION');
+  let box=$('ivMedSafetyWarning'); if(!box)return r;
+  if(r.duplicates.length){
+    box.className='note error';
+    box.innerHTML='<b>⚠ ACTIVE DUPLICATE GENERIC</b><br>'+esc(genericNameForSafety(candidate))+' already has an active order:<br>'+
+      r.duplicates.map(x=>'• '+esc(x.medication)+' — '+esc(x.pharmacy||'')+' ('+esc(x.source||'')+')').join('<br>')+
+      '<br><b>Please check before adding another.</b>';
+  }else if(r.sameClass.length){
+    box.className='note';
+    box.innerHTML='<b>⚠ SAME THERAPEUTIC CLASS: '+esc(r.therapyClass)+'</b><br>'+
+      r.sameClass.map(x=>'• '+esc(x.medication)+' — '+esc(x.pharmacy||'')+' ('+esc(x.source||'')+')').join('<br>');
+  }else{
+    box.className='info'; box.textContent='✓ No active duplicate generic detected.';
+  }
+  box.classList.remove('hidden'); return r;
+}
+
 function prepareIVOrderDialog(){
   if(!selectedMRN)return alert('Load or add a patient first');
-  IV_ORDER_DIALOG_MODE='NEW';IV_ORDER_DIALOG_SOURCE=null;setIVOrderDialogTitle();
+  IV_ORDER_DIALOG_MODE='NEW';IV_ORDER_DIALOG_SOURCE=null;setIVOrderDialogTitle();if($('ivMedSafetyWarning'))$('ivMedSafetyWarning').classList.add('hidden');
   $('ivTemplateName').value='';$('ivTemplateName').dataset.notes='';$('ivTemplateName').dataset.stability='';$('ivNewMed').value='';$('ivNewDose').value='';populateIVSolutionSelect('');$('ivNewAccess').value='Peripheral';$('ivNewVolume').value='';$('ivNewInfusion').value='';$('ivNewRate').value='';$('ivNewFreq').innerHTML=freqOptions('OD');$('ivNewDuration').value='1';$('ivNewDays').value='1';$('ivNewPriority').value='ROUTINE';$('ivNewRoute').value='IV Infusion';$('ivNewOrderedBy').value='';$('ivNewQty').value='1';
   let now=new Date(),tom=new Date(now.getTime()+24*3600e3);$('ivNewProd').value=ivDialogDateValue(now);$('ivNewExpiry').value=ivDialogDateValue(tom);$('ivOrderDialog').showModal();
 }
 $('ivTemplateName').addEventListener('change',applyIVTemplateByName);$('ivTemplateName').addEventListener('blur',applyIVTemplateByName);$('ivNewVolume').addEventListener('input',recalcIVDialogRate);$('ivNewInfusion').addEventListener('input',recalcIVDialogRate);
 function autoSplitIVOrderMedication(){let p=normalizeIVMedicationAndSolution($('ivNewMed').value,$('ivNewSolution').value);$('ivNewMed').value=p.medication;if(p.solution)populateIVSolutionSelect(p.solution)}
-$('ivNewMed').addEventListener('change',autoSplitIVOrderMedication);$('ivNewMed').addEventListener('blur',autoSplitIVOrderMedication);
+$('ivNewMed').addEventListener('change',async()=>{autoSplitIVOrderMedication();await medicationSafetyCheckIV($('ivNewMed').value,(IV_ORDER_DIALOG_MODE==='EDIT'?(IV_ORDER_DIALOG_SOURCE?.id||IV_ORDER_DIALOG_SOURCE?.shared_order_id||null):null))});
+$('ivNewMed').addEventListener('blur',async()=>{autoSplitIVOrderMedication();await medicationSafetyCheckIV($('ivNewMed').value,(IV_ORDER_DIALOG_MODE==='EDIT'?(IV_ORDER_DIALOG_SOURCE?.id||IV_ORDER_DIALOG_SOURCE?.shared_order_id||null):null))});
 async function saveIVSharedOrder(closeAfter=false){
   if(isDoctor())return alert('Doctor accounts are read-only.');
   let req=['ivTemplateName','ivNewMed','ivNewSolution','ivNewDose','ivNewAccess','ivNewFreq','ivNewDays','ivNewRoute','ivNewProd','ivNewExpiry','ivNewOrderedBy','ivNewQty'];
@@ -1697,6 +1917,8 @@ async function saveIVSharedOrder(closeAfter=false){
   let parts=normalizeIVMedicationAndSolution($('ivNewMed').value,$('ivNewSolution').value),med=parts.medication;if(parts.solution)populateIVSolutionSelect(parts.solution);
   let sf=safetyFlagsForDrug(med);let item={id:(IV_ORDER_DIALOG_MODE==='EDIT'?(IV_ORDER_DIALOG_SOURCE?.id||IV_ORDER_DIALOG_SOURCE?.shared_order_id||null):null),medication:med,dosage_form:'INJECTION',dose:$('ivNewDose').value.trim(),route:$('ivNewRoute').value.trim(),frequency:$('ivNewFreq').value,supply_days:+$('ivNewDays').value,quantity:$('ivNewQty').value.trim(),unit:'dose',order_kind:(IV_ORDER_DIALOG_SOURCE?.order_kind||'NEW'),source_date:(IV_ORDER_DIALOG_SOURCE?.source_date||''),source_doctor:$('ivNewOrderedBy').value.trim(),order_priority:$('ivNewPriority').value,duration_value:+$('ivNewDuration').value,duration_unit:'DAYS',template_name:$('ivTemplateName').value.trim(),notes:$('ivTemplateName').dataset.notes||'',label_type:'IV',refrigerated:sf.refrigerated,high_alert:sf.high_alert,high_risk:sf.high_risk,protect_from_light:sf.protect_from_light,iv_solution:parts.solution||$('ivNewSolution').value,iv_access:$('ivNewAccess').value,iv_volume:$('ivNewVolume').value.trim(),iv_infusion_time:$('ivNewInfusion').value.trim(),iv_rate:$('ivNewRate').value.trim(),iv_production_at:$('ivNewProd').value,iv_expiry_at:$('ivNewExpiry').value,iv_ordered_by:$('ivNewOrderedBy').value.trim()};
   let b=closeAfter?$('saveIVOrderClose'):$('saveIVOrder');
+  let ivSafetyExclude=(IV_ORDER_DIALOG_MODE==='EDIT'?(IV_ORDER_DIALOG_SOURCE?.id||IV_ORDER_DIALOG_SOURCE?.shared_order_id||null):null);
+  if(!(await confirmMedicationSafetyBeforeSave(med,ivSafetyExclude,$('ivNewRoute').value,'INJECTION')))return;
   try{b.disabled=true;b.textContent='Saving...';await rpc('medica_upsert_shared_order',{p_token:pharmacist.token,p_hospital:hospital,p_mrn:selectedMRN,p_pharmacy:'IV',p_order:item});patientListCacheByKey[(hospital||'')+'|IV']=null;await loadPatient(selectedMRN);await mergeSharedPatientsIntoSidebar('IV');if(closeAfter||IV_ORDER_DIALOG_MODE==='EDIT'){$('ivOrderDialog').close()}else{let keepDoctor=$('ivNewOrderedBy').value;prepareIVOrderDialog();$('ivNewOrderedBy').value=keepDoctor;$('ivNewMed').focus()}}
   catch(e){alert('Unable to save IV order: '+e.message)}
   finally{b.disabled=false;setIVOrderDialogTitle()}
@@ -1734,8 +1956,8 @@ $('addMedication').onclick=openAddOrderForCurrentPharmacy;
 $('newMedQty').addEventListener('input',()=>{$('newMedQty').dataset.manual='1';$('newMedQtyHint').textContent='Manual override: '+$('newMedQty').value;$('manualQtyVerifyWrap').classList.remove('hidden');$('manualQtyVerify').checked=false;$('doseCalcSafety').className='qty-safety warn';$('doseCalcSafety').textContent='⚠ Manual quantity entered. Verify it before saving.'});
 $('newMedDose').addEventListener('input',autoOrderQty);$('newMedPrnMax').addEventListener('input',autoOrderQty);$('newMedPriority').addEventListener('change',autoOrderQty);$('newMedDuration').addEventListener('input',syncRegularDuration);$('newMedDurationUnit').addEventListener('change',syncRegularDuration);$('newMedFreq').addEventListener('change',autoOrderQty);
 $('ivNewQty').addEventListener('input',()=>{$('ivNewQty').dataset.manual='1'});$('ivNewDuration').addEventListener('input',()=>{let v=Math.min(7,Math.max(1,+$('ivNewDuration').value||1));$('ivNewDuration').value=v;$('ivNewDays').value=v;autoIVQty()});$('ivNewFreq').addEventListener('change',autoIVQty);
-$('newMed').addEventListener('change',prefillAddOrderFromMedication);
-$('newMed').addEventListener('blur',prefillAddOrderFromMedication);
+$('newMed').addEventListener('change',async()=>{prefillAddOrderFromMedication();await medicationSafetyCheck($('newMed').value,(ORDER_DIALOG_MODE==='EDIT'?(ORDER_DIALOG_SOURCE?.id||ORDER_DIALOG_SOURCE?.shared_order_id||null):null),true,$('newMedRoute').value,$('newMedForm').value)});
+$('newMed').addEventListener('blur',async()=>{prefillAddOrderFromMedication();await medicationSafetyCheck($('newMed').value,(ORDER_DIALOG_MODE==='EDIT'?(ORDER_DIALOG_SOURCE?.id||ORDER_DIALOG_SOURCE?.shared_order_id||null):null),true,$('newMedRoute').value,$('newMedForm').value)});
 $('newMedForm').addEventListener('change',()=>{let med=$('newMed').value.trim();if(!$('newMedRoute').value||['PO','SC','IV',''].includes($('newMedRoute').value))$('newMedRoute').value=defaultRouteForDrug(med,$('newMedForm').value);if(!$('newMedUnit').value)$('newMedUnit').value=defaultUnitForForm($('newMedForm').value)||''});
 async function saveRegularSharedOrder(closeAfter=false){
   if(isDoctor())return alert('Doctor accounts are read-only.');
@@ -1781,6 +2003,8 @@ async function saveRegularSharedOrder(closeAfter=false){
   };
 
   let b=closeAfter?$('saveMedClose'):$('saveMed');
+  let safetyExclude=(ORDER_DIALOG_MODE==='EDIT'?(ORDER_DIALOG_SOURCE?.id||ORDER_DIALOG_SOURCE?.shared_order_id||null):null);
+  if(!(await confirmMedicationSafetyBeforeSave(med,safetyExclude,$('newMedRoute').value,$('newMedForm').value)))return;
   try{
     b.disabled=true;
     b.textContent='Saving...';
